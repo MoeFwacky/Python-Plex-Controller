@@ -50,6 +50,7 @@ TheBaconNation Plex Controller
 <br>Syntax:
 <br>Command (options, if any, don't use the parenthesis)/ Example Usage / Description
 <br>
+<br>playme (tvshow/movie) / playme "The Big Bang Theory" OR playme "movie.The Matrix" / plays the next episode from the specified show or the specified movie.
 <br>addfavoritemovie / addfavoritemovie "The Matrix" / adds the specified movie to the favorites list.
 <br>queueadd / queueadd psych OR queuadd "movie.The Matrix" / adds the specified item to the end of the queue.
 <br>whereat / whereat / Lists where you are at in the current feature. *relies on optional scripts
