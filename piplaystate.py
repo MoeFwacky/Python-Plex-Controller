@@ -30,7 +30,16 @@ def sessionstatus():
 
         from plexapi.myplex import MyPlexAccount
         user = MyPlexAccount.signin(PLEXUN, PLEXPW)
-        plex = user.resource(PLEXSVR).connect()
+	try:
+		from plexapi.server import PlexServer
+		baseurl = 'http://serveriphere:portgoeshere'
+		token = 'yourtokengoeshere'
+		plex = PlexServer(baseurl, token)
+		#print ("using local access.")
+	except Exception:
+		print ("Local Fail. Trying cloud access.")
+
+		plex = user.resource(PLEXSVR).connect()
         client = plex.client(PLEXCLIENT)	
 	psess = plex.sessions()
 	if not psess:
@@ -41,6 +50,9 @@ def sessionstatus():
 		nowp = nowp[0]
 		if "TV Show:" in nowp:
 			nowp = nowp.split("Episode: ")
+			nowp = nowp[1]
+		elif "Movie:" in nowp:
+			nowp = nowp.split("Movie: ")
 			nowp = nowp[1]
 		for sess in psess:
 			sess = sess.title
@@ -73,7 +85,16 @@ def playstatus():
 	
 	from plexapi.myplex import MyPlexAccount
 	user = MyPlexAccount.signin(PLEXUN, PLEXPW)
-	plex = user.resource(PLEXSVR).connect()
+	try:
+                from plexapi.server import PlexServer
+                baseurl = 'http://192.168.1.134:32400'
+                token = 'WJBTq6E9WeYAss6wUtNk'
+                plex = PlexServer(baseurl, token)
+                print ("using local access.")
+        except Exception:
+                print ("Local Fail. Trying cloud access.")
+
+		plex = user.resource(PLEXSVR).connect()
 	client = plex.client(PLEXCLIENT)
 
 	pstatus = client.isPlayingMedia()

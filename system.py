@@ -39,6 +39,22 @@ try:
 	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 	PLEXCLIENT = cur.fetchone()
 	PLEXCLIENT = PLEXCLIENT[0]
+
+	from plexapi.myplex import MyPlexAccount
+        user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+	
+	try:
+                from plexapi.server import PlexServer
+                baseurl = 'http://serveriphere:portgoeshere'
+                token = 'yourgokengoeshere'
+                plex = PlexServer(baseurl, token)
+                #print ("using local access.")
+        except Exception:
+                print ("Local Fail. Trying cloud access.")
+
+                plex = user.resource(PLEXSVR).connect()
+        client = plex.client(PLEXCLIENT)
+
 except Exception:
 	print ("Error getting necessary plex api variables. Run system_setup.py.")
 
@@ -70,9 +86,6 @@ def whereat():
 	return (result)
 
 def listclients():
-	from plexapi.myplex import MyPlexAccount
-        user = MyPlexAccount.signin(PLEXUN,PLEXPW)
-        plex = user.resource(PLEXSVR).connect()
 	daclients = []
 	for client in plex.clients():
 		daclients.append(client.title)
@@ -83,9 +96,6 @@ def listclients():
 		counter = counter + 1
 
 def changeclient():
-	from plexapi.myplex import MyPlexAccount
-        user = MyPlexAccount.signin(PLEXUN,PLEXPW)
-        plex = user.resource(PLEXSVR).connect()
         daclients = []
         for client in plex.clients():
                 daclients.append(client.title)
@@ -115,16 +125,10 @@ def changeclient():
 
 
 def stopplay():
-	from plexapi.myplex import MyPlexAccount
-	user = MyPlexAccount.signin(PLEXUN,PLEXPW)
-	plex = user.resource(PLEXSVR).connect()
 	client = plex.client(PLEXCLIENT)
 	client.stop('video')
 
 def pauseplay():
-	from plexapi.myplex import MyPlexAccount
-	user = MyPlexAccount.signin(PLEXUN,PLEXPW)
-	plex = user.resource(PLEXSVR).connect()
 	client = plex.client(PLEXCLIENT)
     	client.pause('video')
 
@@ -902,9 +906,6 @@ def playspshow(show, season, episode):
 	for item in ep:
 		theep = item[0]
 
-	from plexapi.myplex import MyPlexAccount
-	user = MyPlexAccount.signin(PLEXUN, PLEXPW)
-	plex = user.resource(PLEXSVR).connect()
 	shows = plex.library.section('TV Shows')
 	the_show = shows.get(show)
 	#showplay = the_show.rstrip()
@@ -970,9 +971,6 @@ def playshow(show):
                 sql.commit()	
 		thecount = str(thecount)
 	
-		from plexapi.myplex import MyPlexAccount
-		user = MyPlexAccount.signin(PLEXUN, PLEXPW)
-		plex = user.resource(PLEXSVR).connect()
 		shows = plex.library.section('TV Shows')
 		the_show = shows.get(show)
 		#showplay = the_show.rstrip()
@@ -993,9 +991,6 @@ def playshow(show):
 				show = mvs[0]
 				print ("Found " + show + ". Starting...")
 
-				from plexapi.myplex import MyPlexAccount
-				user = MyPlexAccount.signin(PLEXUN, PLEXPW)
-				plex = user.resource(PLEXSVR).connect()
 				show = show.rstrip()
 				movie = plex.library.section('Movies').get(show)
 				client = plex.client(PLEXCLIENT)
