@@ -69,20 +69,64 @@ def whereat():
 		result = "Too soon to tell. Check again in 15 seconds."
 	return (result)
 
+def listclients():
+	from plexapi.myplex import MyPlexAccount
+        user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+        plex = user.resource(PLEXSVR).connect()
+	daclients = []
+	for client in plex.clients():
+		daclients.append(client.title)
+	print ("The Following Clients are available.")
+	counter = 1
+	for client in daclients:
+		print (str(counter) + "- " + client.strip() + "\n")
+		counter = counter + 1
+
+def changeclient():
+	from plexapi.myplex import MyPlexAccount
+        user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+        plex = user.resource(PLEXSVR).connect()
+        daclients = []
+        for client in plex.clients():
+                daclients.append(client.title)
+        print ("The Following Clients are available.")
+        counter = 1
+        for client in daclients:
+                print (str(counter) + "- " + client.strip() + "\n")
+                counter = counter + 1
+	choice = int(raw_input('New Client: '))
+	try:
+		client = daclients[choice-1].strip()
+		print (client)
+		cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXCLIENT\'')
+		sql.commit()
+		print ("Deleted.")
+		cur.execute('INSERT INTO settings VALUES(?,?)',('PLEXCLIENT',client))
+		sql.commit()
+		print ("Added.")
+		cur.execute("SELECT * FROM settings WHERE item LIKE \'PLEXCLIENT\'")
+		test = cur.fetchone()
+		print (test)
+		return ("Client successfully set to: " + client.strip())
+	except Exception:
+		return ("Error. Unable to update client. Please try again.")
+		
+	
+
 
 def stopplay():
-	from plexapi.myplex import MyPlexUser
-	user = MyPlexUser.signin(PLEXUN,PLEXPW)
-	plex = user.getResource(PLEXSVR).connect()
+	from plexapi.myplex import MyPlexAccount
+	user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+	plex = user.resource(PLEXSVR).connect()
 	client = plex.client(PLEXCLIENT)
-	client.stop()
+	client.stop('video')
 
 def pauseplay():
-	from plexapi.myplex import MyPlexUser
-	user = MyPlexUser.signin(PLEXUN,PLEXPW)
-	plex = user.getResource(PLEXSVR).connect()
+	from plexapi.myplex import MyPlexAccount
+	user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+	plex = user.resource(PLEXSVR).connect()
 	client = plex.client(PLEXCLIENT)
-    	client.pause()
+    	client.pause('video')
 
 def getblockpackagelist():
 	consql = DEFAULTDIR + 'myplex.db'
@@ -176,7 +220,8 @@ def explainblock(block):
 					tns = tns + things + "\n"
 				except NameError:
 					tns = things + "\n"
-			say = "The " + block + " plays episodes from \n" + tns
+				tns = tns.replace("movie.", "the movie ")
+			say = "The " + block + " plays the following:\n" + tns
 			return say		
 def addblock(name, title):
 	consql = DEFAULTDIR + 'myplex.db'
@@ -190,7 +235,7 @@ def addblock(name, title):
 	file.close()
 	if (("none" not in name) and ("none" not in title)):
 		blist = getblockpackagelist()
-		if "movie." in title:
+		if ("movie." in title) and ("random" not in title.lower()):
 			title = title.split("movie.")
 			title = title[1]
 			for item in blist:
@@ -223,6 +268,53 @@ def addblock(name, title):
 						print (item)
 				say = "Done."
 			return (say)
+		elif ("random_movie." in title.lower()):
+			rgenre = title.split("movie.")
+			try:
+				rgenre = rgenre[1]
+			except IndexError:
+				Return ("Error. No genre provided.")
+			
+			cur.execute('SELECT * FROM Movies WHERE Genre LIKE \'%' + rgenre + '%\'')
+			if not cur.fetchone():
+				return ("Sorry " + str(rgenre.strip()) + " not found as an available genre.")
+			else:
+				adtitle = title.strip() + ";"
+				blcount = 0
+				blname = str(name)
+				cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, int(blcount)))
+                                sql.commit()
+				say = title + " has been added to the " + name + " block."
+				return (say)
+		elif ("random_tv." in title.lower()):
+			rgenre = title.split('tv.')
+			try:
+				rgenre = rgenre[1]
+                        except IndexError:
+                                Return ("Error. No genre provided.")
+			print ("Checking " + rgenre)
+			cgenre = availgenretv()
+			cxgenre = []
+			for items in cgenre:
+				items = items.replace('.txt','')
+				cxgenre.append(items)
+
+			print (cxgenre)
+
+			if rgenre not in cxgenre:
+				return ("Sorry " + str(rgenre.strip()) + " not found as an available genre.")
+
+			else:
+				adtitle = bitems + "Random_tv." + rgenre.strip() + ";"
+				blcount = 0
+				cur.execute('DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\'')
+				sql.commit()
+				cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, adtitle, blcount))
+				sql.commit()
+				xname = "Random TV " + rgenre.strip() + " has been added to the block.\n"
+				return (xname)
+			
+				
 		else:
 			for item in tvcheck:
 				if (title.lower() == item.lower().rstrip()):
@@ -342,7 +434,60 @@ def addblock(name, title):
 						if (xname.lower() in item.lower().rstrip()):
 							print (item)
 			elif choice == 3:
-				print ("Under Construction.")
+				rcheck = ""
+				while "true" not in rcheck:
+					try:
+						print ("1 - Random Movie OR 2- Random TV Show\n")
+						rtype = int(raw_input('Random Type: '))
+						if rtype == 1:
+							rgenre = str(raw_input('Genre:'))
+							print ("Checking " + rgenre)
+							cur.execute('SELECT * FROM Movies WHERE Genre LIKE \'%' + rgenre + '%\'')
+							if not cur.fetchone():
+								print ("Sorry " + str(rgenre.strip()) + " not found as an available genre.")
+								
+							else:
+								print ("Pass. Adding now.")
+								adtitle = bitems + "Random_movie." + rgenre.strip() + ";"
+								blcount = 0
+								cur.execute('DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\'')
+								sql.commit()
+								cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, adtitle, blcount))
+								sql.commit()
+								xname = "Random Movie " + rgenre.strip() + " has been added to the block.\n"
+								print (xname)
+								rcheck = "true"
+						elif rtype ==2:
+							rgenre = str(raw_input('Genre:'))
+                                                        print ("Checking " + rgenre)
+							cgenre = availgenretv()
+							cxgenre = []
+							for items in cgenre:
+								items = items.replace('.txt','')
+								cxgenre.append(items)
+							
+							print (cxgenre)
+							
+                                                        if rgenre not in cxgenre:
+                                                                print ("Sorry " + str(rgenre.strip()) + " not found as an available genre.")
+
+                                                        else:
+                                                                print ("Pass. Adding now.")
+                                                                adtitle = bitems + "Random_tv." + rgenre.strip() + ";"
+                                                                blcount = 0
+                                                                cur.execute('DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\'')
+                                                                sql.commit()
+                                                                cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, adtitle, blcount))
+                                                                sql.commit()
+                                                                xname = "Random TV " + rgenre.strip() + " has been added to the block.\n"
+                                                                print (xname)
+                                                                rcheck = "true"
+							rcheck = "true"
+						else:
+							print ("Error. You must choose one of the available options.")
+					except Exception:
+						print ("Error. You must choose one of the available options.")
+
 
 			elif choice == 4:
 				return ("Done.")
@@ -757,9 +902,9 @@ def playspshow(show, season, episode):
 	for item in ep:
 		theep = item[0]
 
-	from plexapi.myplex import MyPlexUser
-	user = MyPlexUser.signin(PLEXUN, PLEXPW)
-	plex = user.getResource(PLEXSVR).connect()
+	from plexapi.myplex import MyPlexAccount
+	user = MyPlexAccount.signin(PLEXUN, PLEXPW)
+	plex = user.resource(PLEXSVR).connect()
 	shows = plex.library.section('TV Shows')
 	the_show = shows.get(show)
 	#showplay = the_show.rstrip()
@@ -825,9 +970,9 @@ def playshow(show):
                 sql.commit()	
 		thecount = str(thecount)
 	
-		from plexapi.myplex import MyPlexUser
-		user = MyPlexUser.signin(PLEXUN, PLEXPW)
-		plex = user.getResource(PLEXSVR).connect()
+		from plexapi.myplex import MyPlexAccount
+		user = MyPlexAccount.signin(PLEXUN, PLEXPW)
+		plex = user.resource(PLEXSVR).connect()
 		shows = plex.library.section('TV Shows')
 		the_show = shows.get(show)
 		#showplay = the_show.rstrip()
@@ -848,9 +993,9 @@ def playshow(show):
 				show = mvs[0]
 				print ("Found " + show + ". Starting...")
 
-				from plexapi.myplex import MyPlexUser
-				user = MyPlexUser.signin(PLEXUN, PLEXPW)
-				plex = user.getResource(PLEXSVR).connect()
+				from plexapi.myplex import MyPlexAccount
+				user = MyPlexAccount.signin(PLEXUN, PLEXPW)
+				plex = user.resource(PLEXSVR).connect()
 				show = show.rstrip()
 				movie = plex.library.section('Movies').get(show)
 				client = plex.client(PLEXCLIENT)
@@ -1629,7 +1774,6 @@ def restartblock(block):
 		sql.commit()
 
 	return ("Done")
-#marker
 def randommovieblock(genre):
 	openme = DEFAULTDIR + 'random_movie_block.txt'
 	with open(openme, "w") as file:
@@ -1697,19 +1841,24 @@ def suggestmovie(genre):
         sql = sqlite3.connect(link)
         cur = sql.cursor()
 	from random import randint
-	if (genre == "none"):
+	if (genre == "none") or (genre == "all"):
 		command = 'SELECT Movie from Movies WHERE Genre LIKE \'%favorite%\''
 		cur.execute(command)
 		mvlist = cur.fetchall()
 		#print (mvlist)
+		if ((int(len(mvlist)) < 9) or (genre == "all")):
+			command = 'SELECT Movie FROM Movies'
+			cur.execute(command)
+			mvlist = cur.fetchall()
+			#print (mvlist)
 		min = 0
 		max = int(len(mvlist)-1)
 		playc = randint(min,max)
 		play = mvlist[playc]
 		play = play[0].rstrip()
-		command = 'SELECT Movie from Movies WHERE Movie LIKE\'' + play + '\''
-		cur.execute(command)
-		mvlist = cur.fetchall()
+		#command = 'SELECT Movie from Movies WHERE Movie LIKE\'' + play + '\''
+		#cur.execute(command)
+		#mvlist = cur.fetchall()
 		for mvs in mvlist:
 			if mvs[0].lower() == play.lower():
 				play = mvs[0]	
@@ -1853,8 +2002,6 @@ def readlist(list):
 
 try:	
 	show = str(sys.argv[1])
-	print (show + "\n")
-	print ("check\n")
 	show = show.replace("+"," ")
 	#marker
 	if ("addfavoritemovie" in show):
@@ -1876,6 +2023,11 @@ try:
 	elif ("randommovieblock" in show):
 		genre = str(sys.argv[2])
 		say = randommovieblock(genre)
+	elif ("listclients" in show):
+		listclients()
+		say = ""
+	elif ("changeclient" in show):
+		say = changeclient()
 	elif ("stopplay" in show):
 		stopplay()
 		say = "Playback has been stopped. A new program will start unless you have already stopped playstatus.py"
@@ -2088,19 +2240,6 @@ try:
 		studio = str(sys.argv[2])
 		say = listtvstudio(studio)
 		say = readlist(say)
-	
-	elif "getmovie" in show:
-		genre = str(sys.argv[2])
-		say = getmovie(genre)
-
-	elif "gettv" in show:
-		genre = str(sys.argv[2])
-		say = gettv(genre)
-
-	elif show == "help":
-		say = helpme()
-
-	
 	else:
 		try:
 			season = str(sys.argv[2])
