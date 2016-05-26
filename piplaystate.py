@@ -1,140 +1,145 @@
-import os
 import time
-import urllib3
-import getpass
+import os
 import sqlite3
+import getpass
 
 user = getpass.getuser()
 
-maindir = "/home/" + user + "/hasystem/"
+DEFAULTDIR = "/home/" + user + "/hasystem/"
 
-MYDB = maindir + "myplex.db"
-sql = sqlite3.connect(MYDB)
-cur = sql.cursor()
+MYDB = DEFAULTDIR + "myplex.db"
 
-command = "SELECT setting FROM settings WHERE item LIKE \'ClientIP\'"
-cur.execute(command)
-clientip = cur.fetchone()
-clientip = clientip[0]
+def sessionstatus():
+	sql = sqlite3.connect(MYDB)
+        cur = sql.cursor()
+        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+        PLEXUN = cur.fetchone()
+        PLEXUN = PLEXUN[0]
 
+        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+        PLEXPW = cur.fetchone()
+        PLEXPW = PLEXPW[0]
 
-playstate = maindir + "playstate.txt"
-playstatestatus = maindir + "playstatestatus.txt"
-pstate1 = maindir + "pstate.txt"
-perror = maindir + "perror.txt"
+        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
+        PLEXSVR = cur.fetchone()
+        PLEXSVR = PLEXSVR[0]
 
-def pstate():
+        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
+        PLEXCLIENT = cur.fetchone()
+        PLEXCLIENT = PLEXCLIENT[0]
 
-	with open(playstate, "w") as file:
-		file.write("")
-	file.close()
-
-	command = "sshpass -p 'rasplex' ssh -o StrictHostKeyChecking=no root@" + clientip + "tail -n 15 /storage/.plexht/temp/plexhometheater.log >> " + playstate
-
-	check = "DEBUG: CPlexTimelineManager::ReportProgress updating subscribers: (playing)"
-	check1 = "CPlexTimelineManager::ReportProgress updating subscribers: (paused)"
-	check3 = "CPlexRemoteSubscriber::shouldRemove will not remove because elapsed: 10"
-
-	os.system(command)
-	#reads mini-log to do the check
-	with open(playstate, "r") as file:
-		results = file.readlines()
-	file.close()
-	#log of the state of previous scan
-	with open(pstate1, "r") as file:
-		pstate = file.read()
-	file.close()
-	found = ""
-	for result in results:
-
-		if "playing" in result:
-			writeme = "playing"
-			if "playing" not in pstate:
-				with open(pstate1, "w") as file:
-					file.write(writeme)
-				file.close()
-				
-			ecount = "0"
-			with open(perror, "w") as file:
-				file.write(ecount)
-			file.close()
-			found = "yes"
-
-			return ("playing")
-		elif "paused" in result:
-			writeme = "paused"
-			if "paused" not in pstate:
-				with open(pstate1, "w") as file:
-					file.write(writeme)
-				file.close()
-			found = "yes"
-
-			return ("paused")
-		elif check3 in result:
-			found = "no"
-		else:
-			found = "no"
-	#this check is necessary because there are times where paused/play is not detected on a scan. I found that without this, the script was more apt to incorrectly detect a stop event and launch a new program when it shouldn't. Feel free to remove it and test without it. 
-	if "no" in found:
-		try:
-			with open(perror, "r") as file:
-				ecount = file.read()
-			file.close()
-		except Exception:
-			ecount = 0
-
-		ecount = int(ecount)
-		if ecount == 2:
-			with open(playstatestatus, "r") as file:
-				plstate = file.read()
-			file.close()
-			if "On" in plstate:
-				scommand = "python /home/" + user + "/hasystem/system.py startnextprogram"
-				os.system(scommand)
-				with open(perror, "w") as file:
-					file.write("0")
-				file.close()
-				with open(pstate1, "w") as file:
-					file.write("stopped")
-				file.close()
-				return ("Starting Next Program")
-			elif "Sleep" in plstate:
-				print ("sleeping")
-				with open(playstatestatus, "w") as file:
-					file.write("Off")
-				file.close()
-				with open(perror, "w") as file:
-                                        file.write("0")
-                                file.close()
-
-				#tvofflink = ""
-				#http = urllib3.PoolManager()
-				#response = http.urlopen('GET', tvofflink, preload_content=False).read()
-				return ("System has been put to sleep")
-		else:
-			ecount = ecount + 1
-			ecount = str(ecount)
-			with open(perror, "w") as file:
-				file.write(ecount)
-			file.close()	
-			return ("Log Error. Checking Again.")
+        from plexapi.myplex import MyPlexAccount
+        user = MyPlexAccount.signin(PLEXUN, PLEXPW)
+        plex = user.resource(PLEXSVR).connect()
+        client = plex.client(PLEXCLIENT)	
+	psess = plex.sessions()
+	if not psess:
+		return ("Stopped")
+	else:
+		cur.execute('SELECT State FROM States WHERE Option LIKE \'Nowplaying\'')
+		nowp = cur.fetchone()
+		nowp = nowp[0]
+		if "TV Show:" in nowp:
+			nowp = nowp.split("Episode: ")
+			nowp = nowp[1]
+		for sess in psess:
+			sess = sess.title
 			
-while True:
-	with open(playstatestatus, "r") as file:
-		plstate = file.read()
-	file.close()
-	if "Off" not in plstate:
+			if nowp in sess:
+				#print ("Go")
+				return ("Playing")
+		print ("Fail")
+		return ("Unknown")
 
-		playstate = pstate()
-		#print (playstate)
-		#if it is starting a new program, wait to allow the program to start before resuming the playback checks. 
-		if "Starting Next Program" in playstate:
-			#print (playstate)
-			time.sleep(30)
-		elif "System has been put to sleep" in playstate:
-			print (playstate)
-			time.sleep(30)
-	time.sleep(5)
+def playstatus():
 	
+	sql = sqlite3.connect(MYDB)
+	cur = sql.cursor()
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+	PLEXUN = cur.fetchone()
+	PLEXUN = PLEXUN[0]
+
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+	PLEXPW = cur.fetchone()
+	PLEXPW = PLEXPW[0]
+
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
+	PLEXSVR = cur.fetchone()
+	PLEXSVR = PLEXSVR[0]
+
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
+	PLEXCLIENT = cur.fetchone()
+	PLEXCLIENT = PLEXCLIENT[0]
+	
+	from plexapi.myplex import MyPlexAccount
+	user = MyPlexAccount.signin(PLEXUN, PLEXPW)
+	plex = user.resource(PLEXSVR).connect()
+	client = plex.client(PLEXCLIENT)
+
+	pstatus = client.isPlayingMedia()
+	sql.close()
+	#print (pstatus)
+
+	if pstatus is True:
+		return ("Playing")
+	else:
+		return ("Stopped")
+#say = sessionstatus()
+#print (say)
+while True:
+	with open('/home/pi/hasystem/playstatestatus.txt','r') as file:
+		stuff = file.read()
+	file.close()
+	print (stuff)
+	try:
+		if ("Off" not in stuff):
+			try:
+				print ("Doing a session check.")
+				state = sessionstatus()
+				if "Unknown" in state:
+					print ("Unknown presented. Using playstate method.")
+					state = playstatus()
+			except Exception:
+				print ("Session check failed. Checking Playstate method.")
+				state = playstatus()
+			if ("Playing" in state):
+			
+				sql = sqlite3.connect(MYDB)
+				cur = sql.cursor()
+				print ("Playing")
+				cur.execute("DELETE FROM States WHERE Option LIKE \'Playstate\'")
+				sql.commit
+				cur.execute("INSERT INTO States VALUES(?,?)",('Playstate','Playing'))
+				sql.commit
+				sql.close()
+			elif ("Sleep" in state):
+				sql = sqlite3.connect(MYDB)
+				cur = sql.cursor()
+				cur.execute("DELETE FROM States WHERE Option LIKE \'Playstate\'")
+				sql.commit
+				cur.execute("INSERT INTO States VALUES(?,?)",('Playstate','Stopped'))
+				sql.commit
+				sql.close()
+				command = "python /home/pi/huec.py alllights off"
+				os.system(command)
+				command = "python /home/pi/hasystem/system.py playcheckstop"
+				os.system(command)
+				time.sleep(30)
+			else:
+				sql = sqlite3.connect(MYDB)
+				cur = sql.cursor()
+				print ("Stopped")
+				cur.execute("DELETE FROM States WHERE Option LIKE \'Playstate\'")
+				sql.commit
+				cur.execute("INSERT INTO States VALUES(?,?)",('Playstate','Stopped'))
+				sql.commit
+				sql.close()
+				command = "python " + DEFAULTDIR + "/system.py startnextprogram"
+				os.system(command)
+				time.sleep(45)
+	except Exception:
+		print ("Timeout Error. Checking again next pass.")
+	time.sleep(10)
+
 
 
