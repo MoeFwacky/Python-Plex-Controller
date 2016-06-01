@@ -22,41 +22,55 @@ DEFAULTDIR = "/home/" + user + "/hasystem/"
 MYDB = DEFAULTDIR + "myplex.db"
 sql = sqlite3.connect(MYDB)
 cur = sql.cursor()
-try:
 
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
-	PLEXUN = cur.fetchone()
-	PLEXUN = PLEXUN[0]
+global PLEXUN
+global PLEXSVR
+global PLEXCLIENT
+global plex
+global client
 
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-	PLEXPW = cur.fetchone()
-	PLEXPW = PLEXPW[0]
 
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
-	PLEXSVR = cur.fetchone()
-	PLEXSVR = PLEXSVR[0]
-
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
-	PLEXCLIENT = cur.fetchone()
-	PLEXCLIENT = PLEXCLIENT[0]
-
-	from plexapi.myplex import MyPlexAccount
-        user = MyPlexAccount.signin(PLEXUN,PLEXPW)
-	
+def plexlogin():
+	global PLEXUN
+	global PLEXSVR
+	global PLEXCLIENT
+	global plex
+	global client
 	try:
-                from plexapi.server import PlexServer
-                baseurl = 'http://serveriphere:porthere'
-                token = 'tokengoeshere'
-                plex = PlexServer(baseurl, token)
-                #print ("using local access.")
-        except Exception:
-                print ("Local Fail. Trying cloud access.")
 
-                plex = user.resource(PLEXSVR).connect()
-        client = plex.client(PLEXCLIENT)
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+		PLEXUN = cur.fetchone()
+		PLEXUN = PLEXUN[0]
 
-except Exception:
-	print ("Error getting necessary plex api variables. Run system_setup.py.")
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+		PLEXPW = cur.fetchone()
+		PLEXPW = PLEXPW[0]
+
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
+		PLEXSVR = cur.fetchone()
+		PLEXSVR = PLEXSVR[0]
+
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
+		PLEXCLIENT = cur.fetchone()
+		PLEXCLIENT = PLEXCLIENT[0]
+
+		from plexapi.myplex import MyPlexAccount
+		user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+		
+		try:
+			from plexapi.server import PlexServer
+			baseurl = 'http://serveriphere:port'
+			token = 'tokengoeshere'
+			plex = PlexServer(baseurl, token)
+			#print ("using local access.")
+		except Exception:
+			print ("Local Fail. Trying cloud access.")
+
+			plex = user.resource(PLEXSVR).connect()
+		client = plex.client(PLEXCLIENT)
+
+	except Exception:
+		print ("Error getting necessary plex api variables. Run system_setup.py.")
 
 
 def cls():
@@ -1175,6 +1189,7 @@ def queueremove():
 	cur.execute(command)
 	queue = cur.fetchone()
 	queue = queue[0]
+	queue = queue.replace(';;',';')
 	oqueue = queue
 	queue = queue.split(';')
 	removeme = queue[0]
@@ -1370,7 +1385,36 @@ def addfavoritemovie(title):
 		
 def whatsafterthat():
 	check = playmode()
-	print (check)
+	if "normal" in check:
+		name = "queue"
+		command = 'SELECT State FROM States WHERE Option LIKE \'' + name + '\''
+		cur.execute(command)
+		queue = cur.fetchone()
+		queue = queue[0]
+		queue = queue.split(";")
+		if queue[1] == '':
+			print ("Generating after that now, sir.")
+			furst = queue[0]
+			skipthat()
+			sayme = whatupnext()
+			sayme = sayme.split("we have ")
+			sayme = sayme[1]
+			sayme = sayme.replace("movie.", "The movie ")
+			setupnext(furst)
+			furst = furst.replace("movie.", "The movie ")
+			return (sayme + " will play after " + furst)
+		else:
+			sayme = whatupnext()
+			sayme = sayme.split("we have ")
+			sayme = sayme[1]
+			
+			upnext = queue[1]
+			upnext = upnext.replace("movie.", "The movie ")
+			return ("After " + sayme + " we have: " + upnext + ".")
+
+		#print (queue)
+	else:
+		return("Sorry, whatsafterthat only currenly supports normal playback.")
 	return ("Done.")	
 
 def whatupnext():
@@ -2010,6 +2054,7 @@ try:
 		#sayx = say + " has been added to the queue."
 		#saythat(say)
 	elif ("whereat" in show):
+		plexlogin()
 		nowp = nowplaying()
 		say = whereat()
 		say = "For " + nowp + "- " + say 
@@ -2021,19 +2066,25 @@ try:
 		genre = str(sys.argv[2])
 		say = randommovieblock(genre)
 	elif ("listclients" in show):
+		plexlogin()
 		listclients()
 		say = ""
 	elif ("changeclient" in show):
+		plexlogin()
 		say = changeclient()
 	elif ("stopplay" in show):
+		plexlogin()
 		stopplay()
 		say = "Playback has been stopped. A new program will start unless you have already stopped playstatus.py"
 	elif ("pauseplay" in show):
+		plexlogin()
 		pauseplay()
 		say = "Playback has been paused."
 	elif ("skipahead" in show):
+		plexlogin()
 		say = skipahead()
 	elif ("skipback" in show):
+		plexlogin()
 		say = skipback()
 	elif ("playcheckstart" in show):
 		openme = DEFAULTDIR + 'playstatestatus.txt'
@@ -2061,6 +2112,7 @@ try:
 	elif ("whatsafterthat" in show):
 		say = whatsafterthat()
 	elif ("startnextprogram" in show):
+		plexlogin()
 		#os.system("pkill -f playstate.py")
 		show = upnext()
 		say = playshow(show)
@@ -2158,12 +2210,14 @@ try:
 		title = str(sys.argv[2])
 		say = setupnext(title)
 	elif ("featuredone" in show):
+		plexlogin()
 		show = upnext()
 		say = playshow(show)
 		skipthat()
 		say = "Sir, the last feature has ended, starting " + say
 		
 	elif ("blockplay" in show):
+		plexlogin()
 		play = str(sys.argv[2])
 		say = playblockpackage(play)
 	elif ("nextep" in show)and ("setnextep" not in show):
@@ -2244,6 +2298,7 @@ try:
 		say = listtvstudio(studio)
 		say = readlist(say)
 	else:
+		plexlogin()
 		try:
 			season = str(sys.argv[2])
 			episode = str(sys.argv[3])
