@@ -45,8 +45,8 @@ try:
 	
 	try:
                 from plexapi.server import PlexServer
-                baseurl = 'http://serveriphere:portgoeshere'
-                token = 'yourgokengoeshere'
+                baseurl = 'http://serveriphere:porthere'
+                token = 'tokengoeshere'
                 plex = PlexServer(baseurl, token)
                 #print ("using local access.")
         except Exception:
@@ -62,28 +62,6 @@ except Exception:
 def cls():
 	os.system('cls' if os.name=='nt' else 'clear')
 
-
-def whereat():
-	command = "more " + DEFAULTDIR + "playstate.txt | grep '(playing)' "
-	try:
-	
-		result = subprocess.check_output(command, shell=True)
-	except Exception:
-		time.sleep(1)
-		result = subprocess.check_output(command, shell=True)
-	try:
-		result = result.split('[')
-		result = result[-1]
-		result = result.split(']')
-		result = result[0]
-
-		result = result.split('/')
-		where = str((int(result[0])/60000))
-		outof = str((int(result[1])/60000))
-		result = "We are at minute " + where + " out of " + outof
-	except Exception:
-		result = "Too soon to tell. Check again in 15 seconds."
-	return (result)
 
 def listclients():
 	daclients = []
@@ -131,6 +109,27 @@ def stopplay():
 def pauseplay():
 	client = plex.client(PLEXCLIENT)
     	client.pause('video')
+
+def whereat():
+	client = plex.client(PLEXCLIENT)
+	for mediatype in client.timeline():
+		if int(mediatype.get('time')) != 0:
+			check = mediatype.get('time')
+			check2 = mediatype.get('duration')
+			check = int(check)/60000
+			check2 = int(check2)/60000
+			say = ("We are at minute " + str(check) + " out of " + str(check2) + ".")
+	return (say)
+
+def skipahead():
+	client = plex.client(PLEXCLIENT)
+	client.stepForward('video')
+	return ("Skip Ahead Complete.")
+
+def skipback():
+	client = plex.client(PLEXCLIENT)
+	client.stepBack('video')
+	return ("Skip Back Complete.")
 
 def getblockpackagelist():
 	consql = DEFAULTDIR + 'myplex.db'
@@ -1369,7 +1368,10 @@ def addfavoritemovie(title):
 	except IndexError:
 		return ("Error adding " + movie + " to the favorites list.")
 		
-
+def whatsafterthat():
+	check = playmode()
+	print (check)
+	return ("Done.")	
 
 def whatupnext():
 	sqlcon = DEFAULTDIR + 'myplex.db'
@@ -2029,6 +2031,10 @@ try:
 	elif ("pauseplay" in show):
 		pauseplay()
 		say = "Playback has been paused."
+	elif ("skipahead" in show):
+		say = skipahead()
+	elif ("skipback" in show):
+		say = skipback()
 	elif ("playcheckstart" in show):
 		openme = DEFAULTDIR + 'playstatestatus.txt'
 		with open(openme, "w") as file:
@@ -2052,6 +2058,8 @@ try:
 		#saythat(say)
 	elif ("whatupnext" in show):
 		say = whatupnext()
+	elif ("whatsafterthat" in show):
+		say = whatsafterthat()
 	elif ("startnextprogram" in show):
 		#os.system("pkill -f playstate.py")
 		show = upnext()
