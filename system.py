@@ -59,8 +59,8 @@ def plexlogin():
 		
 		try:
 			from plexapi.server import PlexServer
-			baseurl = 'http://serveriphere:port'
-			token = 'tokengoeshere'
+			baseurl = 'http://IP HERE:PORT'
+			token = 'tokenhere'
 			plex = PlexServer(baseurl, token)
 			#print ("using local access.")
 		except Exception:
@@ -144,6 +144,31 @@ def skipback():
 	client = plex.client(PLEXCLIENT)
 	client.stepBack('video')
 	return ("Skip Back Complete.")
+
+def listwildcard():
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'WILDCARD\'')
+	wildcard = cur.fetchone()
+	wildcard = wildcard[0]
+	return wildcard
+
+def changewildcard(show):
+	currentw = listwildcard()
+	print ("The Current Wild Card is: " + currentw + ".\n")
+	if "none" in show:
+		print ("What do you want to replace it with?")
+		newwild = str(raw_input('Show: '))
+	else:
+		newwild = show
+	command = "SELECT TShow FROM shows WHERE TShow LIKE \'" + newwild + "\'"
+	cur.execute(command)
+	if not cur.fetchall():
+		return ("Error. " + str(newwild) + " Not found in Library to set as wildcard.")
+	else:
+		cur.execute("DELETE FROM settings WHERE item LIKE \'WILDCARD\'")
+		sql.commit()
+		cur.execute("INSERT INTO settings VALUES(?,?)", ('WILDCARD', newwild))
+		sql.commit()
+		return (newwild + " has been set as the new Wildcard show.")
 
 def getblockpackagelist():
 	consql = DEFAULTDIR + 'myplex.db'
@@ -868,7 +893,7 @@ def moviedetails(movie):
 	consql = DEFAULTDIR + 'myplex.db'
 	sql = sqlite3.connect(consql)
 	cur = sql.cursor()
-	command = 'SELECT Movie, Summary, Rating, Tagline, Summary FROM Movies WHERE Movie IS \'' + movie + '\''
+	command = 'SELECT Movie, Summary, Rating, Tagline, Summary FROM Movies WHERE Movie LIKE \'' + movie + '\''
 	cur.execute(command)
 	xep = cur.fetchone()
 	ep = str(xep[0])
@@ -2058,6 +2083,14 @@ try:
 		nowp = nowplaying()
 		say = whereat()
 		say = "For " + nowp + "- " + say 
+	elif ("listwildcard" in show):
+		say = listwildcard()
+	elif ("changewildcard" in show):
+		try:
+			show = str(sys.argv[2])
+		except Exception:
+			show = "none"
+		say = changewildcard(show)
 	elif ("idtonightsmovie" in show):
 		say = idtonightsmovie()
 	elif ("findnewmovie" in show):
