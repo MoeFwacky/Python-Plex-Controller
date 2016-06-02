@@ -48,6 +48,8 @@ alias findnewmovie='python /home/pi/hasystem/system.py findnewmovie'
 alias addfavoritemovie='python /home/pi/hasystem/system.py addfavoritemovie'
 alias listclients='python /home/pi/hasystem/system.py listclients'
 alias changeclient='python /home/pi/hasystem/system.py changeclient'
+alias listwildcard='python /home/pi/hasystem/system.py listwildcard'
+alias changewildcard='python /home/pi/hasystem/system.py changewildcard'
 """
 
 newdir = "/home/" + user + "/"
