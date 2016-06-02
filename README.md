@@ -86,6 +86,9 @@ TheBaconNation Plex Controller
 <br>moviedetails (movie) / moviedetails Predator / gets the details for the specified movie
 <br>findshow (text) / findshow Eureka / finds TV show names containing the given text.
 <br>findmovie (text) / findmovie Terminator / finds movies with names containing the given text.
+<br>findnewmovie / findnewmovie / when using a play mode with a random movie option, this command will replace that pending movie with a new selection of the same genre type. 
 <br>getplaymode / getplaymode / gets the current playmode
 <br>setplaymode (normal / block.(usercreatedblock) / marathon.(tvshownameinlibrary)) / setplaymode normal OR setplaymode block.monday_am_block OR setplaymode "marathon.Married with Children" / sets the playmode of the system to the specified playmode.
 <br>nowplaying / nowplaying / returns what is currently playing
+<br>listwildcard / listwildcard / lists the show currently set as the Wild Card show
+<br>changewildcard (show)/ changewildcard OR changewildcard "My Name Is Earl" / if a show is given it will set the wild card to that show, otherwise it will walk you through choosing a new wildcard show.
