@@ -307,14 +307,14 @@ else:
 	if "reset" in extraopt:
 		cur.execute('DELETE FROM settings')
 		sql.commit()
-
+	'''
 	#check to see if client IP is present. Used for play check script.
 	cur.execute('SELECT setting FROM settings WHERE item LIKE \'ClientIP\'')
 	if not cur.fetchone():
 		clientip = str(raw_input('Input Client IP: '))
 		cur.execute('INSERT INTO settings VALUES(?,?)', ('ClientIP', clientip.strip()))
 		sql.commit()
-
+	'''
 	#checks for plex user name and PW. Used for Plex API. 
 	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
 	if not cur.fetchone():
