@@ -13,13 +13,10 @@ TheBaconNation Plex Controller
 <br>upddatedb_pi.py - this is the script used to update the controllers database. 
 <br>system_setup.py - this script creates the necessary files, database, and prompts the user for the information the controller needs to do its job. 
 <br>
-<br>2 scripts are optional. If you use raspberry pi running rasplex as a controller, these scripts can be used to detect its play state and react based on paused, stopped, and started playback. The system_setup.py script will throw a warning if you do not have these scripts. They are not necessary to use the controller, however, a few commands will not work- ie- playcheckstatus/playcheckstart/playcheckstop
+<br>There is one optional script- piplaystate.py. This script uses the API access to check the playback status of the client you are using at a regular interval. When the mode is "On," when a program stopps the system will automatically launch a new progarm, and continue to do so untill it is in eithr "Off" or "Sleep" mode. While this option used to only be supported by a Raspberry Pi running raslplex, it should ideally work for most/all clients that support api access and report their timeline. 
 <br>
-<br>piplaystate.py - Gets the playback state from your pi.
-<br>playstatus.py - Runs in the background. When enabled uses piplaystate.py to get the status of your pi. 
-<br>
-<br>Note Regarding Playback Detection:
-<br>If you do not have a Pi running rasplex, but do run something like plexpy, you can configure that to launch a script when it detects playback has stopped on your client. The command to use for that is "python system.py startnextprogram". You may need to add the path to your system.py file to that command. 
+<br>piplaystate.py - Gets the playback state from your client.
+<br>playstatus.py - Runs in the background. When enabled uses piplaystate.py to get the status of your client. 
 <br>
 <br>Currently the TBN Plex Controller is currently designed to work on a linux based OS. I suppose it is possible to use it on a windows based machine, though you may need to modify some paths to suit that directory structure.
 <br>
