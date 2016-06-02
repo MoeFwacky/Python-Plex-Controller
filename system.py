@@ -1143,11 +1143,18 @@ def nowplaywrite(showplay):
 	sql.commit()
 
 def nowplaying():
+	'''
 	cur.execute('SELECT State FROM States WHERE Option LIKE \'Nowplaying\'')
 	title = cur.fetchone()
 	title = title[0]
 	return (title)
-
+	'''
+	plexlogin()
+	psess = plex.sessions()
+	for sess in psess:
+		if (sess.player.title == PLEXCLIENT):
+			say = "Content Type: " + sess.type + ".\n Title: " + sess.title + "."
+	return (say)
 
 
 
