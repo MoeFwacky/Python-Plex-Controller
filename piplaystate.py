@@ -2,34 +2,38 @@ import time
 import os
 import sqlite3
 import getpass
+import platform
 
-user = getpass.getuser()
+ostype = platform.system()
 
-DEFAULTDIR = "/home/" + user + "/hasystem/"
+global plex
 
-MYDB = DEFAULTDIR + "myplex.db"
+MYDB = homedir + "myplex.db"
 
-def sessionstatus():
-	sql = sqlite3.connect(MYDB)
-        cur = sql.cursor()
-        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
-        PLEXUN = cur.fetchone()
-        PLEXUN = PLEXUN[0]
+sql = sqlite3.connect(MYDB)
+cur = sql.cursor()
 
-        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-        PLEXPW = cur.fetchone()
-        PLEXPW = PLEXPW[0]
+def plexlogin():
+	global plex
+	from plexapi.myplex import MyPlexAccount
+	
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+	PLEXUN = cur.fetchone()
+	PLEXUN = PLEXUN[0]
 
-        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
-        PLEXSVR = cur.fetchone()
-        PLEXSVR = PLEXSVR[0]
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+	PLEXPW = cur.fetchone()
+	PLEXPW = PLEXPW[0]
 
-        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
-        PLEXCLIENT = cur.fetchone()
-        PLEXCLIENT = PLEXCLIENT[0]
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
+	PLEXSVR = cur.fetchone()
+	PLEXSVR = PLEXSVR[0]
 
-        from plexapi.myplex import MyPlexAccount
-        user = MyPlexAccount.signin(PLEXUN, PLEXPW)
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
+	PLEXCLIENT = cur.fetchone()
+	PLEXCLIENT = PLEXCLIENT[0]
+	
+	user = MyPlexAccount.signin(PLEXUN, PLEXPW)
 	try:
 		from plexapi.server import PlexServer
 		baseurl = 'http://serveriphere:portgoeshere'
@@ -40,7 +44,12 @@ def sessionstatus():
 		print ("Local Fail. Trying cloud access.")
 
 		plex = user.resource(PLEXSVR).connect()
-        client = plex.client(PLEXCLIENT)	
+	client = plex.client(PLEXCLIENT)
+	
+
+def sessionstatus():
+	global plex
+	plexlogin()
 	psess = plex.sessions()
 	if not psess:
 		return ("Stopped")
@@ -64,39 +73,8 @@ def sessionstatus():
 		return ("Unknown")
 
 def playstatus():
-	
-	sql = sqlite3.connect(MYDB)
-	cur = sql.cursor()
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
-	PLEXUN = cur.fetchone()
-	PLEXUN = PLEXUN[0]
 
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-	PLEXPW = cur.fetchone()
-	PLEXPW = PLEXPW[0]
-
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
-	PLEXSVR = cur.fetchone()
-	PLEXSVR = PLEXSVR[0]
-
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
-	PLEXCLIENT = cur.fetchone()
-	PLEXCLIENT = PLEXCLIENT[0]
-	
-	from plexapi.myplex import MyPlexAccount
-	user = MyPlexAccount.signin(PLEXUN, PLEXPW)
-	try:
-                from plexapi.server import PlexServer
-                baseurl = 'http://IPGoesHere:Porthere'
-                token = 'yourtokenhere'
-                plex = PlexServer(baseurl, token)
-                print ("using local access.")
-        except Exception:
-                print ("Local Fail. Trying cloud access.")
-
-		plex = user.resource(PLEXSVR).connect()
-	client = plex.client(PLEXCLIENT)
-
+	plexlogin()
 	pstatus = client.isPlayingMedia()
 	sql.close()
 	#print (pstatus)
@@ -108,7 +86,8 @@ def playstatus():
 #say = sessionstatus()
 #print (say)
 while True:
-	with open('/home/pi/hasystem/playstatestatus.txt','r') as file:
+	checkdir = homedir + "playstatestatus.txt"
+	with open(checkdir,'r') as file:
 		stuff = file.read()
 	file.close()
 	print (stuff)
@@ -141,9 +120,9 @@ while True:
 				cur.execute("INSERT INTO States VALUES(?,?)",('Playstate','Stopped'))
 				sql.commit
 				sql.close()
-				command = "python /home/pi/huec.py alllights off"
-				os.system(command)
-				command = "python /home/pi/hasystem/system.py playcheckstop"
+				#command = "python /home/pi/huec.py alllights off"
+				#os.system(command)
+				command = "python " + homedir + " playcheckstop"
 				os.system(command)
 				time.sleep(30)
 			else:
@@ -155,7 +134,7 @@ while True:
 				cur.execute("INSERT INTO States VALUES(?,?)",('Playstate','Stopped'))
 				sql.commit
 				sql.close()
-				command = "python " + DEFAULTDIR + "/system.py startnextprogram"
+				command = "python " + homedir + "/system.py startnextprogram"
 				os.system(command)
 				time.sleep(45)
 	except Exception:
