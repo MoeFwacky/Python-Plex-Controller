@@ -84,13 +84,6 @@ else:
 
 print ("Database update starting...\n")	
 
-#TVPART = "http://192.168.1.134:32400/library/metadata/"         #partial link to get metadata
-#TVGET = "http://192.168.1.134:32400/library/sections/1/all" #link to main TV tree
-#MOVIEGET = "http://192.168.1.134:32400/library/sections/2/all" #link to your movies list
-
-print (TVPART)
-print (TVGET)
-print (MOVIEGET)
 cur.execute('CREATE TABLE IF NOT EXISTS shows(TShow TEXT, Episode TEXT, Season INT, Enum INT, Tnum INT, Summary TEXT, Link TEXT)')
 sql.commit()
 cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
@@ -100,7 +93,7 @@ sql.commit()
 def fixTVfiles():
 
 	if "Windows" in ostype:
-		PLDIR = homedir + "Genre\\TV\\"
+		PLdir = homedir + "Genre\\TV\\"
 	else:
 		PLdir = homedir + "/Genre/TV/"
 
@@ -121,7 +114,7 @@ def fixTVfiles():
 
 	print ("Part 1 done. Moving on.")
 	if "Windows" in ostype:
-		PLDIR = homedir + "\\Studio\\"
+		PLdir = homedir + "\\Studio\\"
 	else:
 		PLdir = homedir + "/Studio/" 
 
@@ -816,7 +809,10 @@ def getmovies():
 		summary = summary.replace('&amp;','&')
 		summary = summary.replace(',', ' ')	
 		summary = summary.replace('\'','')
-		summary = summary.decode("ascii", "ignore")
+		try:
+			summary = summary.decode("ascii", "ignore")
+		except Exception:
+			pass
 		name = name.replace('&apos;','\'')
 		name = name.replace('&amp;','&')
 		name = name.replace(',', ' ')
@@ -826,13 +822,19 @@ def getmovies():
 		tagline = tagline.replace('&amp;','&')
 		tagline = tagline.replace(',', ' ')
 		tagline = tagline.replace('\'','')
-		tagline = tagline.decode("ascii", "ignore")
+		try:
+			tagline = tagline.decode("ascii", "ignore")
+		except Exception:
+			pass
 		#directors = directors.replace('&apos;','\'')
 		directors = directors.replace('&apos;','')
 		directors = directors.replace('&amp;','&')
 		directors = directors.replace(',', ' ')
 		directors = directors.replace('\'','')
-		directors = directors.decode("ascii", "ignore")
+		try:
+			directors = directors.decode("ascii", "ignore")
+		except Exception:
+			pass
 		#bgenre = bgenre.replace('&apos;','\'')
 		bgenre = bgenre.replace('&apos;','')
 		bgenre = bgenre.replace('&amp;','&')
@@ -843,8 +845,10 @@ def getmovies():
 		bactors = bactors.replace('\'','')
 		bactors = bactors.replace('&amp;','&')
 		bactors = bactors.replace(',', ' ')
-		bactors = bactors.decode("ascii", "ignore")
-
+		try:
+			bactors = bactors.decode("ascii", "ignore")
+		except Exception:
+			pass
 		#print (name + "  " + summary + "  " + rating + "  " + tagline + "  " + bgenre + "  " + directors + "  " + bactors)
 		
 		try:
@@ -873,7 +877,8 @@ try:
 	elif ("updatemovies" in option):
 		getmovies()
 	elif ("all" in option):
-		gettvshows()
+		#gettvshows()
+		fixTVfiles()
 		getmovies()
 
 except IndexError:
