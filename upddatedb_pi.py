@@ -33,6 +33,8 @@ sql.commit()
 command = 'SELECT setting FROM settings WHERE item LIKE \'TVPART\''
 cur.execute(command)
 test2 = cur.fetchone()
+if not cur.fetchone():
+	test2 = ""
 try:
 	test2 = test2[0]
 except IndexError:
@@ -52,6 +54,8 @@ command = 'SELECT setting FROM settings WHERE item LIKE \'TVGET\''
 cur.execute(command)
 test1 = cur.fetchone()
 #print (test1)
+if not cur.fetchone():
+	test1 = ""
 try:
 	test1 = test1[0]
 except IndexError:
@@ -69,6 +73,8 @@ else:
 command = 'SELECT setting FROM settings WHERE item LIKE \'MOVIEGET\''
 cur.execute(command)
 test = cur.fetchone()
+if not cur.fetchone():
+	test = ""
 try:
 	test = test[0]
 except IndexError:

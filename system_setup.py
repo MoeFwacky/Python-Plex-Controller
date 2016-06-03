@@ -175,7 +175,7 @@ else:
 	print ("Pass")
 	homedir = homedir + "hasystem\\"
 	
-writeme = "homedir = " + homedir + "\n"
+writeme = "homedir = \'" + homedir + "\\'\n"
 	
 if not os.path.exists(homedir):
 	os.makedirs(homedir)
