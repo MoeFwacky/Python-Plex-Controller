@@ -877,8 +877,7 @@ try:
 	elif ("updatemovies" in option):
 		getmovies()
 	elif ("all" in option):
-		#gettvshows()
-		fixTVfiles()
+		gettvshows()
 		getmovies()
 
 except IndexError:
