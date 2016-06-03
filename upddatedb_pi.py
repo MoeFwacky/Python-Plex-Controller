@@ -6,6 +6,13 @@ import sys
 import sqlite3
 import platform
 #top
+
+try:
+	input = raw_input
+except NameError:
+	pass
+
+
 MYDB = homedir + "myplex.db"
 http = urllib3.PoolManager()
 
@@ -26,39 +33,54 @@ sql.commit()
 command = 'SELECT setting FROM settings WHERE item LIKE \'TVPART\''
 cur.execute(command)
 test2 = cur.fetchone()
-if ((test2 == "") or (not cur.fetchone())):
+try:
+	test2 = test2[0]
+except IndexError:
+	test2 = ""
+#print (test2)
+#print ("1")
+if (test2 == ""):
 	print ("Looks like you have never run the update DB script. I need some information to proceed.\n Enter the link to your metadata.\n Example: http://192.168.1.134:32400/library/metadata/\n")
-	TVPART = str(raw_input('Link:'))
+	TVPART = str(input('Link:'))
 	cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVPART",TVPART.strip()))
 	sql.commit()
 	print (TVPART + " has been added to the settings table. Moving on.")
 else:
-	TVPART = test2[0]
+	TVPART = test2
 
 command = 'SELECT setting FROM settings WHERE item LIKE \'TVGET\''
 cur.execute(command)
 test1 = cur.fetchone()
-print (test1)
-if ((not cur.fetchone()) or (test1 == "")):
+#print (test1)
+try:
+	test1 = test1[0]
+except IndexError:
+	test1 = ""
+
+if ((test1 == "")):
 	print ("Enter the link to your TV show tree.\nExample: http://192.168.1.134:32400/library/sections/1/all/ \n")
-	TVGET = str(raw_input('Link:'))
+	TVGET = str(input('Link:'))
 	cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVGET",TVGET.strip()))
 	sql.commit()
 	print (TVGET + " has been added to the settings table. Moving on.")
 else:
-	TVGET = test1[0]
+	TVGET = test1
 
 command = 'SELECT setting FROM settings WHERE item LIKE \'MOVIEGET\''
 cur.execute(command)
 test = cur.fetchone()
-if ((not cur.fetchone()) or (test == "")):
+try:
+	test = test[0]
+except IndexError:
+	test = ""
+if ((test == "")):
 	print ("Enter the link to your Movie tree.\nExample: http://192.168.1.134:32400/library/sections/2/all/ \n")
-	MOVIEGET = str(raw_input('Link:'))
+	MOVIEGET = str(input('Link:'))
 	cur.execute('INSERT INTO settings VALUES(?, ?)', ("MOVIEGET",MOVIEGET.strip()))
 	sql.commit()
 	print (MOVIEGET + " has been added to the settings table. Moving on.")
 else:
-	MOVIEGET = test[0]
+	MOVIEGET = test
 
 print ("Database update starting...\n")	
 
@@ -66,7 +88,9 @@ print ("Database update starting...\n")
 #TVGET = "http://192.168.1.134:32400/library/sections/1/all" #link to main TV tree
 #MOVIEGET = "http://192.168.1.134:32400/library/sections/2/all" #link to your movies list
 
-
+print (TVPART)
+print (TVGET)
+print (MOVIEGET)
 cur.execute('CREATE TABLE IF NOT EXISTS shows(TShow TEXT, Episode TEXT, Season INT, Enum INT, Tnum INT, Summary TEXT, Link TEXT)')
 sql.commit()
 cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
@@ -216,22 +240,22 @@ def getshow(show):
 		file.write(TShow)
 		file.write("\n")
 	file.close()
-		if "none" != genre3:
-			if "Windows" in ostype:
-				path = homedir + "\\Genre\\TV\\" + str(genre3) + ".txt"
-			else:
-				path = homedir + "Genre/TV/" + str(genre3) + ".txt"
-			try:
-				with open(path, 'a') as file:
-					file.write(TShow)
-					file.write("\n")
-				file.close()
-			except FileNotFoundError:
-				print (genre3 + " created!")
-				with open(path, 'w+') as file:
-					file.write(TShow)
-					file.write("\n")
-				file.close()
+	if "none" != genre3:
+		if "Windows" in ostype:
+			path = homedir + "\\Genre\\TV\\" + str(genre3) + ".txt"
+		else:
+			path = homedir + "Genre/TV/" + str(genre3) + ".txt"
+		try:
+			with open(path, 'a') as file:
+				file.write(TShow)
+				file.write("\n")
+			file.close()
+		except FileNotFoundError:
+			print (genre3 + " created!")
+			with open(path, 'w+') as file:
+				file.write(TShow)
+				file.write("\n")
+			file.close()
 
 	studio = studio.split("studio=\"")
 	try:
@@ -314,7 +338,10 @@ def getshow(show):
 				Summary = Summary.replace(",", "")
 				Summary = Summary.replace('\xe2',"")
 				Summary = Summary.replace("&quot","")
-				Summary = Summary.decode("ascii", "ignore")
+				try:
+					Summary = Summary.decode("ascii", "ignore")
+				except Exception:
+					pass
 				#Summary = remove_accents(Summary)
 
 
@@ -503,7 +530,7 @@ def gettvshows():
 		episode = show
 		
 		link = TVPART + show + "/allLeaves"
-		
+		print (link)
 		xresponse = http.urlopen('GET', link, preload_content=False).read()
 		xresponse = str(xresponse)
 		
@@ -564,7 +591,10 @@ def gettvshows():
 					Summary = Summary.replace(",", "")
 					Summary = Summary.replace('\xe2',"")
 					Summary = Summary.replace("&quot","")
-					Summary = Summary.decode("ascii", "ignore")
+					try:
+						Summary = Summary.decode("ascii", "ignore")
+					except Exception:
+						pass
 					#Summary = remove_accents(Summary)
 					
 					
@@ -833,7 +863,11 @@ def getmovies():
 	fixmvfiles()
 
 try:
-	option = str(sys.argv[1])
+	if "Windows" not in ostype:
+		option = str(sys.argv[0])
+	else:
+		print ("Notice: For Windows, the update db script may default to 'all' when there is an argument failure.\n")
+		option = "all"
 	if ("updatetv" in option):
 		gettvshows()
 	elif ("updatemovies" in option):
