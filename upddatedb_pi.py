@@ -3,35 +3,30 @@ import requests
 import time
 import os
 import sys
-import getpass
 import sqlite3
-
-user = getpass.getuser()
-
+import platform
 #top
-Maindir = "/home/" + user + "/hasystem/"
-FIXME = Maindir + "fixme.txt"
-PROBLEMS = Maindir + "problems.txt"
-command = "rm -rf " + PROBLEMS
-os.system(command)
-
-MYDB = Maindir + "myplex.db"
-
+MYDB = homedir + "myplex.db"
 http = urllib3.PoolManager()
+
 sql = sqlite3.connect(MYDB)
 cur = sql.cursor()
+
+FIXME = homedir + "fixme.txt"
+PROBLEMS = homedir + "problems.txt"
+with open (PROBLEMS, "w") as file:
+	file.write('')
+file.close()
+
+ostype = platform.system()
 
 cur.execute('CREATE TABLE IF NOT EXISTS settings(item TEXT, setting TEXT)')
 sql.commit()
 
 command = 'SELECT setting FROM settings WHERE item LIKE \'TVPART\''
 cur.execute(command)
-if not cur.fetchone():
-	test2 = ""
-else:
-	cur.execute(command)
-	test2 = cur.fetchone()
-if test2 =="":
+test2 = cur.fetchone()
+if ((test2 == "") or (not cur.fetchone())):
 	print ("Looks like you have never run the update DB script. I need some information to proceed.\n Enter the link to your metadata.\n Example: http://192.168.1.134:32400/library/metadata/\n")
 	TVPART = str(raw_input('Link:'))
 	cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVPART",TVPART.strip()))
@@ -42,33 +37,26 @@ else:
 
 command = 'SELECT setting FROM settings WHERE item LIKE \'TVGET\''
 cur.execute(command)
-if not cur.fetchone():
-	test1 = ""
-else:
-	cur.execute(command)
-	test1 = cur.fetchone()
-if test1 == "":
-        print ("Enter the link to your TV show tree.\nExample: http://192.168.1.134:32400/library/sections/1/all/ \n")
-        TVGET = str(raw_input('Link:'))
-        cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVGET",TVGET.strip()))
-        sql.commit()
-        print (TVGET + " has been added to the settings table. Moving on.")
+test1 = cur.fetchone()
+print (test1)
+if ((not cur.fetchone()) or (test1 == "")):
+	print ("Enter the link to your TV show tree.\nExample: http://192.168.1.134:32400/library/sections/1/all/ \n")
+	TVGET = str(raw_input('Link:'))
+	cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVGET",TVGET.strip()))
+	sql.commit()
+	print (TVGET + " has been added to the settings table. Moving on.")
 else:
 	TVGET = test1[0]
 
 command = 'SELECT setting FROM settings WHERE item LIKE \'MOVIEGET\''
 cur.execute(command)
-if not cur.fetchone():
-	test = ""
-else:
-	cur.execute(command)
-	test = cur.fetchone()
-if test == "":
-        print ("Enter the link to your Movie tree.\nExample: http://192.168.1.134:32400/library/sections/2/all/ \n")
-        MOVIEGET = str(raw_input('Link:'))
-        cur.execute('INSERT INTO settings VALUES(?, ?)', ("MOVIEGET",MOVIEGET.strip()))
-        sql.commit()
-        print (MOVIEGET + " has been added to the settings table. Moving on.")
+test = cur.fetchone()
+if ((not cur.fetchone()) or (test == "")):
+	print ("Enter the link to your Movie tree.\nExample: http://192.168.1.134:32400/library/sections/2/all/ \n")
+	MOVIEGET = str(raw_input('Link:'))
+	cur.execute('INSERT INTO settings VALUES(?, ?)', ("MOVIEGET",MOVIEGET.strip()))
+	sql.commit()
+	print (MOVIEGET + " has been added to the settings table. Moving on.")
 else:
 	MOVIEGET = test[0]
 
@@ -84,19 +72,13 @@ sql.commit()
 cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
 sql.commit()
 
-'''
-http://192.168.1.134:32400/library/metadata/84373/allLeaves
-
-
-http://192.168.1.134:32400/library/sections/1/all
-
-
-ratingKey=\"84373\" key=\"
-'''
 
 def fixTVfiles():
 
-	PLdir = Maindir + "/Genre/TV/"
+	if "Windows" in ostype:
+		PLDIR = homedir + "Genre\\TV\\"
+	else:
+		PLdir = homedir + "/Genre/TV/"
 
 	from os import listdir
 	from os.path import isfile, join
@@ -114,279 +96,284 @@ def fixTVfiles():
 		file.close()
 
 	print ("Part 1 done. Moving on.")
-	PLdir = Maindir + "/Studio/" 
+	if "Windows" in ostype:
+		PLDIR = homedir + "\\Studio\\"
+	else:
+		PLdir = homedir + "/Studio/" 
 
 	showlist = [f for f in listdir(PLdir) if isfile(join(PLdir, f))]
-        say = showlist
-        for item in say:
-                WorkingDir = PLdir + item
-                with open(WorkingDir, 'r') as file:
-                        startfile = file.read()
-                file.close()
-                startfile = startfile.rstrip()
-                with open(WorkingDir, 'w') as file:
-                        file.write(startfile)
-                file.close()
+	say = showlist
+	for item in say:
+		WorkingDir = PLdir + item
+		with open(WorkingDir, 'r') as file:
+			startfile = file.read()
+		file.close()
+		startfile = startfile.rstrip()
+		with open(WorkingDir, 'w') as file:
+			file.write(startfile)
+		file.close()
 	print ("TV Files Cleaned")
 
 def getshow(show):
-        response = http.urlopen('GET', TVGET, preload_content=False).read()
-        response = str(response)
-        #print (response)
-        shows = response.split('<Directory ratingKey=')
-        counter = 1
-
-        workingdir = Maindir + "tvshowlist.txt"
-
-        while counter <= int(len(shows)-1):
-
-                show = shows[counter]
-
-                genres = show
-                studio = show
-
-
-                title = show
-                title = title.split('title="')
-                title = title[1]
-                title = title.split('"')
-                title = title[0]
-
-                title = title.replace('&apos;','\'')
-                title = title.replace('&amp;','&')
-                title = title.replace('?','')
-                title = title.replace('/',' ')
-
-                try:
-                        with open(workingdir, 'a') as file:
-                                file.write(title)
-                                file.write("\n")
-                        file.close()
-                except IOError:
-                        with open(workingdir, 'w+') as file:
-                                file.write(title)
-                                file.write("\n")
-                        file.close()
-
-
-                name = title
-                TShow = name
-                title = title + '.txt.'
-                title = Maindir + title
-
-		genres = genres.split("<Genre tag=\"")
-                try:
-                        genre = genres[1]
-                except IndexError:
-                        genre = "none"
-                try:
-                        genre2 = genres[2]
-                        genre2 = genre2.split('" />')
-                        genre2 = genre2[0]
-                        #print (genre2)
-                except IndexError:
-                        genre2 = "none"
-                try:
-                        genre3 = genres[3]
-                        genre3 = genre3.split('" />')
-                        genre3 = genre3[0]
-                        #print (genre2)
-                except IndexError:
-                        genre3 = "none"
-                genre = genre.split('" />')
-
-                genre = genre[0]
-                #print (genre)
-
-
-                if (genre != "none"):
-
-                        path = Maindir + "Genre/TV/" + str(genre) + ".txt"
-                        try:
-                                with open(path, 'a') as file:
-                                        file.write(TShow)
-                                        file.write("\n")
-                                file.close()
-                        except IOError:
-                                with open(path, 'w') as file:
-                                        file.write(TShow)
-                                        file.write("\n")
-                                file.close()
-                        if "none" != genre2:
-                                path = Maindir + "Genre/TV/" + str(genre2) + ".txt"
-                                try:
-                                        with open(path, 'a') as file:
-                                                file.write(TShow)
-                                                file.write("\n")
-                                        file.close()
-                                except IOError:
-                                        print (genre2 + " created!")
-					with open(path, 'w+') as file:
-						file.write(TShow)
-						file.write("\n")
-					file.close()
-                        if "none" != genre3:
-                                path = Maindir + "Genre/TV/" + str(genre3) + ".txt"
-                                try:
-                                        with open(path, 'a') as file:
-                                                file.write(TShow)
-                                                file.write("\n")
-                                        file.close()
-                                except IOError:
-                                        print (genre3 + " created!")
-                                        with open(path, 'w+') as file:
-                                                file.write(TShow)
-                                                file.write("\n")
-                                        file.close()
-
-                studio = studio.split("studio=\"")
-                try:
-                        studio = studio[1]
-                        studio = studio.split("\"")
-                        studio = studio[0]
-                        path = Maindir + "/Studio/" + str(studio) + ".txt"
-                        try:
-                                with open(path, 'a') as file:
-                                        file.write(TShow)
-                                        file.write("\n")
-                                file.close()
-                        except IOError:
-                                print ("Studio File Created")
-                                with open(path, 'w+') as file:
-                                        file.write(TShow)
-                                        file.write("\n")
-                                file.close()
-                except IndexError:
-                        print ("No Studio Available. Skipping " + TShow)
-
-                show = show.split('" key')
-                show = show[0]
-		show = show.replace("\"", "")
-                show = show.rstrip()
-                episode = show
-
-                link = TVPART + show + "/allLeaves"
-
-                xresponse = http.urlopen('GET', link, preload_content=False).read()
-                xresponse = str(xresponse)
-
-                episodes = xresponse.split('type="episode" title="')
-                #print (episodes)
-                for episode in episodes:
-                        Season = episode
-                        Enum = episode
-                        Summary = episode
-                        Link = episode
-                        episode = episode.split('"')
-                        episode = episode[0]
-                        episode = episode + "\n"
-                        episode = episode.replace('&apos;','\'')
-                        episode = episode.replace('&amp;','&')
-                        Episode = episode.strip()
-                        if ("<?xml version=" in episode.strip()):
-                                #print ("Pass")
-                                Tnum = 0
-                        else:
-
-                                if episode != "Original":
-                                        print ("Skipping")
-                                #else:
-
-                                        #with open(title, "a") as file:
-                                                #file.write(episode)
-                                        #file.close()
-
-                                        try:
-                                                Tnum = Tnum + 1
-                                        except Exception:
-                                                Tnum = 0
-                                        #print (Season)
-                                        Season = Season.split('parentIndex="')
-					#print (Season)
-
-                                        Season = Season[1]
-                                        Season = Season.split('"')
-                                        Season = Season[0]
-
-                                        Enum = Enum.split('index="')
-                                        Enum = Enum[1]
-                                        Enum = Enum.split('"')
-                                        Enum = Enum[0]
-
-                                        Summary = Summary.split('summary="')
-                                        Summary = Summary[1]
-                                        Summary = Summary.split('" index')
-                                        Summary = Summary[0]
-                                        Summary = Summary.replace(",", "")
-                                        Summary = Summary.replace('\xe2',"")
-                                        Summary = Summary.replace("&quot","")
-                                        Summary = Summary.decode("ascii", "ignore")
-                                        #Summary = remove_accents(Summary)
-
-
-                                        Link = Link.split('<Part id=')
-                                        Link = Link[1]
-                                        Link = Link.split('key="')
-                                        Link = Link[1]
-                                        Link = Link.split('" duration')
-                                        Link = Link[0]
-
-                                        TShow = str(TShow)
-                                        #print (TShow)
-                                        Episode = str(Episode)
-                                        #print (Episode)
-                                        Season = int(Season)
-                                        #print (str(Season))
-                                        Enum = int(Enum)
-                                        #print (str(Enum))
-                                        Tnum = int(Tnum)
-                                        #print (str(Tnum))
-                                        Summary = str(Summary.encode('ascii','ignore').strip())
-                                        #print (Summary)
-                                        Link = str(Link.strip().encode('ascii','replace'))
-                                        #print (Link)
-
-                                        if ("'" in TShow):
-                                                TShow = TShow.replace("'","\'")
-                                                print (TShow)
-                                        try:
-						cur.execute('SELECT * FROM shows WHERE TShow LIKE \'' + TShow + '\' AND Tnum LIKE \'' + str(Tnum) + '\'')
-                                                if not cur.fetchone():
-                                                        cur.execute('INSERT INTO shows VALUES(?, ?, ?, ?, ?, ?, ?)', (TShow, Episode, Season, Enum, Tnum, Summary, Link))
-                                                        sql.commit()
-                                                        print ("New Episode Found: " + TShow + " Episode: " + Episode)
-                                        except Exception:
-                                                print ("Error adding " + TShow)
-                                                with open(PROBLEMS, 'a') as file:
-                                                        file.write(TShow + " " + Episode + "\n")
-                                                file.close()
-
-
-
-                counter = counter + 1
-
-        fixTVfiles()
-        print ("TV entries checked.")
-
-
-
-	
-
-def gettvshows():	
-	os.system ("rm -rf /home/" + user + "/hasystem/tvshowlist.bak")
-        print ("Backup removed.\n")
-        os.system ("cp -r /home/" + user + "/hasystem/tvshowlist.txt /home/" + user + "/hasystem/tvshowlist.bak")
-        print ("tvshow list backed up.\n")
-        os.system("rm -rf /home/" + user + "/hasystem/tvshowlist.txt")
-        print ("TV show list removed. regenerating now.")
-
 	response = http.urlopen('GET', TVGET, preload_content=False).read()
 	response = str(response)
 	#print (response)
 	shows = response.split('<Directory ratingKey=')
 	counter = 1
 
-	workingdir = Maindir + "tvshowlist.txt"
+	workingdir = homedir + "tvshowlist.txt"
+
+	while counter <= int(len(shows)-1):
+
+		show = shows[counter]
+
+		genres = show
+		studio = show
+
+
+		title = show
+		title = title.split('title="')
+		title = title[1]
+		title = title.split('"')
+		title = title[0]
+
+		title = title.replace('&apos;','\'')
+		title = title.replace('&amp;','&')
+		title = title.replace('?','')
+		title = title.replace('/',' ')
+
+		try:
+			with open(workingdir, 'a') as file:
+				file.write(title)
+				file.write("\n")
+			file.close()
+		except FileNotFoundError:
+			with open(workingdir, 'w+') as file:
+				file.write(title)
+				file.write("\n")
+			file.close()
+
+
+		name = title
+		TShow = name
+		title = title + '.txt.'
+		title = homedir + title
+
+	genres = genres.split("<Genre tag=\"")
+	try:
+			genre = genres[1]
+	except IndexError:
+			genre = "none"
+	try:
+			genre2 = genres[2]
+			genre2 = genre2.split('" />')
+			genre2 = genre2[0]
+			#print (genre2)
+	except IndexError:
+			genre2 = "none"
+	try:
+			genre3 = genres[3]
+			genre3 = genre3.split('" />')
+			genre3 = genre3[0]
+			#print (genre2)
+	except IndexError:
+			genre3 = "none"
+	genre = genre.split('" />')
+
+	genre = genre[0]
+	#print (genre)
+
+
+	if (genre != "none"):
+		if "Windows" in ostype:
+			path = homedir + "\\Genre\\TV\\" + str(genre) + ".txt"
+		else:
+			path = homedir + "Genre/TV/" + str(genre) + ".txt"
+		try:
+			with open(path, 'a') as file:
+				file.write(TShow)
+				file.write("\n")
+			file.close()
+		except FileNotFoundError:
+			with open(path, 'w') as file:
+				file.write(TShow)
+				file.write("\n")
+			file.close()
+		if "none" != genre2:
+			if "Windows" in ostype:
+				path = homedir + "\\Genre\\TV\\" + str(genre2) + ".txt"
+			else:
+				path = homedir + "Genre/TV/" + str(genre2) + ".txt"
+			
+			try:
+				with open(path, 'a') as file:
+					file.write(TShow)
+					file.write("\n")
+				file.close()
+			except FileNotFoundError:
+				print (genre2 + " created!")
+	with open(path, 'w+') as file:
+		file.write(TShow)
+		file.write("\n")
+	file.close()
+		if "none" != genre3:
+			if "Windows" in ostype:
+				path = homedir + "\\Genre\\TV\\" + str(genre3) + ".txt"
+			else:
+				path = homedir + "Genre/TV/" + str(genre3) + ".txt"
+			try:
+				with open(path, 'a') as file:
+					file.write(TShow)
+					file.write("\n")
+				file.close()
+			except FileNotFoundError:
+				print (genre3 + " created!")
+				with open(path, 'w+') as file:
+					file.write(TShow)
+					file.write("\n")
+				file.close()
+
+	studio = studio.split("studio=\"")
+	try:
+		studio = studio[1]
+		studio = studio.split("\"")
+		studio = studio[0]
+		path = homedir + "/Studio/" + str(studio) + ".txt"
+		try:
+			with open(path, 'a') as file:
+				file.write(TShow)
+				file.write("\n")
+			file.close()
+		except FileNotFoundError:
+			print ("Studio File Created")
+			with open(path, 'w+') as file:
+				file.write(TShow)
+				file.write("\n")
+			file.close()
+	except IndexError:
+		print ("No Studio Available. Skipping " + TShow)
+
+	show = show.split('" key')
+	show = show[0]
+	show = show.replace("\"", "")
+	show = show.rstrip()
+	episode = show
+
+	link = TVPART + show + "/allLeaves"
+
+	xresponse = http.urlopen('GET', link, preload_content=False).read()
+	xresponse = str(xresponse)
+
+	episodes = xresponse.split('type="episode" title="')
+	#print (episodes)
+	for episode in episodes:
+		Season = episode
+		Enum = episode
+		Summary = episode
+		Link = episode
+		episode = episode.split('"')
+		episode = episode[0]
+		episode = episode + "\n"
+		episode = episode.replace('&apos;','\'')
+		episode = episode.replace('&amp;','&')
+		Episode = episode.strip()
+		if ("<?xml version=" in episode.strip()):
+			#print ("Pass")
+			Tnum = 0
+		else:
+
+			if ("(" in episode):
+				xepisode = name + " " + episode
+				with open(FIXME, 'a') as file:
+					file.write(xepisode)
+				file.close()
+			#episode = episode.rstrip()
+			#print (episode)
+			if episode != "Original":
+				try:
+					Tnum = Tnum + 1
+				except Exception:
+					Tnum = 0
+				#print (Season)
+				Season = Season.split('parentIndex="')
+				#print (Season)
+
+				Season = Season[1]
+				Season = Season.split('"')
+				Season = Season[0]
+
+				Enum = Enum.split('index="')
+				Enum = Enum[1]
+				Enum = Enum.split('"')
+				Enum = Enum[0]
+
+				Summary = Summary.split('summary="')
+				Summary = Summary[1]
+				Summary = Summary.split('" index')
+				Summary = Summary[0]
+				Summary = Summary.replace(",", "")
+				Summary = Summary.replace('\xe2',"")
+				Summary = Summary.replace("&quot","")
+				Summary = Summary.decode("ascii", "ignore")
+				#Summary = remove_accents(Summary)
+
+
+				Link = Link.split('<Part id=')
+				Link = Link[1]
+				Link = Link.split('key="')
+				Link = Link[1]
+				Link = Link.split('" duration')
+				Link = Link[0]
+
+				TShow = str(TShow)
+				#print (TShow)
+				Episode = str(Episode)
+				#print (Episode)
+				Season = int(Season)
+				#print (str(Season))
+				Enum = int(Enum)
+				#print (str(Enum))
+				Tnum = int(Tnum)
+				#print (str(Tnum))
+				Summary = str(Summary.encode('ascii','ignore').strip())
+				#print (Summary)
+				Link = str(Link.strip().encode('ascii','replace'))
+				#print (Link)
+
+				if ("'" in TShow):
+					TShow = TShow.replace("'","\'")
+					print (TShow)
+				try:
+					cur.execute('SELECT * FROM shows WHERE TShow LIKE \'' + TShow + '\' AND Tnum LIKE \'' + str(Tnum) + '\'')
+					if not cur.fetchone():
+						cur.execute('INSERT INTO shows VALUES(?, ?, ?, ?, ?, ?, ?)', (TShow, Episode, Season, Enum, Tnum, Summary, Link))
+						sql.commit()
+						print ("New Episode Found: " + TShow + " Episode: " + Episode)
+				except Exception:
+					print ("Error adding " + TShow)
+					with open(PROBLEMS, 'a') as file:
+						file.write(TShow + " " + Episode + "\n")
+					file.close()
+
+
+
+			counter = counter + 1
+
+	fixTVfiles()
+	print ("TV entries checked.")
+
+
+
+	
+
+def gettvshows():	
+	response = http.urlopen('GET', TVGET, preload_content=False).read()
+	response = str(response)
+	#print (response)
+	shows = response.split('<Directory ratingKey=')
+	counter = 1
+
+	workingdir = homedir + "tvshowlist.txt"
 
 	while counter <= int(len(shows)-1):
 
@@ -412,7 +399,7 @@ def gettvshows():
 				file.write(title)
 				file.write("\n")
 			file.close()
-		except IOError:
+		except FileNotFoundError:
 			with open(workingdir, 'w+') as file:
 				file.write(title)
 				file.write("\n")
@@ -422,7 +409,7 @@ def gettvshows():
 		name = title
 		TShow = name
 		title = title + '.txt.'
-		title = Maindir + title
+		title = homedir + title
 		
 		genres = genres.split("<Genre tag=\"")
 		try:
@@ -451,38 +438,38 @@ def gettvshows():
 			
 		if (genre != "none"):
 		
-			path = Maindir + "Genre/TV/" + str(genre) + ".txt"
+			path = homedir + "Genre/TV/" + str(genre) + ".txt"
 			try:
 				with open(path, 'a') as file:
 					file.write(TShow)
 					file.write("\n")
 				file.close()
-			except IOError:
+			except FileNotFoundError:
 				with open(path, 'w') as file:
 					file.write(TShow)
 					file.write("\n")
 				file.close()
 			if "none" != genre2:
-				path = Maindir + "Genre/TV/" + str(genre2) + ".txt"
+				path = homedir + "Genre/TV/" + str(genre2) + ".txt"
 				try:
 					with open(path, 'a') as file:
 						file.write(TShow)
 						file.write("\n")
 					file.close()
-				except IOError:
+				except FileNotFoundError:
 					print (genre2 + " created!")
 					with open(path, 'w+') as file:
 						file.write(TShow)
 						file.write("\n")
 					file.close()
 			if "none" != genre3:
-				path = Maindir + "Genre/TV/" + str(genre3) + ".txt"
+				path = homedir + "Genre/TV/" + str(genre3) + ".txt"
 				try:
 					with open(path, 'a') as file:
 						file.write(TShow)
 						file.write("\n")
 					file.close()
-				except IOError:
+				except FileNotFoundError:
 					print (genre3 + " created!")
 					with open(path, 'w+') as file:
 						file.write(TShow)
@@ -494,13 +481,13 @@ def gettvshows():
 			studio = studio[1]
 			studio = studio.split("\"")
 			studio = studio[0]
-			path = Maindir + "Studio/" + str(studio) + ".txt"
+			path = homedir + "/Studio/" + str(studio) + ".txt"
 			try:
 				with open(path, 'a') as file:
 					file.write(TShow)
 					file.write("\n")
 				file.close()
-			except IOError:
+			except FileNotFoundError:
 				print ("Studio File Created")
 				with open(path, 'w+') as file:
 					file.write(TShow)
@@ -514,9 +501,8 @@ def gettvshows():
 		show = show.replace("\"", "")
 		show = show.rstrip()
 		episode = show
-			
+		
 		link = TVPART + show + "/allLeaves"
-		#print (link)
 		
 		xresponse = http.urlopen('GET', link, preload_content=False).read()
 		xresponse = str(xresponse)
@@ -629,7 +615,7 @@ def gettvshows():
 
 def fixmvfiles():
 
-	PLdir = Maindir + "movielist.txt"
+	PLdir = homedir + "movielist.txt"
 	
 	with open(PLdir, 'r') as file:
 		startfile = file.read()
@@ -648,7 +634,7 @@ def getmovies():
 	#print (response)
 	shows = response.split('<Video ratingKey=')
 	counter = 1
-	Moviedir = Maindir + "movielist.txt"
+	Moviedir = homedir + "movielist.txt"
 
 	while counter <= int(len(shows)-1):
 
@@ -678,7 +664,7 @@ def getmovies():
 				file.write(title)
 				file.write("\n")
 			file.close()
-		except IOError:
+		except FileNotFoundError:
 			with open(Moviedir, 'w+') as file:
 				file.write(title)
 				file.write("\n")
@@ -836,7 +822,7 @@ def getmovies():
 			if not cur.fetchone():
 				cur.execute('INSERT INTO Movies VALUES(?, ?, ?, ?, ?, ?, ?)', (name, summary, rating, tagline, bgenre, directors, bactors))
 				sql.commit()
-				print (name + " found and added to the DB.")
+				print ("New movie found and added to the DB.")
 		except Exception:
 			print ("Error adding " + name)
 			with open(PROBLEMS, 'a') as file:
@@ -858,6 +844,6 @@ try:
 
 except IndexError:
 	print ("No option specified. Use 'updatetv' or 'updatemovies' or 'all' to update your db.")		
-print ("Done\nMake sure you check the problems.txt file to see any files that need special character corrections.\n")	
+print ("Done")	
 		
 
