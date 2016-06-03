@@ -87,6 +87,7 @@ if "Linux" in ostype:
 		addme = addme.replace("/home/pi/", newdir)
 
 		homedir = "/home/" + user + "/hasystem/"
+		writeme = "homedir = \'" + homedir + "\'\n"
 		print (homedir)
 
 		print ("Hello " + user + ". I am now adding the alias add script now. You will be prompted for sudo for this.\n")
@@ -113,7 +114,7 @@ if "Linux" in ostype:
 				print (newfile)
 				print ("go")
 				with open(file0, 'wb') as file:
-					file.write(newfile)
+					file.write(newfile.data)
 				file.close()
 				print ("on")
 				print ("File successfully moved to the necessary directory.")
@@ -142,7 +143,7 @@ if "Linux" in ostype:
 				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_cron.py"
 				newfile = http.request('GET', url, preload_content=False)
 				with open(file00, 'wb') as file:
-					file.write(newfile)
+					file.write(newfile.data)
 				file.close()
 				print ("File successfully moved to the necessary directory.")
 			except IOError:
@@ -174,23 +175,33 @@ else:
 			
 	print ("Pass")
 	homedir = homedir + "hasystem\\"
+	writeme = "homedir = \'" + homedir + "\\'\n"
 	
-writeme = "homedir = \'" + homedir + "\\'\n"
+
 	
 if not os.path.exists(homedir):
 	os.makedirs(homedir)
 	print (homedir + " has been successfully created.\n")
 else:
 	print (homedir + " already exists. Moving on.")
-studio = homedir +"Studio\\"
+if "Linux" in ostype:
+	studio = homedir + "Studio/"
+else:
+	studio = homedir +"Studio\\"
 if not os.path.exists(studio):
 	os.makedirs(studio)
 
-genre = homedir + "Genre\\"
+if "Linux" in ostype:
+	genre = homedir + "Genre/"
+else:
+	genre = homedir + "Genre\\"
 if not os.path.exists(genre):
 	os.makedirs(genre)
 
-genre = genre + "TV\\"
+if "Linux" in ostype:
+	genre = genre + "TV/"
+else:
+	genre = genre + "TV\\"
 if not os.path.exists(genre):
 	os.makedirs(genre)
 	

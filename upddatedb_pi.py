@@ -874,7 +874,7 @@ def getmovies():
 
 try:
 	if "Windows" not in ostype:
-		option = str(sys.argv[0])
+		option = str(sys.argv[1])
 	else:
 		print ("Notice: For Windows, the update db script may default to 'all' when there is an argument failure.\n")
 		option = "all"
