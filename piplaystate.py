@@ -87,8 +87,8 @@ def playstatus():
 	user = MyPlexAccount.signin(PLEXUN, PLEXPW)
 	try:
                 from plexapi.server import PlexServer
-                baseurl = 'http://192.168.1.134:32400'
-                token = 'WJBTq6E9WeYAss6wUtNk'
+                baseurl = 'http://IPGoesHere:Porthere'
+                token = 'yourtokenhere'
                 plex = PlexServer(baseurl, token)
                 print ("using local access.")
         except Exception:
