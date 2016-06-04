@@ -21,7 +21,7 @@ TheBaconNation Plex Controller
 <br>
 <br>Currently the TBN Plex Controller is currently designed to work on a linux based OS. I suppose it is possible to use it on a windows based machine, though you may need to modify some paths to suit that directory structure.
 <br>
-<br>To install the TBN Plex Controller, place the 5 script files in your home directory. The system_setup.py script will make a directory in your home folder, "hasystem/", which it will store its necessary files and database in. If you make this folder first and place the necessary scripts in it first, it will not make a subdirectory. If you do not make the directory first, you can delete the files from your home directory once the setup is complete. 
+<br>To install the TBN Plex Controller, place the system_setup.py script files in your home directory. The system_setup.py script will make a directory in your home folder, "hasystem/", or prompt your for a directory, depending on your OS, which it will store its necessary files and database in.
 <br>
 <br>Install the TBN Plex Controller by running "python system_setup.py" The system setup script will ask you a few questions to get the data it needs to proceed. Once it is ready it will ask you if you want to update your database. You need to update your database before the system will find and choose media. 
 <br>
