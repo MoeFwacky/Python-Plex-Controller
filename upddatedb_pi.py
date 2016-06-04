@@ -1,3 +1,4 @@
+homedir = 'c:\\users\\rob\\documents\\hasystem\\'
 import urllib3
 import requests
 import time

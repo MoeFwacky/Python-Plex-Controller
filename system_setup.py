@@ -87,7 +87,6 @@ if "Linux" in ostype:
 		addme = addme.replace("/home/pi/", newdir)
 
 		homedir = "/home/" + user + "/hasystem/"
-		writeme = "homedir = \'" + homedir + "\'\n"
 		print (homedir)
 
 		print ("Hello " + user + ". I am now adding the alias add script now. You will be prompted for sudo for this.\n")
@@ -114,7 +113,7 @@ if "Linux" in ostype:
 				print (newfile)
 				print ("go")
 				with open(file0, 'wb') as file:
-					file.write(newfile.data)
+					file.write(newfile)
 				file.close()
 				print ("on")
 				print ("File successfully moved to the necessary directory.")
@@ -143,7 +142,7 @@ if "Linux" in ostype:
 				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_cron.py"
 				newfile = http.request('GET', url, preload_content=False)
 				with open(file00, 'wb') as file:
-					file.write(newfile.data)
+					file.write(newfile)
 				file.close()
 				print ("File successfully moved to the necessary directory.")
 			except IOError:
@@ -175,33 +174,23 @@ else:
 			
 	print ("Pass")
 	homedir = homedir + "hasystem\\"
-	writeme = "homedir = \'" + homedir + "\\'\n"
 	
-
+writeme = "homedir = \'" + homedir + "\\'\n"
 	
 if not os.path.exists(homedir):
 	os.makedirs(homedir)
 	print (homedir + " has been successfully created.\n")
 else:
 	print (homedir + " already exists. Moving on.")
-if "Linux" in ostype:
-	studio = homedir + "Studio/"
-else:
-	studio = homedir +"Studio\\"
+studio = homedir +"Studio\\"
 if not os.path.exists(studio):
 	os.makedirs(studio)
 
-if "Linux" in ostype:
-	genre = homedir + "Genre/"
-else:
-	genre = homedir + "Genre\\"
+genre = homedir + "Genre\\"
 if not os.path.exists(genre):
 	os.makedirs(genre)
 
-if "Linux" in ostype:
-	genre = genre + "TV/"
-else:
-	genre = genre + "TV\\"
+genre = genre + "TV\\"
 if not os.path.exists(genre):
 	os.makedirs(genre)
 	
@@ -380,6 +369,32 @@ if not cur.fetchone():
 '''
 
 #checks for plex user name and PW. Used for Plex API.
+print ("You Will need to use Either LOCAL or CLOUD access to have the TBN Controller control your client. It is recommended you use both for fail back purposes, however, if you do not want to or know the information for one, you can use garbage data. Remember, you need to use either LOCAL or CLOUD access for this to work properly. \n\n")
+print ("Setting up local access now.\n")
+
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXTOKEN\'')
+if not cur.fetchone():
+	PLEXTOKEN = str(input('Plex Token: '))
+	writeme = str("PLEXTOKEN")
+	cur.execute('INSERT INTO settings VALUES(?,?)', (writeme,PLEXTOKEN))
+	sql.commit()
+	
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
+if not cur.fetchone():
+	PLEXSERVERIP = str(input('Plex Server IP: '))
+	writeme = str("PLEXSERVERIP")
+	cur.execute('INSERT INTO settings VALUES(?,?)', (writeme,PLEXSERVERIP))
+	sql.commit()
+
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
+if not cur.fetchone():
+	PLEXSERVERPORT = str(input('Plex Server Port: '))
+	writeme = str("PLEXSERVERPORT")
+	cur.execute('INSERT INTO settings VALUES(?,?)', (writeme,PLEXSERVERPORT))
+	sql.commit()
+	
+print ("\nFinished getting necessary local access information. Getting Plex Cloud information now.\n")
+	
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
 if not cur.fetchone():
 	PLEXUN = str(input('Plex Username: '))
@@ -393,15 +408,18 @@ if not cur.fetchone():
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXPW',PLEXPW))
 	sql.commit()
 
+print ("\nFinished getting necessary cloud information. Getting necessary general information now.\n")
 #checks for client name and server name. used by Plex API.
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 if not cur.fetchone():
 	PLEXSVR = str(input('Plex Server Name: '))
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSVR',PLEXSVR))
 	sql.commit()
+
 	
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 if not cur.fetchone():
+	print ("Enter Plex Client Name. Note: If you do not know this name, enter garbage data and run 'changeclient' once you have finished running the system_setup script.\n")
 	PLEXCLIENT = str(input('Plex Client Name: '))
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXCLIENT',PLEXCLIENT))
 	sql.commit()
@@ -409,16 +427,11 @@ if not cur.fetchone():
 #get wildcard show name. Used as part of random media picking mechanism.
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'WILDCARD\'')
 if not cur.fetchone():
+	print ("Enter your Wild Card Show. This is the show you are working your way through that will play more often than some other ransom TV show or random movie when automated selection is in play.\n")
 	WILDCARD = str(input('Wild Card Show: '))
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('WILDCARD',WILDCARD))
 	sql.commit()
 	
-#get homedirectory. Used as part of random media picking mechanism.
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'HOMEDIR\'')
-if not cur.fetchone():
-	cur.execute('INSERT INTO settings VALUES(?,?)', ('HOMEDIR',homedir))
-	sql.commit()
-
 
 cur.execute('CREATE TABLE IF NOT EXISTS States(Option TEXT, State TEXT)')
 sql.commit()
@@ -453,7 +466,7 @@ sql.commit()
 print ("Necessary File check complete.")
 
 if ("pass" in updatecheck):
-	print ("Would you like to update your system database now to add the available shows and movies in your library?")
+	print ("Would you like to update your system database now to add the available shows and movies in your library? This is highly recommended and may take some time depending on the size of your library. If you do not update your library some actions will error.\n")
 	choice = str(input('Yes or No? '))
 	if "y" in choice.lower():
 		if "Windows" not in ostype:

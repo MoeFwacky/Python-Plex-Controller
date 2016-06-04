@@ -58,14 +58,26 @@ def plexlogin():
 		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 		PLEXCLIENT = cur.fetchone()
 		PLEXCLIENT = PLEXCLIENT[0]
+		
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXTOKEN\'')
+		PLEXTOKEN = cur.fetchone()
+		PLEXTOKEN = PLEXTOKEN[0]
+		
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
+		PLEXSERVERIP = cur.fetchone()
+		PLEXSERVERIP = PLEXSERVERIP[0]
+		
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
+		PLEXSERVERPORT = cur.fetchone()
+		PLEXSERVERPORT = PLEXSERVERPORT[0]
 
 		from plexapi.myplex import MyPlexAccount
 		user = MyPlexAccount.signin(PLEXUN,PLEXPW)
 		
 		try:
 			from plexapi.server import PlexServer
-			baseurl = 'http://IP HERE:PORT'
-			token = 'tokenhere'
+			baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
+			token = PLEXTOKEN
 			plex = PlexServer(baseurl, token)
 			#print ("using local access.")
 		except Exception:
@@ -107,13 +119,13 @@ def changeclient():
 		print (client)
 		cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 		sql.commit()
-		print ("Deleted.")
+		#print ("Deleted.")
 		cur.execute('INSERT INTO settings VALUES(?,?)',('PLEXCLIENT',client))
 		sql.commit()
-		print ("Added.")
+		#print ("Added.")
 		cur.execute("SELECT * FROM settings WHERE item LIKE \'PLEXCLIENT\'")
 		test = cur.fetchone()
-		print (test)
+		#print (test)
 		return ("Client successfully set to: " + client.strip())
 	except Exception:
 		return ("Error. Unable to update client. Please try again.")
@@ -183,14 +195,10 @@ def getblockpackagelist():
 	cur.execute(command)
 	list = cur.fetchall()
 	xlist = []
-	count = 0
-	max = len(list)
-	while count < max:
-		item = str(list[count])
-		item = item.replace("(u'","")
-		item = item.replace("',)","")
-		xlist.append(item)
-		count = count + 1
+	for item in list:
+		xlist.append(item[0])
+	#print (xlist)
+	
 	return (xlist)
 def ostype():
 	ostype = platform.system()
@@ -253,29 +261,27 @@ def explainblock(block):
 			command = 'SELECT Items FROM Blocks WHERE Name LIKE \'' + block + '\''
 			cur.execute(command)
 			stuff = cur.fetchall()
-			stuff = str(stuff)
-			stuff = stuff.replace("[(u'","")
-			stuff = stuff.replace("',)]","")
-			stuff = stuff.replace("\\n","")
-			stuff = stuff.split(';')
-
-			for things in stuff:
-				things = things.rstrip()
-				if "Random_movie" in things:
-					things = things.replace("Random_movie.", "A random ")
-					things = things + " movie"
-					things = things.replace(";","")
-				elif "Random_tv" in things:
-					things = things.replace("Random_tv.", "A Random ")
-					things = things + " TV Show."
-					things = things.replace(";","")
-				try:
-					tns = tns + things + "\n"
-				except NameError:
-					tns = things + "\n"
-				tns = tns.replace("movie.", "the movie ")
+			
+			for dathings in stuff:
+				dbthings = dathings[0].split(';')
+				for things in dbthings:
+					things = things
+					if "Random_movie" in things:
+						things = things.replace("Random_movie.", "A random ")
+						things = things + " movie"
+						things = things.replace(";","")
+					elif "Random_tv" in things:
+						things = things.replace("Random_tv.", "A Random ")
+						things = things + " TV Show."
+						things = things.replace(";","")
+					try:
+						tns = tns + things + "\n"
+					except NameError:
+						tns = things + "\n"
+					tns = tns.replace("movie.", "the movie ")
 			say = "The " + block + " plays the following:\n" + tns
-			return say		
+			return say
+			
 def addblock(name, title):
 	consql = homedir + 'myplex.db'
 	sql = sqlite3.connect(consql)
@@ -352,7 +358,7 @@ def addblock(name, title):
 				items = items.replace('.txt','')
 				cxgenre.append(items)
 
-			print (cxgenre)
+			#print (cxgenre)
 
 			if rgenre not in cxgenre:
 				return ("Sorry " + str(rgenre.strip()) + " not found as an available genre.")
@@ -599,8 +605,9 @@ def addtoblock(blockname, name):
 			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, blcount))
 			sql.commit()
 			blname = blname.replace("movie.", "The Movie ")
-			say = (adtitle.rstrip() + " has been added to the " + blname + " .")
-			print (say)
+			say = (name.rstrip() + " has been added to the " + blname + " block.")
+			say = say.replace("movie.", "The Movie ")
+			return (say)
 
 		else:
 			#print ("Block Found. Checking TV.")
@@ -623,7 +630,8 @@ def addtoblock(blockname, name):
 				cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, int(blcount)))
 				sql.commit()
 				blname = blname.replace("movie.", "The Movie ")
-				say = (xname.rstrip() + " has been added to the " + blname + ".")
+				say = (xname.rstrip() + " has been added to the " + blname + " block.")
+				return (say)
 			else:
 				print (xname +" not found in library. Did you mean: \n")
 				for item in tvcheck:
@@ -651,7 +659,7 @@ def removefromblock(blockname, name):
 			bname = binfo[0]
 			bitems = binfo[1]
 			bcount = binfo[2]
-			bitems = bitems.replace(name +";","")
+			bitems = bitems.replace(name +";","", 1)
 			command = 'DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\''
 			cur.execute(command)
 			sql.commit()
@@ -2146,6 +2154,10 @@ try:
 			file.write("On")
 		file.close()
 		say = "Playback State Checking has been Enabled."
+	elif ("playcheckstatus" in show):
+		command = homedir + 'playstatus.py'
+		os.system(command)
+		say = "\r"
 	elif ("playcheckstop" in show):
 		openme = homedir + 'playstatestatus.txt'
 		with open(openme, "w") as file:
