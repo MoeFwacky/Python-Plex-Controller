@@ -104,16 +104,12 @@ def changeclient():
 	choice = int(input('New Client: '))
 	try:
 		client = daclients[choice-1].strip()
-		print (client)
 		cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 		sql.commit()
-		print ("Deleted.")
 		cur.execute('INSERT INTO settings VALUES(?,?)',('PLEXCLIENT',client))
 		sql.commit()
-		print ("Added.")
 		cur.execute("SELECT * FROM settings WHERE item LIKE \'PLEXCLIENT\'")
 		test = cur.fetchone()
-		print (test)
 		return ("Client successfully set to: " + client.strip())
 	except Exception:
 		return ("Error. Unable to update client. Please try again.")
@@ -1396,6 +1392,14 @@ def upnext():
 		try:
 			playme = queue[0]
 			playme = playme.lstrip()
+			#marker
+			if "block." in playme:
+				skipthat()
+				setplaymode(playme)
+				playme = upnext()
+				return (playme)
+			
+				
 		except IndexError:
 			queuefill()
 			queue= openqueue()
@@ -1661,6 +1665,11 @@ def whatupnext():
 		if ('The Movie'  in playme):
 			#print ("Found "+ playme)
 			goon = "yes"
+		elif ("block." in playme):
+			skipthat()
+			setplaymode(playme)
+			say = whatupnext()
+			return (say)
 		else:
 
 			playme = playme.strip()
