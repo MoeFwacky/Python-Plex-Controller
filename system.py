@@ -58,26 +58,14 @@ def plexlogin():
 		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 		PLEXCLIENT = cur.fetchone()
 		PLEXCLIENT = PLEXCLIENT[0]
-		
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXTOKEN\'')
-		PLEXTOKEN = cur.fetchone()
-		PLEXTOKEN = PLEXTOKEN[0]
-		
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
-		PLEXSERVERIP = cur.fetchone()
-		PLEXSERVERIP = PLEXSERVERIP[0]
-		
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
-		PLEXSERVERPORT = cur.fetchone()
-		PLEXSERVERPORT = PLEXSERVERPORT[0]
 
 		from plexapi.myplex import MyPlexAccount
 		user = MyPlexAccount.signin(PLEXUN,PLEXPW)
 		
 		try:
 			from plexapi.server import PlexServer
-			baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
-			token = PLEXTOKEN
+			baseurl = 'http://IP HERE:PORT'
+			token = 'tokenhere'
 			plex = PlexServer(baseurl, token)
 			#print ("using local access.")
 		except Exception:
@@ -119,13 +107,13 @@ def changeclient():
 		print (client)
 		cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 		sql.commit()
-		#print ("Deleted.")
+		print ("Deleted.")
 		cur.execute('INSERT INTO settings VALUES(?,?)',('PLEXCLIENT',client))
 		sql.commit()
-		#print ("Added.")
+		print ("Added.")
 		cur.execute("SELECT * FROM settings WHERE item LIKE \'PLEXCLIENT\'")
 		test = cur.fetchone()
-		#print (test)
+		print (test)
 		return ("Client successfully set to: " + client.strip())
 	except Exception:
 		return ("Error. Unable to update client. Please try again.")
@@ -197,8 +185,6 @@ def getblockpackagelist():
 	xlist = []
 	for item in list:
 		xlist.append(item[0])
-	#print (xlist)
-	
 	return (xlist)
 def ostype():
 	ostype = platform.system()
@@ -226,14 +212,31 @@ def availgenretv():
 	from os import listdir
 	from os.path import isfile, join
 	showlist = [f for f in listdir(PLdir) if isfile(join(PLdir, f))]
-	return showlist
+	xshowlist = []
+	for item in showlist:
+		item = item.replace('.txt', '')
+		xshowlist.append(item)
+	worklist(xshowlist)
+	return ("Done.")
 
 def availgenremovie():
-	PLdir = homedir + 'Genre/Movies/'
-	from os import listdir
-	from os.path import isfile, join
-	showlist = [f for f in listdir(PLdir) if isfile(join(PLdir, f))]
-	return showlist
+	command = "SELECT Genre FROM Movies"
+	cur.execute(command)
+	thelist = cur.fetchall()
+	genres = []
+	for item in thelist:
+		item = item[0].split(' ')
+		for gen in item:
+			if gen not in genres:
+				if gen == "":
+					pass
+				elif gen == "&":
+					pass
+				else:
+					genres.append(gen)
+				
+	worklist(genres)	
+	return ("Done.")
 
 
 def filenumlines(file):
@@ -261,27 +264,29 @@ def explainblock(block):
 			command = 'SELECT Items FROM Blocks WHERE Name LIKE \'' + block + '\''
 			cur.execute(command)
 			stuff = cur.fetchall()
-			
-			for dathings in stuff:
-				dbthings = dathings[0].split(';')
-				for things in dbthings:
-					things = things
-					if "Random_movie" in things:
-						things = things.replace("Random_movie.", "A random ")
-						things = things + " movie"
-						things = things.replace(";","")
-					elif "Random_tv" in things:
-						things = things.replace("Random_tv.", "A Random ")
-						things = things + " TV Show."
-						things = things.replace(";","")
-					try:
-						tns = tns + things + "\n"
-					except NameError:
-						tns = things + "\n"
-					tns = tns.replace("movie.", "the movie ")
+			stuff = str(stuff)
+			stuff = stuff.replace("[(u'","")
+			stuff = stuff.replace("',)]","")
+			stuff = stuff.replace("\\n","")
+			stuff = stuff.split(';')
+
+			for things in stuff:
+				things = things.rstrip()
+				if "Random_movie" in things:
+					things = things.replace("Random_movie.", "A random ")
+					things = things + " movie"
+					things = things.replace(";","")
+				elif "Random_tv" in things:
+					things = things.replace("Random_tv.", "A Random ")
+					things = things + " TV Show."
+					things = things.replace(";","")
+				try:
+					tns = tns + things + "\n"
+				except NameError:
+					tns = things + "\n"
+				tns = tns.replace("movie.", "the movie ")
 			say = "The " + block + " plays the following:\n" + tns
-			return say
-			
+			return say		
 def addblock(name, title):
 	consql = homedir + 'myplex.db'
 	sql = sqlite3.connect(consql)
@@ -358,7 +363,7 @@ def addblock(name, title):
 				items = items.replace('.txt','')
 				cxgenre.append(items)
 
-			#print (cxgenre)
+			print (cxgenre)
 
 			if rgenre not in cxgenre:
 				return ("Sorry " + str(rgenre.strip()) + " not found as an available genre.")
@@ -605,9 +610,8 @@ def addtoblock(blockname, name):
 			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, blcount))
 			sql.commit()
 			blname = blname.replace("movie.", "The Movie ")
-			say = (name.rstrip() + " has been added to the " + blname + " block.")
-			say = say.replace("movie.", "The Movie ")
-			return (say)
+			say = (adtitle.rstrip() + " has been added to the " + blname + " .")
+			print (say)
 
 		else:
 			#print ("Block Found. Checking TV.")
@@ -630,8 +634,7 @@ def addtoblock(blockname, name):
 				cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, int(blcount)))
 				sql.commit()
 				blname = blname.replace("movie.", "The Movie ")
-				say = (xname.rstrip() + " has been added to the " + blname + " block.")
-				return (say)
+				say = (xname.rstrip() + " has been added to the " + blname + ".")
 			else:
 				print (xname +" not found in library. Did you mean: \n")
 				for item in tvcheck:
@@ -754,21 +757,53 @@ def playblockpackage(play):
 
 
 def availableshows():
-	openme = homedir + "tvshowlist.txt"
-	with open(openme,'r') as file:
-		showlist = file.readlines()
-	file.close()
-	for shows in showlist:
-		#print (shows)
-		shows = shows.replace(".txt","")
-		name = shows.strip()
-		shows = shows.replace(" ", "+")
-		try:
-			theshows = theshows + name + "\n"
+	command = 'SELECT TShow FROM shows WHERE Tnum = 1'
+	cur.execute(command)
+	tshows = cur.fetchall()
+	theshows = []
+	for shows in tshows:
+		theshows.append(shows[0])
+	worklist(theshows)	
+	return ("Done")
 
-		except NameError:
-			theshows = name + "\n"
-	return theshows
+def worklist(thearray):
+	movies = thearray
+	mcount = 1
+	mvcount = 0
+	mmin = 0
+	mmax = 9
+	mpmin = 1
+	if mmax > len(movies):
+		mmax = int(len(movies)-1)
+	exitc = ""
+	while "quit" not in exitc:
+		cls()
+		print ("The Following Items were found:\n")
+		while mmin <= mmax:
+			print (movies[mmin])
+			mmin = mmin + 1
+		print ("\nShowing Items " + str(mpmin) + " out of " + str(mmax+1)+ " Total Found: " + str(len(movies)))
+		mpmin = mmax + 1
+		mmax = mmax + 10
+		if (mmax > int(len(movies)-1)):
+			mcheck = int(mmax) - int(len(movies)-1)
+			if ((mcheck > 0) and (mcheck < 10)):
+				mmax = mmax-mcheck
+			elif mcheck > 10:
+				return ("Done.")
+		if (mmax == int(len(movies)+9)):
+			return ("Done")
+		print ("\nWould you like to see more?")
+		getme = input('Yes or No?')
+		if ("y" in getme.lower()):
+			mvcount = mvcount + 10
+		else:
+			exitc = "quit"
+		
+	#print (movies)
+			print ("\n")
+			say = ""
+
 
 def availableblocks():
 	blocklist = getblockpackagelist()
@@ -876,6 +911,76 @@ def findmovie(movie):
 
 
 		return (say)
+
+def listepisodes(show):
+	command = "SELECT TShow, Episode, Season, Enum FROM shows WHERE TShow LIKE \'" + show + "\'"
+	cur.execute(command)
+	if not cur.fetchall():
+		return ("The Show " + show + " not found.")
+	else:
+		cur.execute(command)
+		episodes = cur.fetchall()
+		for item in episodes:
+			addme = "Episode: " + item[1] + " Season: " + str(item[2]) + " Ep Number: " + str(item[3])
+			try:
+				eplist = eplist + " | " + addme
+			except NameError:
+				eplist = addme
+		eplist = eplist.split(" | ")
+		emax = 10
+		if emax > int(len(eplist)):
+			emax = int(len(eplist))
+		emin = 0
+		epmin = 1
+		exitc = ""
+		echoice = 1
+		while "quit" not in exitc:
+			cls()
+			print ("The Following Episodes where found for the show " + show + ": \n")
+			while emin <= emax-1:
+				print (str(echoice) + ":" +eplist[emin])
+				emin = emin + 1
+				echoice = echoice + 1
+			print ("\nShowing Items " + str(epmin) + " out of " + str(emax) + "\nTotal Number of Episodes: " + str(len(eplist)))
+			print ("\nPick a number to see the episode details.\nOr\nWould you like to see more?")
+			getme = input('1-10 / Yes or No?')
+			try:
+				choice = int(getme) + epmin-1
+				#print (choice)
+				choice = episodes[choice-1]
+				say = epdetails(str(choice[0]), str(choice[2]), str(choice[3]))
+				print ("Episode Details:\n" + say + "\n\nEnter 'Yes' to proceed.\n")
+				readyc = input('Yes?' )
+				if "y" in readyc.lower():
+					epmin = emax + 1
+					emax = emax + 10
+					echoice = 1
+					if (emax > int(len(eplist)-1)):
+						echeck = int(emax) - int(len(eplist)-1)
+						if ((echeck >0) and (echeck <10)):
+							emax = emax - echeck+1
+						elif echeck > 10:
+							return ("Done.")
+					if (emax == int(len(eplist)+9)):
+						return ("Done.")
+					if ('n' in getme.lower()):
+						exitc = "quit"
+			except Exception:
+				epmin = emax + 1
+				emax = emax + 10
+				echoice = 1
+				if (emax > int(len(eplist)-1)):
+					echeck = int(emax) - int(len(eplist)-1)
+					if ((echeck >0) and (echeck <10)):
+						emax = emax - echeck+1
+					elif echeck > 10:
+						return ("Done.")
+				if (emax == int(len(eplist)+9)):
+					return ("Done.")
+				if ('n' in getme.lower()):
+					exitc = "quit"
+	return ("Done.")				
+
 
 def findshow(show):
         connsql = homedir + 'myplex.db'
@@ -1310,6 +1415,65 @@ def upnext():
 		
 
 	return playme
+
+def seriesskipback(show):
+	command = "SELECT Number from TVCounts WHERE Show LIKE \'" + show + "\'"
+	cur.execute(command)
+	if not cur.fetchone():
+		command = "SELECT TShow FROM shows WHERE TShow LIKE \'" + show + "\'"
+		cur.execute(command)
+		if not cur.fetchone():
+			return ("Error. " + show + " not found.")
+		else:
+			cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, 1))
+			sql.commit()
+			return ("Show " + show + " has been set to the first episode in the series.")
+	else:
+		cur.execute(command)
+		nowat = cur.fetchone()
+		nowat = nowat[0]
+		if nowat == 1:
+			return ("Show " + show + " is already at the first episode in the series. Unable to go back.")
+		else:
+			nowat = int(nowat) - 1
+			cur.execute('DELETE FROM TVCounts WHERE show LIKE \'' + show + '\'')
+			sql.commit()
+			cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, nowat))
+                        sql.commit()
+			sayme = nextep(show)
+			return (sayme)
+
+def seriesskipahead(show):
+        command = "SELECT Number from TVCounts WHERE Show LIKE \'" + show + "\'"
+        cur.execute(command)
+        if not cur.fetchone():
+                command = "SELECT TShow FROM shows WHERE TShow LIKE \'" + show + "\'"
+                cur.execute(command)
+                if not cur.fetchone():
+                        return ("Error. " + show + " not found.")
+                else:
+                        cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, 1))
+                        sql.commit()
+                        return ("Show " + show + " has been set to the first episode in the series.")
+        else:
+                cur.execute(command)
+                nowat = cur.fetchone()
+                nowat = nowat[0]
+		command = "SELECT tnum FROM shows WHERE TShow LIKE \'" + show + "\'"
+		cur.execute(command)
+		max = cur.fetchall()
+		max = len(max) - 1
+                if nowat == max:
+                        return ("Show " + show + " is already at the last episode. Unable to skip ahead.")
+                else:
+                        nowat = int(nowat) + 1
+                        cur.execute('DELETE FROM TVCounts WHERE show LIKE \'' + show + '\'')
+                        sql.commit()
+                        cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, nowat))
+                        sql.commit()
+                        sayme = nextep(show)
+                        return (sayme)
+	
 
 def playmode():
 	link = homedir + 'myplex.db'
@@ -1860,7 +2024,7 @@ def restartblock(block):
 		bitems = binfo[1]
 		bcount = "0"
 	except TypeError:
-		return ("Block not found to remove.")
+		return ("Block not found to restart.")
 	else:
 		command = 'DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\''
 		cur.execute(command)
@@ -2041,7 +2205,12 @@ def listshows(genre):
 				playlist = file.readlines()
 			file.close()
 			play = playlist
-	return play
+	shows = []
+	for item in play:
+		shows.append(item.strip())
+	worklist(shows)	
+
+	return ("Done.")
 
 def whatispending():
 	consql = homedir + 'myplex.db'
@@ -2142,10 +2311,10 @@ try:
 		plexlogin()
 		pauseplay()
 		say = "Playback has been paused."
-	elif ("skipahead" in show):
+	elif (("skipahead" in show) and ("series" not in show)):
 		plexlogin()
 		say = skipahead()
-	elif ("skipback" in show):
+	elif (("skipback" in show) and ("series" not in show)):
 		plexlogin()
 		say = skipback()
 	elif ("playcheckstart" in show):
@@ -2154,10 +2323,6 @@ try:
 			file.write("On")
 		file.close()
 		say = "Playback State Checking has been Enabled."
-	elif ("playcheckstatus" in show):
-		command = homedir + 'playstatus.py'
-		os.system(command)
-		say = "\r"
 	elif ("playcheckstop" in show):
 		openme = homedir + 'playstatestatus.txt'
 		with open(openme, "w") as file:
@@ -2190,6 +2355,55 @@ try:
 		if "No queue to skip." in say:
 			say = queuefill()
 		#saythat(say)
+	elif ("seriesskipback" in show):
+		try:
+			show = str(sys.argv[2])
+			say = seriesskipback(show)
+		except Exception:
+			sayx = whatupnext()
+			
+			pmode = playmode()
+			try:
+				if ("normal" not in pmode):
+					say = sayx.split('we have ')
+				else:
+					say = sayx.split("The TV Show ")
+				say = say[1]
+				if ("normal" not in pmode):
+					say = say.split(', Season')
+				else:
+					say = say.split(" Season ")
+				show = say[0]
+			except Exception:
+				say = "A movie is currently up next, and no show was specified. No action has been taken.\n"
+			if ('A movie' not in say):
+				say = seriesskipback(show)
+			
+	elif ("seriesskipahead" in show):
+                try:
+                        show = str(sys.argv[2])
+			say = seriesskipahead(show)
+                except Exception:
+                        sayx = whatupnext()
+
+                        pmode = playmode()
+
+                        try:
+                                if ("normal" not in pmode):
+                                        say = sayx.split('we have ')
+                                else:
+                                        say = sayx.split("The TV Show ")
+                                say = say[1]
+                                if ("normal" not in pmode):
+                                        say = say.split(', Season')
+                                else:
+                                        say = say.split(" Season ")
+                                show = say[0]
+                        except Exception:
+                                say = "A movie is currently up next, and no show was specified. No action has been taken.\n"
+			if ('A movie' not in say):
+				say = seriesskipahead(show)
+	
 	elif ("findsomethingelse" in show):
 		say = findsomethingelse()
 		#queue = queue.split(';')
@@ -2213,12 +2427,16 @@ try:
 			genre = str(sys.argv[2])
 			print (genre)
 			say = listshows(genre)
-			say = readlist(say)
-			say = say.rstrip()
 		except IndexError:
 			print (show)
 			show = availableshows()
 			say = show
+	elif ("listepisodes" in show):
+		try:
+			show = str(sys.argv[2])
+			say = listepisodes(show)
+		except IndexError:
+			say = "Specificy a show to use this command."
 
 	elif ("addsuggestion" in show):
 		say = addsuggestion()
@@ -2227,7 +2445,12 @@ try:
 		say = whatispending()
 		#saythat(say)
 	elif ("availableblocks" in show):
-		say = availableblocks()
+		try:
+			say = availableblocks()
+			say = "The Following Blocks are available:\n" + say
+		except NameError:
+			say = "You must first create a block to use this command. Use 'addblock' for more information."
+
 	elif ("restartblock" in show):
 		try:
 			block = str(sys.argv[2])
@@ -2300,7 +2523,10 @@ try:
 			mode = show.split("setplaymode ")
 			mode = mode[1]
 			#print (mode)
-		say = setplaymode(mode)
+		setplaymode(mode)
+		say = whatupnext()
+		say = say.replace("is active.", "is now active.")
+
 	elif ("epdetails" in show):
 		try:
 			season = str(sys.argv[3])
@@ -2351,11 +2577,9 @@ try:
 	elif "moviegenres" in show:
 
 		say = availgenremovie()
-		say = readlist(say)
 
 	elif "tvgenres" in show:
 		say = availgenretv()
-		say = readlist(say)
 	elif "tvstudios" in show:
 		say = availstudiotv()
 		say = readlist(say)
