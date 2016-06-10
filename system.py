@@ -77,7 +77,6 @@ def plexlogin():
 	except IndexError:
 		print ("Error getting necessary plex api variables. Run system_setup.py.")
 
-
 def cls():
 	os.system('cls' if os.name=='nt' else 'clear')
 
@@ -774,7 +773,11 @@ def worklist(thearray):
 	exitc = ""
 	while "quit" not in exitc:
 		cls()
-		print ("The Following Items were found:\n")
+		try:
+			print ("Error: " + Error + "\nThe Following Items Were Found:\n")
+			del Error
+		except NameError:
+			print ("The Following Items Were Found:\n")
 		while mmin <= mmax:
 			print (movies[mmin])
 			mmin = mmin + 1
@@ -791,8 +794,36 @@ def worklist(thearray):
 			return ("Done")
 		print ("\nWould you like to see more?")
 		getme = input('Yes or No?')
-		if ("y" in getme.lower()):
+		if (("y" in getme.lower()) and ("letter" not in getme.lower())):
 			mvcount = mvcount + 10
+		elif ("letter" in getme.lower()):
+			find = getme.lower().split("letter ")
+			find = find[1][:1].strip()
+			print ("Starting at the letter " + find + ".\n")
+			lcount = 0
+			lcheck = "go"
+			try:
+				while "stop" not in lcheck:
+					lmcheck = movies[lcount][:1].lower()
+					#print (lmcheck)
+					if find.lower() in lmcheck:
+						lcheck = "stop"
+					lcount = lcount + 1
+				mmin = lcount
+				mpmin = lcount + 1
+				mmax = lcount + 10
+				if (mmax > int(len(movies)-1)):
+					mcheck = int(mmax) - int(len(movies)-1)
+					if ((mcheck > 0) and (mcheck < 10)):
+						mmax = mmax-mcheck
+					elif mcheck > 10:
+						return ("Done.")
+					if (mmax == int(len(movies)+9)):
+						return ("Done")
+			except Exception:
+				Error = "No items found containing " + find + ".\n"
+
+			
 		else:
 			exitc = "quit"
 		
@@ -1386,13 +1417,18 @@ def upnext():
 	cur.execute(command)
 	playmode = cur.fetchone()
 	playmode = playmode[0]
+	try:
+		option = str(sys.argv[2])
+		if "normal" in option:
+			playmode = option
+	except Exception:
+		pass
 	queue = openqueue()
-	if "normal" in playmode:	
+	if (("normal" in playmode) or ("block." in playmode)):	
 		queue = queue.split(";")
 		try:
 			playme = queue[0]
 			playme = playme.lstrip()
-			#marker
 			if "block." in playme:
 				skipthat()
 				setplaymode(playme)
@@ -1405,9 +1441,12 @@ def upnext():
 			queue= openqueue()
 			queue = queue.split(';')
 			playme = queue[0]
-
-		playme = playme.replace(";"," ")	
-		playme = playme.rstrip()
+		if ("binge." in playmode):
+			playme = playmode.split("binge.")
+			playme = playme[1].strip()
+		else:
+			playme = playme.replace(";"," ")	
+			playme = playme.rstrip()
 		#print (playme)	
 	elif "block" in playmode:
 		playme = playmode
@@ -1488,6 +1527,11 @@ def playmode():
 	playmode = cur.fetchone()
 	playmode = playmode[0]
 	playmode = playmode.replace("marathon.","Marathon Mode- ")
+	if "binge." in playmode:
+		option = playmode.split("binge.")
+		option = option[1].strip()
+		option = option.replace("movie.", "The Movie ")
+		return ("We are binge  watching: " + option)
 	return playmode
 
 def setplaymode(mode):
@@ -1648,8 +1692,11 @@ def whatupnext():
 	playmode = cur.fetchone()
 	playmode = playmode[0]
 
-	if "normal" in playmode:
-		print ("We are in normal playmode.\n")
+	if (("normal" in playmode) or ("binge." in playmode)):
+		if "normal" in playmode:
+			print ("We are in normal playmode.\n")
+		elif "binge." in playmode:
+			print ("We are in binge playback mode.\n")
 		queue = openqueue()
 		if queue == " ":
 			print ("First run situation detected. Taking approprate action.\n")
@@ -1660,6 +1707,10 @@ def whatupnext():
 		upnext = upnext.replace(";", "")
 		upnext = upnext.replace("movie.", "The Movie ")
 		upnext = upnext.rstrip()
+		if "binge." in playmode:
+			upnext = playmode.split("binge.")
+			upnext = upnext[1].strip()
+			upnext = upnext.replace("movie.", "The Movie ")
 		playme = upnext
 	
 		if ('The Movie'  in playme):
@@ -1878,7 +1929,13 @@ def skipthat():
 	sql = sqlite3.connect(consql)
 	cur = sql.cursor()
 	mode = playmode()
-	if "normal" in mode:
+	try:
+		option = str(sys.argv[2])
+		if "normal" in option:
+			print ("Skip Enabled")
+	except Exception:
+		option = ""
+	if (("normal" in mode) or ("normal" in option)):
 		command = 'SELECT State FROM States WHERE Option LIKE \'Queue\''
 		cur.execute(command)
 		queue = cur.fetchone()
@@ -1900,6 +1957,9 @@ def skipthat():
 				return playme
 		except IndexError:
 			return "No queue to skip."	
+	elif ("binge." in mode):
+
+		return ("We are in binge mode. Change playmodes to use this option or add 'normal' to your command to skip what is up next in the queue.")
 	else:
 		play = upnext()
 		#print (play)
@@ -2221,6 +2281,16 @@ def listshows(genre):
 
 	return ("Done.")
 
+def listmovies():
+	cur.execute("SELECT Movie FROM Movies")
+	thelist = cur.fetchall()
+	movies = []
+	for movie in thelist:
+		movies.append(movie[0])
+	worklist(movies)
+
+	return ("Done.")
+		
 def whatispending():
 	consql = homedir + 'myplex.db'
 	sql = sqlite3.connect(consql)
@@ -2276,7 +2346,6 @@ def readlist(list):
 try:	
 	show = str(sys.argv[1])
 	show = show.replace("+"," ")
-	#marker
 	if ("addfavoritemovie" in show):
 		title = str(sys.argv[2])
 		say = addfavoritemovie(title)
@@ -2356,7 +2425,7 @@ try:
 		#os.system("pkill -f playstate.py")
 		show = upnext()
 		say = playshow(show)
-		if ("block." not in say):
+		if (("block." or "binge.") not in say):
 			skipthat()
 		say = say + "\n"
 	elif ("skipthat" in show):
@@ -2446,6 +2515,8 @@ try:
 			say = listepisodes(show)
 		except IndexError:
 			say = "Specificy a show to use this command."
+	elif ("listmovies" in show):
+		say = listmovies()
 
 	elif ("addsuggestion" in show):
 		say = addsuggestion()
