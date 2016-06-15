@@ -33,61 +33,10 @@ if "Linux" in ostype:
 		print ("Run this command as your non-root user, without sudo. You will be prompted for sudo access where it is necessary in this setup.")
 	else:
 
-		addme = """
-
-		#Plex system.py aliases
-
-		alias whatupnext='python /home/pi/hasystem/system.py whatupnext'
-		alias whatsafterthat='python /home/pi/hasystem/system.py whatsafterthat'
-		alias startnextprogram='python /home/pi/hasystem/system.py startnextprogram'
-		alias queueshow='python /home/pi/hasystem/system.py queueshow'
-		alias suggestmovie='python /home/pi/hasystem/system.py suggestmovie'
-		alias moviedetails='python /home/pi/hasystem/system.py moviedetails'
-		alias idtonightsmovie='python /home/pi/hasystem/system.py idtonightsmovie'
-		alias findmovie='python /home/pi/hasystem/system.py findmovie'
-		alias findshow='python /home/pi/hasystem/system.py findshow'
-		alias suggesttv='python /home/pi/hasystem/system.py suggesttv'
-		alias addsuggestion='python /home/pi/hasystem/system.py addsuggestion'
-		alias skipthat='python /home/pi/hasystem/system.py skipthat'
-		alias skipahead='python /home/pi/hasystem/system.py skipahead'
-		alias skipback='python /home/pi/hasystem/system.py skipback'
-		alias whatispending='python /home/pi/hasystem/system.py whatispending'
-		alias playme='python /home/pi/hasystem/system.py'
-		alias nowplaying='python /home/pi/hasystem/system.py nowplaying'
-		alias nextep='python /home/pi/hasystem/system.py nextep'
-		alias queueadd='python /home/pi/hasystem/system.py queueadd'
-		alias idplaymode='python /home/pi/hasystem/system.py getplaymode'
-		alias getplaymode='python /home/pi/hasystem/system.py getplaymode'
-		alias setplaymode='python /home/pi/hasystem/system.py setplaymode'
-		alias availableblocks='python /home/pi/hasystem/system.py availableblocks'
-		alias explainblock='python /home/pi/hasystem/system.py explainblock'
-		alias epdetails='python /home/pi/hasystem/system.py epdetails'
-		alias setnextep='python /home/pi/hasystem/system.py setnextep'
-		alias stopplayback='python /home/pi/hasystem/system.py stopplayback'
-		alias pauseplayback='python /home/pi/hasystem/system.py pauseplayback'
-		alias addblock='python /home/pi/hasystem/system.py addblock'
-		alias addtoblock='python /home/pi/hasystem/system.py addtoblock'
-		alias removefromblock='python /home/pi/hasystem/system.py removefromblock'
-		alias removeblock='python /home/pi/hasystem/system.py removeblock'
-		alias setupnext='python /home/pi/hasystem/system.py setupnext'
-		alias playcheckstatus='python /home/pi/hasystem/playstatus.py'
-		alias playcheckstart='python /home/pi/hasystem/system.py playcheckstart'
-		alias playcheckstop='python /home/pi/hasystem/system.py playcheckstop'
-		alias playchecksleep='python /home/pi/hasystem/system.py playchecksleep'
-		alias whereat='python /home/pi/hasystem/system.py whereat'
-		alias findsomethingelse='python /home/pi/hasystem/system.py findsomethingelse'
-		alias findnewmovie='python /home/pi/hasystem/system.py findnewmovie'
-		alias addfavoritemovie='python /home/pi/hasystem/system.py addfavoritemovie'
-		alias listclients='python /home/pi/hasystem/system.py listclients'
-		alias changeclient='python /home/pi/hasystem/system.py changeclient'
-		"""
-
-
 		newdir = "/home/" + user + "/"
-		addme = addme.replace("/home/pi/", newdir)
-
 		homedir = "/home/" + user + "/hasystem/"
-		print (homedir)
+		writeme = "homedir = \'" + homedir + "\'\n"
+		writemehome = writeme
 
 		print ("Hello " + user + ". I am now adding the alias add script now. You will be prompted for sudo for this.\n")
 
@@ -109,20 +58,32 @@ if "Linux" in ostype:
 			try:
 				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_bash.py"
 				newfile = http.request('GET', url, preload_content=False)
-				print ("...")
-				print (newfile)
-				print ("go")
 				with open(file0, 'wb') as file:
-					file.write(newfile)
+					file.write(newfile.data)
 				file.close()
-				print ("on")
 				print ("File successfully moved to the necessary directory.")
 			except IOError:
-				print ("warning add_to_bash.py does not exist. The TBN controller will not work.")
+				print ("warning add_to_bash.py does not exist. Alias commands will not work.")
 		try:
-			print ("test1")
+                        file10 = homedir + "aliases"
+                        with open (file10, "r") as file:
+                                readme = file.read()
+                        file.close()
+                        print ("check pass.  aliases exists.")
+                except IOError:
+                        try:
+                                url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/aliases"
+                                newfile = http.request('GET', url, preload_content=False)
+                                #print (newfile)
+                                with open(file10, 'wb') as file:
+                                        file.write(newfile.data)
+                                file.close()
+                                print ("File successfully moved to the necessary directory.")
+                        except IOError:
+                                print ("warning aliases does not exist. Alias commands will not work.")
+		try:
 			command = "sudo python " + file0 + " " + user.strip()
-			print (command)
+			#print (command)
 			os.system(command)
 		except Exception:
 			print ("Failed to add aliases to Bash. see add_to_bash.py for list of alias it is recommended you add.\n")
@@ -142,7 +103,7 @@ if "Linux" in ostype:
 				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_cron.py"
 				newfile = http.request('GET', url, preload_content=False)
 				with open(file00, 'wb') as file:
-					file.write(newfile)
+					file.write(newfile.data)
 				file.close()
 				print ("File successfully moved to the necessary directory.")
 			except IOError:
@@ -174,23 +135,34 @@ else:
 			
 	print ("Pass")
 	homedir = homedir + "hasystem\\"
+	writeme = "homedir = \'" + homedir + "\\'\n"
+	writemehome = writeme
 	
-writeme = "homedir = \'" + homedir + "\\'\n"
+
 	
 if not os.path.exists(homedir):
 	os.makedirs(homedir)
 	print (homedir + " has been successfully created.\n")
 else:
 	print (homedir + " already exists. Moving on.")
-studio = homedir +"Studio\\"
+if "Linux" in ostype:
+	studio = homedir + "Studio/"
+else:
+	studio = homedir +"Studio\\"
 if not os.path.exists(studio):
 	os.makedirs(studio)
 
-genre = homedir + "Genre\\"
+if "Linux" in ostype:
+	genre = homedir + "Genre/"
+else:
+	genre = homedir + "Genre\\"
 if not os.path.exists(genre):
 	os.makedirs(genre)
 
-genre = genre + "TV\\"
+if "Linux" in ostype:
+	genre = genre + "TV/"
+else:
+	genre = genre + "TV\\"
 if not os.path.exists(genre):
 	os.makedirs(genre)
 	
@@ -258,7 +230,7 @@ except IOError:
 		with open (file5, 'r') as file:
 			rewrite = file.read()
 		file.close()
-		rewrite = writeme + rewrite
+		rewrite = writemehome + "\n" + rewrite
 		with open(file5, "w") as file:
 			file.write(rewrite)
 		file.close()
@@ -369,32 +341,6 @@ if not cur.fetchone():
 '''
 
 #checks for plex user name and PW. Used for Plex API.
-print ("You Will need to use Either LOCAL or CLOUD access to have the TBN Controller control your client. It is recommended you use both for fail back purposes, however, if you do not want to or know the information for one, you can use garbage data. Remember, you need to use either LOCAL or CLOUD access for this to work properly. \n\n")
-print ("Setting up local access now.\n")
-
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXTOKEN\'')
-if not cur.fetchone():
-	PLEXTOKEN = str(input('Plex Token: '))
-	writeme = str("PLEXTOKEN")
-	cur.execute('INSERT INTO settings VALUES(?,?)', (writeme,PLEXTOKEN))
-	sql.commit()
-	
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
-if not cur.fetchone():
-	PLEXSERVERIP = str(input('Plex Server IP: '))
-	writeme = str("PLEXSERVERIP")
-	cur.execute('INSERT INTO settings VALUES(?,?)', (writeme,PLEXSERVERIP))
-	sql.commit()
-
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
-if not cur.fetchone():
-	PLEXSERVERPORT = str(input('Plex Server Port: '))
-	writeme = str("PLEXSERVERPORT")
-	cur.execute('INSERT INTO settings VALUES(?,?)', (writeme,PLEXSERVERPORT))
-	sql.commit()
-	
-print ("\nFinished getting necessary local access information. Getting Plex Cloud information now.\n")
-	
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
 if not cur.fetchone():
 	PLEXUN = str(input('Plex Username: '))
@@ -408,18 +354,15 @@ if not cur.fetchone():
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXPW',PLEXPW))
 	sql.commit()
 
-print ("\nFinished getting necessary cloud information. Getting necessary general information now.\n")
 #checks for client name and server name. used by Plex API.
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 if not cur.fetchone():
 	PLEXSVR = str(input('Plex Server Name: '))
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSVR',PLEXSVR))
 	sql.commit()
-
 	
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 if not cur.fetchone():
-	print ("Enter Plex Client Name. Note: If you do not know this name, enter garbage data and run 'changeclient' once you have finished running the system_setup script.\n")
 	PLEXCLIENT = str(input('Plex Client Name: '))
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXCLIENT',PLEXCLIENT))
 	sql.commit()
@@ -427,11 +370,16 @@ if not cur.fetchone():
 #get wildcard show name. Used as part of random media picking mechanism.
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'WILDCARD\'')
 if not cur.fetchone():
-	print ("Enter your Wild Card Show. This is the show you are working your way through that will play more often than some other ransom TV show or random movie when automated selection is in play.\n")
 	WILDCARD = str(input('Wild Card Show: '))
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('WILDCARD',WILDCARD))
 	sql.commit()
 	
+#get homedirectory. Used as part of random media picking mechanism.
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'HOMEDIR\'')
+if not cur.fetchone():
+	cur.execute('INSERT INTO settings VALUES(?,?)', ('HOMEDIR',homedir))
+	sql.commit()
+
 
 cur.execute('CREATE TABLE IF NOT EXISTS States(Option TEXT, State TEXT)')
 sql.commit()
@@ -466,7 +414,7 @@ sql.commit()
 print ("Necessary File check complete.")
 
 if ("pass" in updatecheck):
-	print ("Would you like to update your system database now to add the available shows and movies in your library? This is highly recommended and may take some time depending on the size of your library. If you do not update your library some actions will error.\n")
+	print ("Would you like to update your system database now to add the available shows and movies in your library?")
 	choice = str(input('Yes or No? '))
 	if "y" in choice.lower():
 		if "Windows" not in ostype:
