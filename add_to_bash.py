@@ -19,17 +19,18 @@ with open(workingdir, "r") as file:
 file.close()
 
 for tline in thelines:
-	tline = tline.replace('/home/pi/', newdir)
+	tline = tline.replace('/home/pi/hasystem/', newdir)
 	tcheck = tline.split("=")
 	tcheck = tcheck[0]
-	print (tcheck)
+	#print (tcheck)
 	if tcheck not in checkme:
 		with open(workingdir, "a") as file:
 			file.write(tline)
 		file.close()
 		print ("added" + tline)
 	else:
-		print ("Already exists. Checking next.")
+		#print ("Already exists. Checking next.")
+		pass
 
 
 print ("Aliases successfully added. Adding play status files now.\n")
