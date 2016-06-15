@@ -1540,7 +1540,7 @@ def upnext():
 	except Exception:
 		pass
 	queue = openqueue()
-	if (("normal" in playmode) or ("block." in playmode)):	
+	if (("normal" in playmode) or ("binge." in playmode)):	
 		queue = queue.split(";")
 		try:
 			playme = queue[0]
