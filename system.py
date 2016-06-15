@@ -1053,8 +1053,10 @@ def moviedetails(movie):
 	summary = str(xep[1])
 	summary = summary.replace("&apos;", "'")
 	summary = summary.replace("&#xA;", "")
+	xmovie = "movie." + movie.strip()
+	leftoff = whereleftoff(xmovie)
 
-	showplay = "Movie: " + ep + "\nRated: " + str(xep[2]) + "\nTagline: " + str(xep[3]) + "\nSummary: " + summary
+	showplay = "Movie: " + ep + "\nRated: " + str(xep[2]) + "\nTagline: " + str(xep[3]) + "\nSummary: " + summary + "\n\nResume from minute option: " + str(leftoff) + "."
 	return showplay
 
 
@@ -1199,6 +1201,120 @@ def playshow(show):
 	else:
 		
 		return ("Media not found to launch. Check the title and try again.")
+
+def whereleftoff(item):
+	global plex
+	plexlogin()
+	if "movie." in item:
+		item = item.replace("movie.","")
+		command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'' + item.strip() + '\''
+		cur.execute(command)
+		movie = cur.fetchone()
+		movie = movie[0]
+		mve = plex.library.section('Movies').get(movie)
+		whereleftoff = mve.viewOffset
+		whereleftoff = whereleftoff / 60000
+		return (whereleftoff)
+	else:
+		print ("Sorry. This feature only currently supports movies. Starting your request from the beginning.")
+		return (0)
+
+def playwhereleftoff(show):
+	leftoff = int(whereleftoff(show)) * 60000
+	print (leftoff)
+	consql = homedir + 'myplex.db'
+	tvshowlist = homedir + 'tvshowlist.txt'
+	sql = sqlite3.connect(consql)
+	cur = sql.cursor()
+	with open(tvshowlist, 'r') as file:
+		showlist = file.readlines()
+	file.close()
+	command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + show + '\''
+	cur.execute(command)
+	if not cur.fetchone():
+		schecker = "lost"
+	else:
+		schecker = "found"
+
+	try:
+		schecker
+	except NameError:
+		schecker = "lost"
+	print (show)
+		
+	if ("found" in schecker):
+		#print ("Show Found")
+		try:
+			command = 'SELECT Number FROM TVCounts WHERE Show LIKE \'' + show + '\''
+			cur.execute(command)
+			thecount = cur.fetchone()
+			thecount = thecount[0]
+		except Exception:
+			print ("Item not found in DB. Adding")
+			thecount = 1 
+			cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecount))
+			sql.commit()
+			print ("added")
+
+		if thecount == 0:
+			thecount = 1
+		
+		command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + show + '\' and Tnum LIKE \'' + str(thecount) + '\''
+		cur.execute(command)
+		sql.commit()
+		xshow = cur.fetchone()
+		xshow = xshow[0].rstrip()
+		thecountx = (thecount + 1)
+		command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + show + '\' and Tnum LIKE \'' + str(thecountx) + '\''
+		cur.execute(command)
+		check = cur.fetchone()
+		if not check:
+			thecountx = 1
+		command = 'DELETE FROM TVCounts WHERE Show LIKE \'' + show + '\''
+		cur.execute(command)
+		cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecountx))
+		sql.commit()	
+		thecount = str(thecount)
+	
+		shows = plex.library.section('TV Shows')
+		the_show = shows.get(show)
+		#showplay = the_show.rstrip()
+		ep = the_show.get(xshow)
+		client = plex.client("RasPlex")
+		client.playMedia(ep, leftoff)
+		nowplaywrite("TV Show: " + show + " Episode: " + xshow)
+		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, Sir' 
+		
+		return showsay
+	elif ("movie." in show):
+		print ("test")
+		show = show.replace("movie.", "")
+		command = 'SELECT Movie FROM Movies WHERE Movie like\'' + show + '\''
+		cur.execute(command)
+		movies = cur.fetchall()
+		for mvs in movies:
+			if mvs[0].lower() == show.lower():
+				show = mvs[0]
+				show = show.rstrip()
+				movie = plex.library.section('Movies').get(show)
+				client = plex.client(PLEXCLIENT)
+				client.playMedia(movie, offset=leftoff)
+				#playfile(show)
+				showplay = show
+				nowplaywrite("Movie: " + showplay)
+				
+				return ("Playing the movie " + show + " now, Sir.") 
+		return ("Error. " + show + " Not found!")
+	elif ("block." in show):
+		playblockpackage(show)
+		show = show.replace("_", " ")
+		return ("Starting the " + show)
+	else:
+		
+		return ("Media not found to launch. Check the title and try again.")
+	
+		
+
 
 def queueadd(addme):
 	link = homedir + 'myplex.db'
@@ -2667,6 +2783,22 @@ try:
 		studio = str(sys.argv[2])
 		say = listtvstudio(studio)
 		say = readlist(say)
+	elif (("whereleftoff" in show) and ("play" not in show)):
+		try:
+			item = str(sys.argv[2])
+			say = whereleftoff(item)
+		except IndexError:
+			say = "Error. You must specify an item to use this command."
+	elif "playwhereleftoff" in show:
+		print (show)
+		print ("1")
+		try:
+			item = str(sys.argv[2])
+			print (item)
+			say = playwhereleftoff(item)
+		except IndexError:
+			say = "Error. You must specify a movie or show to use this command."
+	#marker
 	else:
 		plexlogin()
 		try:
