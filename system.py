@@ -2787,6 +2787,7 @@ try:
 		try:
 			item = str(sys.argv[2])
 			say = whereleftoff(item)
+			say = "You left off at minute " + str(say) + "."
 		except IndexError:
 			say = "Error. You must specify an item to use this command."
 	elif "playwhereleftoff" in show:
