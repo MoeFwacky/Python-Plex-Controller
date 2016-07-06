@@ -46,7 +46,13 @@ if "Linux" in ostype:
 		else:
 			sayme = ""
 
-		print (homedir)
+		print (sayme)
+		try:
+			import enchant
+		except Exception:
+			print ("The enchant python library is necessary. Getting that now. You may be prompted for your sudo password.")
+			command = "sudo pip install pyenchant"
+			os.system(command)
 		
 		try:
 			file0 = homedir + "add_to_bash.py"
@@ -118,8 +124,13 @@ if "Linux" in ostype:
 		
 
 else:
-	print (ostype)
 	print ("Unable to add cron or bash entries on a Windows system. I am skipping those steps.")
+	try:
+		import enchant
+	except Exception:
+		print ("The enchant python library is necessary. Getting that now. You may be prompted for your sudo password.")
+		command = "python -m pip install pyenchant"
+		os.system(command)
 	hcheck = "negative"
 	while ("goon" not in hcheck):
 		
@@ -367,6 +378,27 @@ if not cur.fetchone():
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXCLIENT',PLEXCLIENT))
 	sql.commit()
 
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
+if not cur.fetchone():
+	print ("Enter Server IP. Example- 192.168.1.134\n")
+        PLEXSERVERIP = str(input('Plex Server IP: '))
+        cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSERVERIP',PLEXSERVERIP))
+        sql.commit()
+
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
+if not cur.fetchone():
+	print ("Enter Server Port. Example- 32400\n")
+        PLEXSERVERPORT = str(input('Plex Server PORT: '))
+        cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSERVERPORT',PLEXSERVERPORT))
+        sql.commit()
+
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERTOKEN\'')
+if not cur.fetchone():
+	print ("Enter Local Access Token. Example: WKDLCLltoslekCLASSSssELKSNC\n")
+        PLEXSERVERTOKEN = str(input('Plex Server TOKEN: '))
+        cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSERVERTOKEN',PLEXSERVERTOKEN))
+        sql.commit()
+
 #get wildcard show name. Used as part of random media picking mechanism.
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'WILDCARD\'')
 if not cur.fetchone():
@@ -399,7 +431,7 @@ sql.commit()
 cur.execute('INSERT INTO States VALUES(?,?)', ('Nowplaying','Stopped'))
 sql.commit()
 
-cur.execute('CREATE TABLE IF NOT EXISTS shows(TShow TEXT, Episode TEXT, Season INT, Enum INT, Tnum INT, Summary TEXT, Link TEXT)')
+cur.execute('CREATE TABLE IF NOT EXISTS shows(TShow TEXT, Episode TEXT, Season INT, Enum INT, Tnum INT, Summary TEXT, Link TEXT, Duration INT)')
 sql.commit()
 
 cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
