@@ -47,13 +47,7 @@ if "Linux" in ostype:
 			sayme = ""
 
 		print (sayme)
-		try:
-			import enchant
-		except Exception:
-			print ("The enchant python library is necessary. Getting that now. You may be prompted for your sudo password.")
-			command = "sudo pip install pyenchant"
-			os.system(command)
-		
+				
 		try:
 			file0 = homedir + "add_to_bash.py"
 			with open (file0, "r") as file:
@@ -125,12 +119,7 @@ if "Linux" in ostype:
 
 else:
 	print ("Unable to add cron or bash entries on a Windows system. I am skipping those steps.")
-	try:
-		import enchant
-	except Exception:
-		print ("The enchant python library is necessary. Getting that now. You may be prompted for your sudo password.")
-		command = "python -m pip install pyenchant"
-		os.system(command)
+	
 	hcheck = "negative"
 	while ("goon" not in hcheck):
 		
