@@ -1,4 +1,4 @@
-homedir = '/home/pi/hasystem/'
+
 import urllib3
 import requests
 import time
@@ -983,7 +983,16 @@ try:
 		gettvshows()
 		getshows()
 		getmovies()
-
+	elif ("reset" in option):
+		print ("Warning: This option will remove your stored data tree settings and they will be rebuilt. There is no going back.")
+		command = 'DELETE FROM settings WHERE item LIKE \'TVPART\''
+		cur.execute(command)
+		command = 'DELETE FROM settings WHERE item LIKE \'TVGET\''
+		cur.execute(command)
+		command = 'DELETE FROM settings WHERE item LIKE \'MOVIEGET\''
+		cur.execute(command)
+		sql.commit()
+		print ("It has been done. You will be asked to restore these settings next time upddatedb_pi.py runs.")
 except IndexError:
 	print ("No option specified. Use 'updatetv' or 'updatemovies' or 'all' to update your db.")		
 print ("Done")
