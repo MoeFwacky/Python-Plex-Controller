@@ -8,7 +8,10 @@ import sqlite3
 import urllib3
 import subprocess
 import platform
-import enchant
+try:
+	import enchant
+except Exception:
+	print ("Warning: pyenchant no installed or has a path problem. Spell checking will not work.\n")
 
 from os import listdir
 from os.path import isfile, join
@@ -776,11 +779,9 @@ def playblockpackage(play):
 			if "Random_movie." in play:
 				type = play
 				type = type.replace(";","")
-				openmv = homedir + "tonights_movie.txt"
-				with open(openmv, "r") as file:
-					play = file.read()
-				file.close()
-				if not play:
+				command = 'SELECT State FROM States WHERE Option LIKE \'TONIGHTSMOVIE\''
+				cur.execute(command)
+				if not cur.fetchone():
 					type = type.split("Random_movie.")
 					type = type[1]
 					type = type.replace(";","")
@@ -790,10 +791,14 @@ def playblockpackage(play):
 					play = play.split(" sound")
 					play = play[0]
 					play = "movie." + play
+				else:
+					cur.execute(command)
+					play = cur.fetchone()[0]
 				play = play.rstrip()
-				with open (openmv, "w") as file:
-					file.write("")
-				file.close()
+				cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSMOVIE\'')
+				sql.commit()
+				cur.execute('INSERT INTO States VALUES (?,?)',('TONIGHTSMOVIE',''))
+				sql.commit()
 			elif "Random_tv." in play:
 				type = play
 				type = type.replace(";","")
@@ -846,9 +851,10 @@ def worklist(thearray):
 		except NameError:
 			print ("The Following Items Were Found:\n")
 		while mmin <= mmax:
-			print (movies[mmin])
+			print (str(mmin+1) + ": " + movies[mmin])
 			mmin = mmin + 1
 		print ("\nShowing Items " + str(mpmin) + " out of " + str(mmax+1)+ " Total Found: " + str(len(movies)))
+		'''
 		mpmin = mmax + 1
 		mmax = mmax + 10
 		if (mmax > int(len(movies)-1)):
@@ -859,10 +865,24 @@ def worklist(thearray):
 				return ("Done.")
 		if (mmax == int(len(movies)+9)):
 			return ("Done")
-		print ("\nWould you like to see more?")
-		getme = input('Yes or No?')
-		if (("y" in getme.lower()) and ("letter" not in getme.lower())):
+		'''
+		print ("\nSelect an item to return the corresponding item.\nTo see a description of an item enter \'desc number\', where number is the corresponding number.\nTo jump to a letter enter \'letter a\', where a is the desired letter.\nEnter \'Yes\' to go to the next page, and \'No\' to exit.\n")
+		getme = input('Choice:')
+		if (("yes" in getme.lower()) and ("letter" not in getme.lower())):
 			mvcount = mvcount + 10
+			mpmin = mmax + 1
+			mmax = mmax + 10
+			if (mmax > int(len(movies)-1)):
+				mcheck = int(mmax) - int(len(movies)-1)
+				if ((mcheck > 0) and (mcheck < 10)):
+					mmax = mmax-mcheck
+				elif mcheck > 10:
+					return ("Done.")
+			if (mmax == int(len(movies)+9)):
+				return ("Done")
+		elif (("no" in getme.lower()) and ("letter" not in getme.lower())):
+			exitc = "quit"
+			return ("done")	
 		elif ("letter" in getme.lower()):
 			find = getme.lower().split("letter ")
 			find = find[1][:1].strip()
@@ -890,11 +910,55 @@ def worklist(thearray):
 				Error = "No items found containing " + find + ".\n"
 
 			
-		else:
+		elif ("desc " in getme.lower()):
+			getme = getme.lower().split('desc ')
+			getme = getme[1].strip()
+			getme = int(getme)
+			titlecheck = movies[getme-1]
+			media = mediachecker(titlecheck)
+			exitd = 'go'
+			if "movie." in media:
+				media = media.replace("movie.","")
+				sayme = moviedetails(media)
+			else:
+				sayme = showdetails(media)
+			print (sayme + "\nReturn to previous menu?")
+			while 'yes' not in exitd:
+				exitd = str(raw_input("yes?"))
+			mmin = mmin - 10
+		elif (isanint(getme) is True):
+			getme = int(getme)
+                        titlecheck = movies[getme-1]
+                        media = mediachecker(titlecheck)
+			return (media)
+		elif ("setupnext" in getme.lower()):
+			media = getme.lower().split("setupnext ")
+			media = media[1].strip()
+			if (isanint(media) is True):
+				media = movies[int(media)-1]
+			setupnext(media)
+			media = media.replace("movie.","The Movie ")
+			print (media + " will play next from the queue.")
 			exitc = "quit"
-		
-			print ("\n")
-			say = ""
+		elif ("queueadd" in getme.lower()):
+			media = getme.lower().split("queueadd ")
+			media = media[1].strip()
+			if (isanint(media) is True):
+                                media = movies[int(media)-1]
+			queueadd(media)
+			print (media + " has been added to the queue.")
+			exitc = "quit"
+		else:
+			Error = "Invalid Selection. Please Try Again."
+			mmin = mmin - 10
+
+
+def isanint(checkme):
+	try:
+		int(checkme)
+		return True
+	except ValueError:
+		return False
 
 
 def availableblocks():
@@ -915,7 +979,6 @@ def findmovie(movie):
 		cur = sql.cursor()
 		command = 'SELECT Movie FROM Movies WHERE Genre LIKE \'%' + genre + '%\' ORDER BY Movie ASC'
 		cur.execute(command)
-		#marker
 		if not cur.fetchone():
                         return ("Error: No movies in the " + genre + " genre have been found.")
                 else:
@@ -1067,7 +1130,6 @@ def findshow(show):
         connsql = homedir + 'myplex.db'
         sql = sqlite3.connect(connsql)
         cur = sql.cursor()
-	#marker
 	if ("genre." in show.lower()):
 		genre = show.split("genre.")
 		genre = genre[1].strip().lower()
@@ -1370,6 +1432,8 @@ def movierating(movie):
 			return "The Movie " + movie + " has no rating specified." 
 
 def moviesummary(movie):
+	movie = titlecheck(movie)
+	movie = mediachecker(movie)
         command = 'SELECT Summary FROM Movies WHERE Movie LIKE \'' + movie + '\''
         cur.execute(command)
         if not cur.fetchone():
@@ -1388,6 +1452,8 @@ def moviesummary(movie):
 
 
 def setnextep(show, season, episode):
+	show = titlecheck(show)
+	show = mediachecker(show)
 	consql = homedir + 'myplex.db'
 	sql = sqlite3.connect(consql)
 	cur = sql.cursor()
@@ -1559,6 +1625,8 @@ def whereleftoff(item):
 		return (0)
 
 def playwhereleftoff(show):
+	show = titlecheck(show)
+	show = mediachecker(show)
 	leftoff = int(whereleftoff(show)) * 60000
 	consql = homedir + 'myplex.db'
 	tvshowlist = homedir + 'tvshowlist.txt'
@@ -1728,7 +1796,6 @@ def nowplaying():
 			elif ("Movie: " in title):
 				ctitle = title.split("Movie: ")
 				ctitle = ctitle[1].strip()
-		
 			if ctitle in sess.title:
 				say = "Now Playing: " + title
 			else:
@@ -1829,15 +1896,16 @@ def queueremove(item):
 	queue = cur.fetchone()
 	queue = queue[0]
 	queue = queue.replace(';;',';')
-	oqueue = queue
+	oqueue = queue.lower()
 	queue = queue.split(';')
 	if (item == "None"):
 		removeme = queue[0]
 	else:
 		removeme = mediachecker(item)
 	removeme = removeme + ";"
+	removeme = removeme.lower()
 	if (removeme in oqueue):
-		newqueue = oqueue.replace(removeme, "")
+		newqueue = oqueue.replace(removeme, "", 1)
 		newqueue = newqueue.replace("movie.';","")
 		newqueue = newqueue.lstrip()
 		cur.execute('DELETE FROM States WHERE Option LIKE \'Queue\'')
@@ -2303,21 +2371,24 @@ def titlecheck(title):
 	if title in tvxlist:
 		check = "pass"
 	if "fail" in check:	
-		d = enchant.Dict("en_US")
-		options = []
-		newt = ""
-		ccount = 0
-		fail = "no"
-		for word in title.split(" "):
-			if d.check(word) is True:
-				newt = newt + word + " "
-			else:
-				clist = d.suggest(word)
-				word = clist[ccount]
-				newt = newt + word + " "
-				fail = "yes"
-		if "yes" in fail:
-			print ("Assuming you meant " + newt )
+		try:
+			d = enchant.Dict("en_US")
+			options = []
+			newt = ""
+			ccount = 0
+			fail = "no"
+			for word in title.split(" "):
+				if d.check(word) is True:
+					newt = newt + word + " "
+				else:
+					clist = d.suggest(word)
+					word = clist[ccount]
+					newt = newt + word + " "
+					fail = "yes"
+			if "yes" in fail:
+				print ("Assuming you meant " + newt )
+		except Exception:
+			pass
 	else:
 		newt = title
 	return (newt)
@@ -2326,7 +2397,7 @@ def didyoumeanboth(title):
 	#title = titlecheck(title).strip()
 	movie = title
 	movie = movie.replace("movie.","")
-	passcheck = ['the', 'and', 'a', 'to', 'of', 'for', 'an', 'on', 'with', '&', 'from']
+	passcheck = ['the', 'and', 'a', 'to', 'of', 'for', 'an', 'on', 'with', '&', 'from', ' ', '']
 	found = []
 	#darker
 	if "Fail" not in externalcheck():
@@ -2360,7 +2431,9 @@ def didyoumeanboth(title):
         for item in checks:
                 command = 'SELECT TShow FROM TVshowlist WHERE TShow LIKE \'%' + item + '%\''
                 cur.execute(command)
-                if cur.fetchall():
+		if not cur.fetchall():
+			pass
+		else:
                         cur.execute(command)
                         foundme = cur.fetchall()
                         for items in foundme:
@@ -2388,7 +2461,9 @@ def didyoumeanboth(title):
                         print ("Error: You must choose one of the available options to proceed.")
 
 def didyoumeanshow(show):
-	passcheck = ['the', 'from', 'and', 'a', 'to', 'of', 'for', 'an', 'on', 'with', '&']
+	if ("Error:" in show):
+		return ("Error.")
+	passcheck = ['the', 'and', 'a', 'to', 'of', 'for', 'an', 'on', 'with', '&', 'from', ' ', '']
 	tshow = show
 	checks = []
 	found = []
@@ -2397,6 +2472,7 @@ def didyoumeanshow(show):
 		if item.lower() not in passcheck:
 			checks.append(item)
 	print (tshow + " not found. Did you mean on of the following, perhaps:\n")
+	print (checks)
 	for item in checks:
 		command = 'SELECT TShow FROM TVshowlist WHERE TShow LIKE \'%' + item + '%\''
 		cur.execute(command)
@@ -2428,7 +2504,7 @@ def didyoumeanshow(show):
 
 		
 def didyoumeanmovie(movie):
-	passcheck = ['the', 'from', 'and', 'a', 'to', 'of', 'for', 'an', 'on', 'with', '&']
+	passcheck = ['the', 'and', 'a', 'to', 'of', 'for', 'an', 'on', 'with', '&', 'from', ' ', '']
         tshow = movie
 	show = movie
         checks = []
@@ -2649,19 +2725,22 @@ def idtonightsmovie():
 				title = title[1]
 				title = title.replace(";","")
 				title = title.rstrip()
-				tnmv = homedir + "tonights_movie.txt"
-				with open(tnmv, "r") as file:
-					play = file.read()
-				file.close()
-				if not play:
+				command = "SELECT State FROM States WHERE Option LIKE \'TONIGHTSMOVIE\'"
+				cur.execute(command)
+				
+				if not cur.fetchone():
 					play = suggestmovie(title)
 					play = play.split("movie: ")
 					play = play[1]
 					play = play.split(" sound")
 					play = play[0]
-					with open(tnmv, "w") as file:
-						file.write("movie."+play)
-					file.close()
+					cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSMOVIE\'')
+					sql.commit()
+					cur.execute('INSERT INTO States VALUES(?,?)',('TONIGHTSMOVIE',play))
+					sql.commit()
+				else:
+					cur.execute(command)
+					play = cur.fetchone()[0]
 		play = play.replace("movie.","")
 		play = "Tonights scheduled film is: " + play
 	else:
@@ -2669,19 +2748,19 @@ def idtonightsmovie():
 	return play
 
 def settonightsmovie(movie):
-	tnmv = homedir + "tonights_movie.txt"
-	command = "SELECT Movie FROM Movies WHERE Movie LIKE \'" + movie + "\'"
-	cur.execute(command)
-	if not cur.fetchone():
-		return ("Error. Movie not found.")
-	moview = "movie." + movie.strip()		
-	with open(tnmv, "w") as file:
-		file.write(moview)
-	file.close()
+	movie = titlecheck(movie)
+	movie = mediachecker(movie)
+	cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSMOVIE\'')
+	sql.commit()
+	cur.execute('INSERT INTO States VALUES(?,?)',('TONIGHTSMOVIE',movie))
+	sql.commit()
+	movie = movie.replace('movie.','')
 	return ("Tonights movie has been set to " + movie)
 		
 
 def nextep(show):
+	show = titlecheck(show)
+	show = mediachecker(show)
 	consql = homedir + 'myplex.db'
 	sql = sqlite3.connect(consql)
 	cur = sql.cursor()
@@ -2848,16 +2927,10 @@ def findsomethingelse():
 	return (playme)
 
 def findnewmovie():
-	tonightsmovie = homedir + "tonights_movie.txt"
-	with open(tonightsmovie, "w") as file:
-		file.write("")
-	file.close()
-	say = whatupnext()
-	return(say)
-	with open(tonightsmovie, "w") as file:
-		file.write("")
-	file.close()
-	say = whatupnext()
+	command = 'DELETE FROM States WHERE Option LIKE \'TONIGHTSMOVIE\''
+	cur.execute(command)
+	sql.commit()
+	say = idtonightsmovie()
 	return(say)
 
 
@@ -3308,13 +3381,14 @@ try:
 		command = 'SELECT State FROM States WHERE Option LIKE \'' + name + '\''
 		cur.execute(command)
 		queue = cur.fetchone()
-		queue = queue[0]
+		queue = queue[0].lower()
 		if item == "None":
 			say = upnext()
 			queueremove('None')
 			say = say + " has been removed from the queue."
 		else:
-			if item in queue:
+			if item.lower() in queue:
+				item = item.lower()
 				queueremove(item)
 				say = item + " has been removed from the queue."
 			else:
@@ -3674,6 +3748,15 @@ try:
 			
 		except IndexError:
 			say = "Error."
+	elif ("updatedb" in show):
+		try:
+			type = str(sys.argv[2])
+			command = "python " + homedir + "upddatedb_pi.py " + type.strip()
+			print ("Warning- This command may take several minutes to complete depending on the size of your library.\n")
+			result = subprocess.check_output(command, shell=True)
+			say = result
+		except Exception:
+			say = "Error. Invalid Syntax. Use 'updatemovies' or 'updateshows' or 'updateall' as a flag for this command. Please try again."
 	#marker
 	else:
 		plexlogin()
