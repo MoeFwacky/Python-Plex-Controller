@@ -204,12 +204,13 @@ def skipback():
 	return ("Skip Back Complete.")
 
 def listwildcard():
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'WILDCARD\'')
+	cur.execute("SELECT setting FROM settings WHERE item LIKE \"WILDCARD\"")
 	wildcard = cur.fetchone()
 	wildcard = wildcard[0]
 	return wildcard
 
 def changewildcard(show):
+	show = show.replace("'","''")
 	currentw = listwildcard()
 	print ("The Current Wild Card is: " + currentw + ".\n")
 	if "none" in show:
@@ -217,21 +218,18 @@ def changewildcard(show):
 		newwild = str(input('Show: '))
 	else:
 		newwild = show
-	command = "SELECT TShow FROM shows WHERE TShow LIKE \'" + newwild + "\'"
+	command = "SELECT TShow FROM shows WHERE TShow LIKE \"" + newwild + "\""
 	cur.execute(command)
 	if not cur.fetchall():
 		return ("Error. " + str(newwild) + " Not found in Library to set as wildcard.")
 	else:
-		cur.execute("DELETE FROM settings WHERE item LIKE \'WILDCARD\'")
+		cur.execute("DELETE FROM settings WHERE item LIKE \"WILDCARD\"")
 		sql.commit()
 		cur.execute("INSERT INTO settings VALUES(?,?)", ('WILDCARD', newwild))
 		sql.commit()
 		return (newwild + " has been set as the new Wildcard show.")
 
 def getblockpackagelist():
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	command = 'SELECT Name FROM Blocks'
 	cur.execute(command)
 	list = cur.fetchall()
@@ -271,8 +269,6 @@ def availgenretv():
 			if xgen not in xshowlist:
 				xshowlist.append(xgen)
 			
-	#xshowlist = sorted(xshowlist)	
-	#worklist(xshowlist)
 	return (xshowlist)
 
 def avalratingtv():
@@ -322,14 +318,11 @@ def helpme():
 	return stuff
 
 def explainblock(block):
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	blist = getblockpackagelist()
 	for item in blist:
 		check = item
 		if block == check:
-			command = 'SELECT Items FROM Blocks WHERE Name LIKE \'' + block + '\''
+			command = "SELECT Items FROM Blocks WHERE Name LIKE \"" + block + "\""
 			cur.execute(command)
 			stuff = cur.fetchall()
 			stuff = str(stuff)
@@ -354,13 +347,11 @@ def explainblock(block):
 					tns = things + "\n"
 				tns = tns.replace("movie.", "the movie ")
 			say = "The " + block + " plays the following:\n" + tns
+			say = say.replace("''","'")
 			return say		
 def addblock(name, title):
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
-	command1 = 'SELECT Movie FROM Movies'
-	command2 = 'SELECT TShow FROM TVshowlist'
+	command1 = "SELECT Movie FROM Movies"
+	command2 = "SELECT TShow FROM TVshowlist"
 	cur.execute(command1)
 	mvcheck = cur.fetchall()
 	cur.execute(command2)
@@ -386,7 +377,7 @@ def addblock(name, title):
 				if name == check:
 					return ("Error. That block already exists. Pick a new name or use 'addtoblock' to update an existing block.")
 
-			command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'' + title + '\''
+			command = "SELECT Movie FROM Movies WHERE Movie LIKE \"" + title + "\""
 			cur.execute(command)
 			if not cur.fetchone():
 				print ("Error: " + title + " not found.\n")
@@ -403,7 +394,7 @@ def addblock(name, title):
 			blname = str(name)
 			adtitle = "movie." + str(xname) + ";"
 			blcount = 0
-			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, blcount))
+			cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (blname, adtitle, blcount))
 			sql.commit()
 			blname = blname.replace("movie.", "The Movie ")
 			say = (adtitle.rstrip() + " has been added to the " + blname + " .")
@@ -416,14 +407,14 @@ def addblock(name, title):
 			except IndexError:
 				Return ("Error. No genre provided.")
 			
-			cur.execute('SELECT * FROM Movies WHERE Genre LIKE \'%' + rgenre + '%\'')
+			cur.execute("SELECT * FROM Movies WHERE Genre LIKE \"%" + rgenre + "%\"")
 			if not cur.fetchone():
 				return ("Sorry " + str(rgenre.strip()) + " not found as an available genre.")
 			else:
 				adtitle = title.strip() + ";"
 				blcount = 0
 				blname = str(name)
-				cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, int(blcount)))
+				cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (blname, adtitle, int(blcount)))
 				sql.commit()
 				say = title + " has been added to the " + name + " block."
 				return (say)
@@ -447,9 +438,9 @@ def addblock(name, title):
 			else:
 				adtitle = bitems + "Random_tv." + rgenre.strip() + ";"
 				blcount = 0
-				cur.execute('DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\'')
+				cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + bname + "\"")
 				sql.commit()
-				cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, adtitle, blcount))
+				cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (bname, adtitle, blcount))
 				sql.commit()
 				xname = "Random TV " + rgenre.strip() + " has been added to the block.\n"
 				return (xname)
@@ -467,8 +458,9 @@ def addblock(name, title):
 			if "True" in mycheck:
 				blname = str(name).strip()
 				adtitle = str(xname).strip() + ";"
+				adtitle = adtitle.replace("'","''")
 				blcount = 0
-				cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, int(blcount)))
+				cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (blname, adtitle, int(blcount)))
 				sql.commit()
 				blname = blname.replace("movie.", "The Movie ")
 				say = (xname.rstrip() + " has been added to the " + blname + ".")
@@ -500,7 +492,7 @@ def addblock(name, title):
 		name = name.replace("+","")
 		name = name.replace("=","")
 		while True:
-			cur.execute('SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \'' + name + '\'')
+			cur.execute("SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \"" + name + "\"")
 			binfo = cur.fetchone()
 			try:
 				bname = binfo[0].rstrip()
@@ -519,13 +511,6 @@ def addblock(name, title):
 				choice = 4
 			if choice == 1:
 				xname = str(input('Movie Name:'))
-				'''
-				for item in mcheck:
-					macheck = item.lower()
-					if (xname.lower() == item.lower().rstrip()):
-						xname = "movie." + item.rstrip()
-						mycheck = "True"
-				'''
 				xname = titlecheck(xname.strip())
 				xname = mediachecker(xname)
 				if ("Quit." in xname):
@@ -533,12 +518,11 @@ def addblock(name, title):
 				blname = str(name)
 				adtitle = bitems+str(xname)+";"
 				blcount = 0
-				cur.execute('DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\'')
+				cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + bname + "\"")
 				sql.commit()
-				cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, adtitle, bcount))
+				cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (bname, adtitle, bcount))
 				sql.commit()
-				xname = blname
-				xname = xname.replace("movie.","")
+				xname = xname.replace("movie.","The movie ")
 				print (xname.rstrip() + " has been added to the block.")
 			elif choice == 2:
 				xname = str(input('TV Show Name:'))
@@ -552,14 +536,14 @@ def addblock(name, title):
 					mycheck = "False"
 				if "True" in mycheck:
 					blname = str(name)
+					xname = xname.replace("'","''")
 					adtitle = bitems+str(xname)+";"
 					blcount = 0
-					cur.execute('DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\'')
+					cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + bname + "\"")
 					sql.commit()
-					cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, adtitle, bcount))
+					cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (bname, adtitle, bcount))
 					sql.commit()
-					xname = blname
-					xname = xname.replace("movie.","")
+					xname = xname.replace("movie.","The Movie ")
 
 					print (xname.rstrip() + " has been added to the block.")
 				else:
@@ -586,7 +570,7 @@ def addblock(name, title):
 								blcount = 0
 								cur.execute('DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\'')
 								sql.commit()
-								cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, adtitle, blcount))
+								cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (bname, adtitle, blcount))
 								sql.commit()
 								xname = "Random Movie " + rgenre.strip() + " has been added to the block.\n"
 								rcheck = "true"
@@ -607,7 +591,7 @@ def addblock(name, title):
 								blcount = 0
 								cur.execute('DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\'')
 								sql.commit()
-								cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, adtitle, blcount))
+								cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (bname, adtitle, blcount))
 								sql.commit()
 								xname = "Random TV " + rgenre.strip() + " has been added to the block.\n"
 								rcheck = "true"
@@ -619,7 +603,7 @@ def addblock(name, title):
 
 
 			elif choice == 4:
-				return ("Done.")
+				break
 			else:
 				print ("Error. You must select either 1- Movie OR 2- TV Show OR 3- Random Item OR 4- Quit.")
 			
@@ -627,10 +611,27 @@ def addblock(name, title):
 		return (say)
 
 def addtoblock(blockname, name):
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	blist = getblockpackagelist()
+	if (blockname == "none"):
+		print ("Blockname not present. Proceeding to querry mode.\n")
+		blockname = str(raw_input('Input Block Name: '))
+	if (name == "none"):
+		print ("Title to add not present. Proceeding to querry mode.\n")
+		name = str(raw_input('Title to add: '))
+	if (blockname == "select"):
+		print ("Block select mode enabled. Generating list\n")
+		blockname = worklist(blist)
+	if (name == "select"):
+		print ("Title select mode enabled.\n")
+		mchoice = int(raw_input('1- TV Show or 2- Movie? '))
+		if mchoice == 1:
+			name = availableshows()
+		elif mchoice ==2:
+			name = listmovies()
+		else:
+			return ("Error. Invalid Selection. No action taken.")
+		name = worklist(name)
+
 	for item in blist:
 		check = item.rstrip()
 		if blockname == check:
@@ -639,15 +640,18 @@ def addtoblock(blockname, name):
 		acheck
 	except Exception:
 		acheck = "False"
-	name = titlecheck(name.strip())
-	name = mediachecker(name)
-	if ("Quit." in name):
-		return ("User Quit. No action Taken.")
+	name = name.replace("random_movie.","Random_movie.")
+	if "Random_movie." not in name:
+		name = titlecheck(name.strip())
+		name = mediachecker(name)
+		if ("Quit." in name):
+			return ("User Quit. No action Taken.")
 	name = name.replace('movie.movie.','movie.')
-	if ('movie.' in name):
+	if (('movie.' in name) and ('Random_movie.' not in name)):
 		chname = name.split("movie.")
 		chname = chname[1].strip()
-		command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'' + chname + '\''
+		chaname = chname.replace("'","''")
+		command = "SELECT Movie FROM Movies WHERE Movie LIKE \"" + chname + "\""
 		cur.execute(command)
 		if not cur.fetchone():
 			name = didyoumeanmovie(chname)
@@ -656,11 +660,21 @@ def addtoblock(blockname, name):
 			elif ("Quit" in name):
 				return ("User Quit. No action Taken.")
 		#name = "movie." + name
+	elif ("Random_movie." in name):
+		gcheck = name.split("_movie.")
+		gcheck = gcheck[1].strip()
+		gcheck = moviegenrechecker(gcheck)
+		if ("Error" in gcheck):
+			print (gcheck)
+			return ("Error. No action taken.")
+		
 	else:
 		command = 'SELECT TShow FROM TVshowlist WHERE TShow LIKE \'' + name + '\''
 		cur.execute(command)
 		if not cur.fetchone():
+			print (name + "1")
 			name = didyoumeanshow(name)
+			print (name + "2")
 			if ("Error" in name):
 				return(name)
 			elif ("Quit" in name):
@@ -682,7 +696,7 @@ def addtoblock(blockname, name):
 		bitems = binfo[1].rstrip()
 		aditem = bitems + name + ";"
 		bcount = binfo[2]
-		if ("movie." in name):
+		if (("movie." in name) and ("Random_movie." not in name)):
 			blname = str(bname)
 			adtitle = bitems + str(name) + ";"
 			blcount = 0
@@ -697,10 +711,10 @@ def addtoblock(blockname, name):
 
 		else:
 			xname = name
-			blname = str(bname)
+			blname = str(bname).strip()
 			adtitle = bitems + str(xname).strip() + ";"
 			blcount = 0
-			command = 'DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\''
+			command = 'DELETE FROM Blocks WHERE Name LIKE \'' + blname + '\''
 			cur.execute(command)
 			sql.commit()
 			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, int(blcount)))
@@ -711,9 +725,8 @@ def addtoblock(blockname, name):
 		return ("Done.")
 
 def removefromblock(blockname, name):
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
+	name = titlecheck(name)
+	name = mediachecker(name)
 	list = getblockpackagelist()
 	for item in list:
 		item = item.replace(".txt", "")
@@ -747,9 +760,6 @@ def removefromblock(blockname, name):
 	return ("Item not found to remove.")
 
 def playblockpackage(play):
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	list = getblockpackagelist()
 	for item in list:
 		item = item.replace(".txt", "")
@@ -830,8 +840,8 @@ def availableshows():
 	theshows = []
 	for shows in tshows:
 		theshows.append(shows[0])
-	worklist(theshows)	
-	return ("Done")
+	#worklist(theshows)	
+	return (theshows)
 
 def worklist(thearray):
 	movies = thearray
@@ -854,18 +864,6 @@ def worklist(thearray):
 			print (str(mmin+1) + ": " + movies[mmin])
 			mmin = mmin + 1
 		print ("\nShowing Items " + str(mpmin) + " out of " + str(mmax+1)+ " Total Found: " + str(len(movies)))
-		'''
-		mpmin = mmax + 1
-		mmax = mmax + 10
-		if (mmax > int(len(movies)-1)):
-			mcheck = int(mmax) - int(len(movies)-1)
-			if ((mcheck > 0) and (mcheck < 10)):
-				mmax = mmax-mcheck
-			elif mcheck > 10:
-				return ("Done.")
-		if (mmax == int(len(movies)+9)):
-			return ("Done")
-		'''
 		print ("\nSelect an item to return the corresponding item.\nTo see a description of an item enter \'desc number\', where number is the corresponding number.\nTo jump to a letter enter \'letter a\', where a is the desired letter.\nEnter \'Yes\' to go to the next page, and \'No\' to exit.\n")
 		getme = input('Choice:')
 		if (("yes" in getme.lower()) and ("letter" not in getme.lower())):
@@ -928,9 +926,10 @@ def worklist(thearray):
 			mmin = mmin - 10
 		elif (isanint(getme) is True):
 			getme = int(getme)
-                        titlecheck = movies[getme-1]
-                        media = mediachecker(titlecheck)
-			return (media)
+                        name = movies[getme-1]
+			exitc = "quit"
+			return (str(name))
+
 		elif ("setupnext" in getme.lower()):
 			media = getme.lower().split("setupnext ")
 			media = media[1].strip()
@@ -974,9 +973,6 @@ def findmovie(movie):
 	if ("genre." in movie.lower()):
 		genre = movie.split("genre.")
 		genre = genre[1]
-		connsql = homedir + 'myplex.db'
-		sql = sqlite3.connect(connsql)
-		cur = sql.cursor()
 		command = 'SELECT Movie FROM Movies WHERE Genre LIKE \'%' + genre + '%\' ORDER BY Movie ASC'
 		cur.execute(command)
 		if not cur.fetchone():
@@ -989,9 +985,6 @@ def findmovie(movie):
                         worklist(mlist)
 	elif ("rating." in movie.lower()):
 		from random import randint
-		connsql = homedir + 'myplex.db'
-                sql = sqlite3.connect(connsql)
-                cur = sql.cursor()
 		rating = movie.split('.')
 		rating = rating[1].strip()
 		command = "SELECT Movie FROM Movies WHERE Rating LIKE \'" + rating + "\'"
@@ -1006,9 +999,6 @@ def findmovie(movie):
 			worklist(mlist)
 	elif ('actor.' in movie.lower()):
 		from random import randint
-                connsql = homedir + 'myplex.db'
-                sql = sqlite3.connect(connsql)
-                cur = sql.cursor()
                 rating = movie.split('actor.')
                 rating = rating[1].strip()
                 command = "SELECT Movie FROM Movies WHERE Actors LIKE \'%" + rating + "%\'"
@@ -1022,9 +1012,6 @@ def findmovie(movie):
                                 mlist.append(movie[0])
                         worklist(mlist)
 	else:
-		connsql = homedir + 'myplex.db'
-		sql = sqlite3.connect(connsql)
-		cur = sql.cursor()
 		command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'%' + movie + '%\''
 		cur.execute(command)
 		xep = cur.fetchall()
@@ -1127,23 +1114,20 @@ def listepisodes(show):
 
 
 def findshow(show):
-        connsql = homedir + 'myplex.db'
-        sql = sqlite3.connect(connsql)
-        cur = sql.cursor()
 	if ("genre." in show.lower()):
 		genre = show.split("genre.")
 		genre = genre[1].strip().lower()
-		command = 'SELECT TShow from TVshowlist WHERE Genre LIKE \'%' + genre + '%\''
+		command = "SELECT TShow from TVshowlist WHERE Genre LIKE \"%" + genre + "%\""
 	elif ("rating." in show.lower()):
 		rating = show.split("rating.")
 		rating = rating[1].strip()
-		command = 'SELECT TShow FROM TVshowlist WHERE Rating LIKE \'' + rating + '\''
+		command = "SELECT TShow FROM TVshowlist WHERE Rating LIKE \"" + rating + "\""
 	elif ("duration." in show):
 		duration = show.split("duration.")
 		duration = int(duration[1].strip())
-		command = 'SELECT TShow FROM TVshowlist WHERE Duration LIKE \'' + str(duration) + '\''
+		command = "SELECT TShow FROM TVshowlist WHERE Duration LIKE \"" + str(duration) + "\""
 	else:
-		command = 'SELECT TShow FROM shows WHERE TShow LIKE \'%' + show + '%\' AND Tnum = 1'
+		command = "SELECT TShow FROM shows WHERE TShow LIKE \"%" + show + "%\" AND Tnum = 1"
         cur.execute(command)
         xep = cur.fetchall()
 	foundme = []
@@ -1158,13 +1142,10 @@ def findshow(show):
         return (say)
 
 def epdetails(show, season, episode):
-	connsql = homedir + 'myplex.db'
-	sql = sqlite3.connect(connsql)
-	cur = sql.cursor()
 	test = show
 	Ssn = season
 	Epnum = episode
-	command = 'SELECT Episode, Summary FROM shows WHERE TShow LIKE \'' + test + '\' and Season LIKE \'' + Ssn + '\' and Enum LIKE \'' + Epnum + '\''
+	command = "SELECT Episode, Summary FROM shows WHERE TShow LIKE \"" + test + "\" and Season LIKE \"" + Ssn + "\" and Enum LIKE \"" + Epnum + "\""
 	cur.execute(command)
 	xep = cur.fetchone()
 	ep = str(xep[0])
@@ -1175,9 +1156,6 @@ def epdetails(show, season, episode):
 	return showplay
 
 def moviedetails(movie):
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	command = 'SELECT Movie, Summary, Rating, Tagline, Summary FROM Movies WHERE Movie LIKE \'' + movie + '\''
 	cur.execute(command)
 	xep = cur.fetchone()
@@ -1192,7 +1170,8 @@ def moviedetails(movie):
 	return showplay
 
 def showdetails(show):
-	command = 'SELECT * FROM TVshowlist WHERE TShow LIKE \'' + show + '\''
+	show = show.replace("'","''")
+	command = "SELECT * FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
 		return ("Error: " + show + " not found. Check title and try again.")
@@ -1214,7 +1193,7 @@ def showdetails(show):
 		return (sayme)
 
 def movietagline(movie):
-	command = 'SELECT Tagline FROM Movies WHERE Movie LIKE \'' + movie + '\''
+	command = "SELECT Tagline FROM Movies WHERE Movie LIKE \"" + movie + "\""
 	cur.execute(command)
 	if not cur.fetchone():
 		return ("Error: " + movie + " not found in DB. Please try again.")
@@ -1416,7 +1395,7 @@ def movietlgame_intro():
 	
 
 def movierating(movie):
-	command = 'SELECT Rating FROM Movies WHERE Movie LIKE \'' + movie + '\''
+	command = "SELECT Rating FROM Movies WHERE Movie LIKE \"" + movie + "\""
         cur.execute(command)
         if not cur.fetchone():
                 return ("Error: " + movie + " not found in DB. Please try again.")
@@ -1434,7 +1413,7 @@ def movierating(movie):
 def moviesummary(movie):
 	movie = titlecheck(movie)
 	movie = mediachecker(movie)
-        command = 'SELECT Summary FROM Movies WHERE Movie LIKE \'' + movie + '\''
+        command = "SELECT Summary FROM Movies WHERE Movie LIKE \"" + movie + "\""
         cur.execute(command)
         if not cur.fetchone():
                 return ("Error: " + movie + " not found in DB. Please try again.")
@@ -1454,23 +1433,20 @@ def moviesummary(movie):
 def setnextep(show, season, episode):
 	show = titlecheck(show)
 	show = mediachecker(show)
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	test = show
 	Ssn = season
 	Epnum = episode
-	command = 'SELECT Episode, Tnum FROM shows WHERE TShow LIKE \'' + test + '\' and Season LIKE \'' + Ssn + '\' and Enum LIKE \'' + Epnum + '\''
+	command = "SELECT Episode, Tnum FROM shows WHERE TShow LIKE \"" + test + "\" and Season LIKE \"" + Ssn + "\" and Enum LIKE \"" + Epnum + "\""
 	cur.execute(command)
 	ep = cur.fetchall()
 	Episode = ep[0]
 	xshow = Episode[0]
 	Episode = Episode[1]
 	ep = int(Episode)
-	command = 'DELETE FROM TVCounts WHERE Show LIKE \'' + show + '\''
+	command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
 	cur.execute(command)
 	sql.commit()
-	cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, ep))
+	cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, ep))
 	sql.commit()
 	say = "The Next episode of " + show + " has been set to - " + xshow 
 	say = say.rstrip()
@@ -1479,13 +1455,10 @@ def setnextep(show, season, episode):
 
 
 def playspshow(show, season, episode):
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	test = show
 	Ssn = season
 	Epnum = episode
-	command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + test + '\' and Season LIKE \'' + Ssn + '\' and Enum LIKE \'' + Epnum + '\''
+	command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + test + "\" and Season LIKE \"" + Ssn + "\" and Enum LIKE \"" + Epnum + "\""
 	cur.execute(command)
 	ep = cur.fetchall()
 	for item in ep:
@@ -1503,14 +1476,7 @@ def playspshow(show, season, episode):
 	return showsay
 
 def playshow(show):
-	consql = homedir + 'myplex.db'
-	tvshowlist = homedir + 'tvshowlist.txt'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
-	with open(tvshowlist, 'r') as file:
-		showlist = file.readlines()
-	file.close()
-	command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + show + '\''
+	command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
 		schecker = "lost"
@@ -1524,7 +1490,7 @@ def playshow(show):
 		
 	if ("found" in schecker):
 		try:
-			command = 'SELECT Number FROM TVCounts WHERE Show LIKE \'' + show + '\''
+			command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + show + "\""
 			cur.execute(command)
 			thecount = cur.fetchone()
 			thecount = thecount[0]
@@ -1537,20 +1503,20 @@ def playshow(show):
 		if thecount == 0:
 			thecount = 1
 		
-		command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + show + '\' and Tnum LIKE \'' + str(thecount) + '\''
+		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecount) + "\""
 		cur.execute(command)
 		sql.commit()
 		xshow = cur.fetchone()
 		xshow = xshow[0].rstrip()
 		thecountx = (thecount + 1)
-		command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + show + '\' and Tnum LIKE \'' + str(thecountx) + '\''
+		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecountx) + "\""
 		cur.execute(command)
 		check = cur.fetchone()
 		if not check:
 			thecountx = 1
-		command = 'DELETE FROM TVCounts WHERE Show LIKE \'' + show + '\''
+		command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
 		cur.execute(command)
-		cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecountx))
+		cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecountx))
 		sql.commit()	
 		thecount = str(thecount)
 	
@@ -1566,7 +1532,7 @@ def playshow(show):
 		return showsay
 	elif ("movie." in show):
 		show = show.replace("movie.", "")
-		command = 'SELECT Movie FROM Movies WHERE Movie like\'' + show + '\''
+		command = "SELECT Movie FROM Movies WHERE Movie like\"" + show + "\""
 		cur.execute(command)
 		movies = cur.fetchall()
 		for mvs in movies:
@@ -1595,7 +1561,7 @@ def whereleftoff(item):
 	if "movie." in item:
 		plexlogin()
 		item = item.replace("movie.","")
-		command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'' + item.strip() + '\''
+		command = "SELECT Movie FROM Movies WHERE Movie LIKE \"" + item.strip() + "\""
 		cur.execute(command)
 		movie = cur.fetchone()
 		try:
@@ -1609,13 +1575,13 @@ def whereleftoff(item):
 	else:
 		if "block." in item:
 			thing = item.replace("block.","").strip()
-			command = "SELECT Count FROM Blocks WHERE Name LIKE \'" + thing + "\'"
+			command = "SELECT Count FROM Blocks WHERE Name LIKE \"" + thing + "\""
 			cur.execute(command)
 			foundc = cur.fetchone()[0]
 			if not foundc:
 				return ("Block not found. Try again.")
 			else:
-				command = "SELECT Items FROM Blocks WHERE Name Like \'" + thing + "\'"
+				command = "SELECT Items FROM Blocks WHERE Name Like \"" + thing + "\""
 				cur.execute(command)
 				items = cur.fetchone()[0]
 				items = items.split(';')
@@ -1628,14 +1594,7 @@ def playwhereleftoff(show):
 	show = titlecheck(show)
 	show = mediachecker(show)
 	leftoff = int(whereleftoff(show)) * 60000
-	consql = homedir + 'myplex.db'
-	tvshowlist = homedir + 'tvshowlist.txt'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
-	with open(tvshowlist, 'r') as file:
-		showlist = file.readlines()
-	file.close()
-	command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + show + '\''
+	command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
 		schecker = "lost"
@@ -1648,34 +1607,34 @@ def playwhereleftoff(show):
 		schecker = "lost"
 	if ("found" in schecker):
 		try:
-			command = 'SELECT Number FROM TVCounts WHERE Show LIKE \'' + show + '\''
+			command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + show + "\""
 			cur.execute(command)
 			thecount = cur.fetchone()
 			thecount = thecount[0]
 		except Exception:
 			print ("Item not found in DB. Adding")
 			thecount = 1 
-			cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecount))
+			cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecount))
 			sql.commit()
 			print ("added")
 
 		if thecount == 0:
 			thecount = 1
 		
-		command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + show + '\' and Tnum LIKE \'' + str(thecount) + '\''
+		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecount) + "\""
 		cur.execute(command)
 		sql.commit()
 		xshow = cur.fetchone()
 		xshow = xshow[0].rstrip()
 		thecountx = (thecount + 1)
-		command = 'SELECT Episode FROM shows WHERE TShow LIKE \'' + show + '\' and Tnum LIKE \'' + str(thecountx) + '\''
+		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecountx) + "\""
 		cur.execute(command)
 		check = cur.fetchone()
 		if not check:
 			thecountx = 1
-		command = 'DELETE FROM TVCounts WHERE Show LIKE \'' + show + '\''
+		command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
 		cur.execute(command)
-		cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecountx))
+		cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecountx))
 		sql.commit()	
 		thecount = str(thecount)
 	
@@ -1691,7 +1650,7 @@ def playwhereleftoff(show):
 		return showsay
 	elif ("movie." in show):
 		show = show.replace("movie.", "")
-		command = 'SELECT Movie FROM Movies WHERE Movie like\'' + show + '\''
+		command = "SELECT Movie FROM Movies WHERE Movie like\"" + show + "\""
 		cur.execute(command)
 		movies = cur.fetchall()
 		for mvs in movies:
@@ -1720,13 +1679,10 @@ def playwhereleftoff(show):
 
 def queueadd(addme):
         title = addme.strip()
+	type = "queue"
         if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
                 title = titlecheck(title).strip()
 		title = title.replace("'","")
-		link = homedir + 'myplex.db'
-		sql = sqlite3.connect(link)
-		cur = sql.cursor()
-		type = "queue"
 		xname = title
 		xname = xname.replace('movie.','')
 		if ("addrand" in addme):
@@ -1740,7 +1696,7 @@ def queueadd(addme):
 
 	if ("movie." in name):
 		xname = name + ";"
-		command = 'SELECT State FROM States WHERE Option LIKE \'' + type + '\''
+		command = "SELECT State FROM States WHERE Option LIKE \"" + type + "\""
 		cur.execute(command)
 		queue = cur.fetchone()
 		queue = queue[0]
@@ -1748,10 +1704,10 @@ def queueadd(addme):
 			queue = xname
 		else:
 			queue = queue + xname
-		command = 'DELETE FROM States WHERE Option LIKE \'' + type + '\''
+		command = "DELETE FROM States WHERE Option LIKE \"" + type + "\""
 		cur.execute(command)
 		sql.commit()
-		cur.execute('INSERT INTO States VALUES(?,?)', (type, queue))
+		cur.execute("INSERT INTO States VALUES(?,?)", (type, queue))
 		sql.commit()	
 		xname = xname.replace("movie.","")
 		say = ("The Movie " + xname.rstrip() + " has been added to the queue.")
@@ -1759,7 +1715,7 @@ def queueadd(addme):
 	else:
 		xname = name
 		xname = xname + ";"
-		command = 'SELECT State FROM States WHERE Option LIKE \'' + type + '\''
+		command = "SELECT State FROM States WHERE Option LIKE \"" + type + "\""
 		cur.execute(command)
 		queue = cur.fetchone()
 		queue = queue[0]
@@ -1767,22 +1723,22 @@ def queueadd(addme):
 			queue = xname
 		else:
 			queue = queue + xname
-		command = 'DELETE FROM States WHERE Option LIKE \'' + type + '\''
+		command = "DELETE FROM States WHERE Option LIKE \"" + type + "\""
 		cur.execute(command)
-		cur.execute('INSERT INTO States VALUES(?,?)', (type, queue))
+		cur.execute("INSERT INTO States VALUES(?,?)", (type, queue))
 		sql.commit()
 
 		say = ("The TV Show " + xname.rstrip() + " has been added to the queue.")
 		return say
 
 def nowplaywrite(showplay):
-	cur.execute('DELETE FROM States WHERE Option LIKE \'Nowplaying\'')
+	cur.execute("DELETE FROM States WHERE Option LIKE \"Nowplaying\"")
 	sql.commit()
-	cur.execute('INSERT INTO States VALUES (?,?)',('Nowplaying',showplay))
+	cur.execute("INSERT INTO States VALUES (?,?)",('Nowplaying',showplay))
 	sql.commit()
 
 def nowplaying():
-	cur.execute('SELECT State FROM States WHERE Option LIKE \'Nowplaying\'')
+	cur.execute("SELECT State FROM States WHERE Option LIKE \"Nowplaying\"")
 	title = cur.fetchone()
 	title = title[0]
 	global plex
@@ -1805,11 +1761,8 @@ def nowplaying():
 
 
 def queueget():
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
 	name = "queue"
-	command = 'SELECT State FROM States WHERE Option LIKE \'' + name + '\''
+	command = "SELECT State FROM States WHERE Option LIKE \"" + name + "\""
 	cur.execute(command)
 	queue = cur.fetchone()
 	queue = queue[0]
@@ -1827,11 +1780,11 @@ def queueget():
 	return queue;
 
 def queuefix():
-	command = 'DELETE FROM States WHERE Option LIKE \'queue\''
+	command = "DELETE FROM States WHERE Option LIKE \"queue\""
 	cur.execute(command)
 	sql.commit()
 	queue = listwildcard() + ";"
-	cur.execute('INSERT INTO States VALUES(?,?)',('queue',queue))
+	cur.execute("INSERT INTO States VALUES(?,?)",('queue',queue))
 	sql.commit()
 	
 	return ("The Queue has been rebuilt.")
@@ -1864,7 +1817,7 @@ def queuefill():
 	#random Movie
 	if ((playme == 2) or (playme ==4) or (playme == 6)):
 		if ((playme == 2) or (playme == 6)):
-			command = "SELECT Movie FROM Movies WHERE Genre LIKE \'%favorite%\'"
+			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\""
 			print ("Using Favorites.")
 		else:
 			command = "SELECT Movie FROM Movies"
@@ -1880,18 +1833,15 @@ def queuefill():
 		play = mlist[playc]
 		addme = "movie." + play
 	if (playme == 3):
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'WILDCARD\'')
+		cur.execute("SELECT setting FROM settings WHERE item LIKE \"WILDCARD\"")
 		addme = cur.fetchone()
 		addme = addme[0]
 	#addme = "The Big Bang Theory"
 	return queueadd(addme)
 
 def queueremove(item):
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
 	name = "queue"
-	command = 'SELECT State FROM States WHERE Option LIKE \'' + name + '\''
+	command = "SELECT State FROM States WHERE Option LIKE \"" + name + "\""
 	cur.execute(command)
 	queue = cur.fetchone()
 	queue = queue[0]
@@ -1908,20 +1858,17 @@ def queueremove(item):
 		newqueue = oqueue.replace(removeme, "", 1)
 		newqueue = newqueue.replace("movie.';","")
 		newqueue = newqueue.lstrip()
-		cur.execute('DELETE FROM States WHERE Option LIKE \'Queue\'')
+		cur.execute("DELETE FROM States WHERE Option LIKE \"Queue\"")
 		sql.commit()
-		cur.execute('INSERT INTO States VALUES(?,?)', (name, newqueue))
+		cur.execute("INSERT INTO States VALUES(?,?)", (name, newqueue))
 		sql.commit()
 		upnext()
 		
 
 
 def queueremovenofill():
-	sqlcon = homedir + "myplex.db"
-	sql = sqlite3.connect(sqlcon)
-	cur = sql.cursor()
 	name = "queue"
-	command = 'SELECT State FROM States WHERE Option LIKE \'' + name + '\''
+	command = "SELECT State FROM States WHERE Option LIKE \"" + name + "\""
 	cur.execute(command)
 	queue = cur.fetchone()
 	queue = queue[0]
@@ -1931,17 +1878,14 @@ def queueremovenofill():
 	removeme = removeme + ";"
 	newqueue = oqueue.replace(removeme, "")
 	newqueue=newqueue.lstrip()
-	cur.execute('DELETE FROM States WHERE Option LIKE \'Queue\'')
+	cur.execute("DELETE FROM States WHERE Option LIKE \"Queue\"")
 	sql.commit()
-	cur.execute('INSERT INTO States VALUES(?,?)', (name, newqueue))
+	cur.execute("INSERT INTO States VALUES(?,?)", (name, newqueue))
 	sql.commit()
 	
 
 def upnext():
-	sqlcon = homedir + 'myplex.db'
-	sql = sqlite3.connect(sqlcon)
-	cur = sql.cursor()
-	command = 'SELECT State FROM States WHERE Option LIKE \'Playmode\''
+	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
 	playmode = cur.fetchone()
 	playmode = playmode[0]
@@ -1983,15 +1927,15 @@ def upnext():
 	return playme
 
 def seriesskipback(show):
-	command = "SELECT Number from TVCounts WHERE Show LIKE \'" + show + "\'"
+	command = "SELECT Number from TVCounts WHERE Show LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
-		command = "SELECT TShow FROM shows WHERE TShow LIKE \'" + show + "\'"
+		command = "SELECT TShow FROM shows WHERE TShow LIKE \"" + show + "\""
 		cur.execute(command)
 		if not cur.fetchone():
 			return ("Error. " + show + " not found.")
 		else:
-			cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, 1))
+			cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, 1))
 			sql.commit()
 			return ("Show " + show + " has been set to the first episode in the series.")
 	else:
@@ -2002,9 +1946,9 @@ def seriesskipback(show):
 			return ("Show " + show + " is already at the first episode in the series. Unable to go back.")
 		else:
 			nowat = int(nowat) - 1
-			cur.execute('DELETE FROM TVCounts WHERE show LIKE \'' + show + '\'')
+			cur.execute("DELETE FROM TVCounts WHERE show LIKE \"" + show + "\"")
 			sql.commit()
-			cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, nowat))
+			cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, nowat))
                         sql.commit()
 			sayme = nextep(show)
 			return (sayme)
@@ -2013,12 +1957,12 @@ def seriesskipahead(show):
         command = "SELECT Number from TVCounts WHERE Show LIKE \'" + show + "\'"
         cur.execute(command)
         if not cur.fetchone():
-                command = "SELECT TShow FROM shows WHERE TShow LIKE \'" + show + "\'"
+                command = "SELECT TShow FROM shows WHERE TShow LIKE \"" + show + "\""
                 cur.execute(command)
                 if not cur.fetchone():
                         return ("Error. " + show + " not found.")
                 else:
-                        cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, 1))
+                        cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, 1))
                         sql.commit()
                         return ("Show " + show + " has been set to the first episode in the series.")
         else:
@@ -2033,19 +1977,16 @@ def seriesskipahead(show):
                         return ("Show " + show + " is already at the last episode. Unable to skip ahead.")
                 else:
                         nowat = int(nowat) + 1
-                        cur.execute('DELETE FROM TVCounts WHERE show LIKE \'' + show + '\'')
+                        cur.execute("DELETE FROM TVCounts WHERE show LIKE \"" + show + "\"")
                         sql.commit()
-                        cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, nowat))
+                        cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, nowat))
                         sql.commit()
                         sayme = nextep(show)
                         return (sayme)
 	
 
 def playmode():
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
-	command = 'SELECT State FROM States WHERE Option LIKE \'Playmode\''
+	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
 	playmode = cur.fetchone()
 	playmode = playmode[0]
@@ -2058,16 +1999,21 @@ def playmode():
 	return playmode
 
 def setplaymode(mode):
+	checks = ['normal','block.','marathon.','binge.']
+	setcheck = "fail"
+	for item in checks:
+		if item in mode:
+			setcheck = "pass"
+	
+	if "pass" not in setcheck:
+		return ("Error: " + mode + " is not an available playmode. Please try again.")
 	from random import randint
 	mode = mode.replace("block_","block.")
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
-	command = 'DELETE FROM States WHERE Option LIKE \'Playmode\''
+	command = "DELETE FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
 	name = 'Playmode'
 	queue = mode	
-	cur.execute('INSERT INTO States VALUES(?,?)', (name, queue))
+	cur.execute("INSERT INTO States VALUES(?,?)", (name, queue))
 	sql.commit()
 	if "block.randommovieblock" in mode:
 		xmode = mode.split('.')
@@ -2083,28 +2029,25 @@ def setplaymode(mode):
 		movie3 = movielist[randint(0,moviemax)]
 		movie3 = movie3[0]
 		bname = "randommovieblock"
-		command = 'DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\''
+		command = "DELETE FROM Blocks WHERE Name LIKE \"" + bname + "\""
 		cur.execute(command)
 		sql.commit()
 		block = "movie."+movie1 + ";movie." + movie2 + ";movie." + movie3 + ";"
 		blcount = 0
-		cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, block, blcount))
+		cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (bname, block, blcount))
 		sql.commit()
 		say = movie1 + ", and then " + movie2 + ", and finally " + movie3
 		mode = "Random " + xmode + " movie block. This one will play: " + say
 		
-		return "Playmode has been set to "+ mode
+	return "Playmode has been set to "+ mode
 
 def getblockpackage(play):
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
 	list = getblockpackagelist()
 	play = play.replace("block.","")
 	for item in list:
 		item = item.replace(".txt", "")
 		if (item in play):
-			command = 'SELECT Items, Count FROM Blocks WHERE Name LIKE \'' + play + '\''
+			command = "SELECT Items, Count FROM Blocks WHERE Name LIKE \"" + play + "\""
 			cur.execute(command)
 			stuff = cur.fetchone()
 			plays = stuff[0]
@@ -2119,13 +2062,13 @@ def mediachecker(title):
 	check1 = "start"
         check2 = "start"
         ctitle = title.replace("movie.","")
-        cur.execute('SELECT Movie FROM Movies WHERE Movie LIKE \'' + ctitle + '\'')
+        cur.execute("SELECT Movie FROM Movies WHERE Movie LIKE \"" + ctitle + "\"")
         if not cur.fetchone():
                 check1 = "fail"
         else:
                 check1 = "pass"
                 newt = "movie." + title
-        cur.execute('SELECT TShow FROM TVshowlist WHERE TShow LIKE \'' + title + '\'')
+        cur.execute("SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + title + "\"")
         if not cur.fetchone():
                 check2 = "fail"
         else:
@@ -2144,44 +2087,14 @@ def mediachecker(title):
                         title = addme
         elif ((check1 == "pass") and (check2 == "fail")):
                 title = newt
+	title = title.replace("'","''")
 	return (title)
 
 def setupnext(title):
 	title = title.strip()
 	if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 		title = titlecheck(title).strip()
-	title = title.replace("'","")
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
-	check1 = "start"
-	check2 = "start"
-	ctitle = title.replace("movie.","")
-	cur.execute('SELECT Movie FROM Movies WHERE Movie LIKE \'' + ctitle + '\'')
-        if not cur.fetchone():
-		check1 = "fail"
-	else:
-		check1 = "pass"
-		newt = "movie." + title
-	cur.execute('SELECT TShow FROM TVshowlist WHERE TShow LIKE \'' + title + '\'')
-	if not cur.fetchone():
-		check2 = "fail"
-	else:
-		check2 = "pass"
-	if ((check1 == "fail") and (check2 == "fail")):
-		addme = didyoumeanboth(title)
-		if "Quit." in addme:
-			return ("User Quit. No Action Taken.")
-		else:
-			title = addme
-	elif ((check1 == "pass") and (check2 == "pass") and ("Fail" not in externalcheck())):
-		addme = didyoumeanboth(title)
-                if "Quit." in addme:
-                        return ("User Quit. No Action Taken.")
-                else:
-                        title = addme
-	elif ((check1 == "pass") and (check2 == "fail")):
-		title = newt
+	title = mediachecker(title)
 
 	if ("movie." in title):
 		ctitle = title.replace("movie.","")
@@ -2218,9 +2131,6 @@ def setupnext(title):
 	return (title + " will play next from the queue.")
 
 def addfavoritemovie(title):
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
 	command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + title + '\''
 	cur.execute(command)
 	if not cur.fetchone():
@@ -2407,12 +2317,12 @@ def didyoumeanboth(title):
 		if (" " in show):
 			show = show.split(' ')
 			for item in show:
-				if item.lower() not in passcheck:
+				if ((item.lower() not in passcheck) and (int(len(item)) > 3)):
 					checks.append(item)
 		else:
 			checks.append(show)
 		for item in checks:
-			command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'%' + item + '%\''
+			command = "SELECT Movie FROM Movies WHERE Movie LIKE \"%" + item + "%\""
 			cur.execute(command)
 			if cur.fetchall():
 				cur.execute(command)
@@ -2429,7 +2339,7 @@ def didyoumeanboth(title):
                 if item.lower() not in passcheck:
                         checks.append(item)
         for item in checks:
-                command = 'SELECT TShow FROM TVshowlist WHERE TShow LIKE \'%' + item + '%\''
+                command = "SELECT TShow FROM TVshowlist WHERE TShow LIKE \"%" + item + "%\""
                 cur.execute(command)
 		if not cur.fetchall():
 			pass
@@ -2472,9 +2382,8 @@ def didyoumeanshow(show):
 		if item.lower() not in passcheck:
 			checks.append(item)
 	print (tshow + " not found. Did you mean on of the following, perhaps:\n")
-	print (checks)
 	for item in checks:
-		command = 'SELECT TShow FROM TVshowlist WHERE TShow LIKE \'%' + item + '%\''
+		command = "SELECT TShow FROM TVshowlist WHERE TShow LIKE \"%" + item + "%\""
 		cur.execute(command)
 		if cur.fetchall():
 			cur.execute(command)
@@ -2515,7 +2424,7 @@ def didyoumeanmovie(movie):
                         checks.append(item)
         print (tshow + " not found. Did you mean on of the following, perhaps:\n")
         for item in checks:
-                command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'%' + item + '%\''
+                command = "SELECT Movie FROM Movies WHERE Movie LIKE \"%" + item + "%\""
                 cur.execute(command)
                 if cur.fetchall():
                         cur.execute(command)
@@ -2547,7 +2456,7 @@ def whatsafterthat():
 	check = playmode()
 	if "normal" in check:
 		name = "queue"
-		command = 'SELECT State FROM States WHERE Option LIKE \'' + name + '\''
+		command = "SELECT State FROM States WHERE Option LIKE \"" + name + "\""
 		cur.execute(command)
 		queue = cur.fetchone()
 		queue = queue[0]
@@ -2577,10 +2486,7 @@ def whatsafterthat():
 	return ("Done.")	
 
 def whatupnext():
-	sqlcon = homedir + 'myplex.db'
-	sql = sqlite3.connect(sqlcon)
-	cur = sql.cursor()
-	command = 'SELECT State FROM States WHERE Option LIKE \'Playmode\''
+	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
 	playmode = cur.fetchone()
 	playmode = playmode[0]
@@ -2590,7 +2496,6 @@ def whatupnext():
 		if queue == " ":
 			print ("First run situation detected. Taking approprate action.\n")
 			queuefix()
-			#skipthat()
 			queue = openqueue()
 		queue = queue.split(';')
 		upnext = queue[0]
@@ -2615,21 +2520,18 @@ def whatupnext():
 			playme = playme.strip()
 			playme = playme.rstrip()
 			try:
-				command = 'SELECT Number FROM TVCounts WHERE Show LIKE \'' + playme + '\''
+				command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + playme + "\""
 				cur.execute(command)
 				thecount = cur.fetchone()
 				thecount = thecount[0]
 			except Exception:
 				thecount = 1
-				cur.execute('INSERT INTO TVCounts VALUES(?,?)', (playme, thecount))
+				cur.execute("INSERT INTO TVCounts VALUES(?,?)", (playme, thecount))
 				sql.commit()
 			if thecount ==0:
 				thecount = 1
 			epnum = str(thecount)
-			command1 = 'SELECT Season, Enum, Episode FROM shows WHERE TShow LIKE \'' + playme + '\' and Tnum LIKE \'' + epnum + '\''
-			sqlcon = homedir + 'myplex.db'
-			sql = sqlite3.connect(sqlcon)
-			cur = sql.cursor()
+			command1 = "SELECT Season, Enum, Episode FROM shows WHERE TShow LIKE \"" + playme + "\" and Tnum LIKE \"" + epnum + "\""
 			cur.execute(command1)
 			ep = cur.fetchone()
 
@@ -2643,27 +2545,10 @@ def whatupnext():
 	elif ("block." in playmode):
 		block = getblockpackage(playmode)
 		if ("Random_movie." in block):
-			title = block.split("Random_movie.")
-			title = title[1]
-			title = title.replace(";","")
-			title = title.rstrip()
-			upnext = "Up next is a random " + title + " movie. Tonights selection is: "
-			tnmv = homedir + 'tonights_movie.txt'
-			with open(tnmv, "r") as file:
-				play = file.read()
-			file.close()
-			if not play:
-				play = suggestmovie(title)
-				play = play.split("movie: ")
-				play = play[1]
-				play = play.split(" sound")
-				play = play[0]
-				with open(tnmv, "w") as file:
-					file.write("movie."+play)
-				file.close()
-			play = play.replace("movie.", "\nThe Movie ")
-			upnext = upnext + play
-			#upnext = upnext.replace("movie.", "The movie ")
+			upnext = idtonightsmovie()
+			if upnext == " ":
+				findnewmovie()
+				upnext = idtonightsmovie()
 		elif ("Random_tv." in block):
 			title = block.split("Random_tv.")
 			title = title[1]
@@ -2734,9 +2619,9 @@ def idtonightsmovie():
 					play = play[1]
 					play = play.split(" sound")
 					play = play[0]
-					cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSMOVIE\'')
+					cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
 					sql.commit()
-					cur.execute('INSERT INTO States VALUES(?,?)',('TONIGHTSMOVIE',play))
+					cur.execute("INSERT INTO States VALUES(?,?)",('TONIGHTSMOVIE',play))
 					sql.commit()
 				else:
 					cur.execute(command)
@@ -2750,9 +2635,9 @@ def idtonightsmovie():
 def settonightsmovie(movie):
 	movie = titlecheck(movie)
 	movie = mediachecker(movie)
-	cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSMOVIE\'')
+	cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
 	sql.commit()
-	cur.execute('INSERT INTO States VALUES(?,?)',('TONIGHTSMOVIE',movie))
+	cur.execute("INSERT INTO States VALUES(?,?)",('TONIGHTSMOVIE',movie))
 	sql.commit()
 	movie = movie.replace('movie.','')
 	return ("Tonights movie has been set to " + movie)
@@ -2761,17 +2646,14 @@ def settonightsmovie(movie):
 def nextep(show):
 	show = titlecheck(show)
 	show = mediachecker(show)
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	try:
-		command = 'SELECT Number FROM TVCounts WHERE Show LIKE \'' + show + '\''
+		command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + show + "\""
 		cur.execute(command)
 		thecount = cur.fetchall()
 		thecount = thecount[0]
 	except Exception:
 		thecount = 1
-		cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecount))
+		cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecount))
 		sql.commit()
 
 	if thecount == 0:
@@ -2781,10 +2663,7 @@ def nextep(show):
 	except Exception:
 		epnum = thecount
 	#epnum = str(epnum)
-	command1 = 'SELECT Season, Enum, Episode FROM shows WHERE TShow LIKE \'' + str(show) + '\' and Tnum LIKE \'' + str(epnum) + '\''
-	sqlcon = homedir + "myplex.db"
-	sql = sqlite3.connect(sqlcon)
-	cur = sql.cursor()
+	command1 = "SELECT Season, Enum, Episode FROM shows WHERE TShow LIKE \"" + str(show) + "\" and Tnum LIKE \"" + str(epnum) + "\""
 	cur.execute(command1)
 	ep = cur.fetchone()
 	ssn = str(ep[0])
@@ -2797,9 +2676,6 @@ def nextep(show):
 
 
 def removeblock(block):
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	say = availableblocks()
 	if "none" in block:
 		print("Block Package to Remove?")
@@ -2810,15 +2686,12 @@ def removeblock(block):
 	else:
 		return ("Error, block not found to remove. Please try check and try again.")
 	bname = block.strip()
-	command = 'DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\''
+	command = "DELETE FROM Blocks WHERE Name LIKE \"" + bname + "\""
 	cur.execute(command)
 	sql.commit()
 	return ("Block " + block + " has been successfully removed.")
 
 def skipthat():
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	mode = playmode()
 	try:
 		option = str(sys.argv[2])
@@ -2827,7 +2700,7 @@ def skipthat():
 	except Exception:
 		option = ""
 	if (("normal" in mode) or ("normal" in option)):
-		command = 'SELECT State FROM States WHERE Option LIKE \'Queue\''
+		command = "SELECT State FROM States WHERE Option LIKE \"Queue\""
 		cur.execute(command)
 		queue = cur.fetchone()
 		queue = queue[0]
@@ -2851,17 +2724,17 @@ def skipthat():
 		return ("We are in binge mode. Change playmodes to use this option or add 'normal' to your command to skip what is up next in the queue.")
 	else:
 		play = upnext()
-		consql = homedir + 'myplex.db'
-		sql = sqlite3.connect(consql)
-		cur = sql.cursor()
 		list = getblockpackagelist()
 		for item in list:
 			item = item.replace(".txt", "")
 			if (item in play):
+				check = whatupnext()
+				if "Tonights scheduled film" in check:
+					deletetonightsmovie()
 				xitem = item
 				yitem = item + ".txt"
 				xitem = xitem.replace('.txt','')
-				command = 'SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \'' + xitem + '\''
+				command = "SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \"" + xitem + "\""
 				cur.execute(command)
 				binfo = cur.fetchone()
 				bname = binfo[0]
@@ -2875,10 +2748,10 @@ def skipthat():
 					bcount = 0
 					setplaymode("normal")
 					print ("Playmode has been set to normal.")
-				command = 'DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\''
+				command = "DELETE FROM Blocks WHERE Name LIKE \"" + bname + "\""
 				cur.execute(command)
 				sql.commit()
-				cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, bitems, int(bcount)))
+				cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (bname, bitems, int(bcount)))
 				sql.commit()
 		say = whatupnext()
 		return (say)
@@ -2927,19 +2800,21 @@ def findsomethingelse():
 	return (playme)
 
 def findnewmovie():
-	command = 'DELETE FROM States WHERE Option LIKE \'TONIGHTSMOVIE\''
+	command = "DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\""
 	cur.execute(command)
 	sql.commit()
 	say = idtonightsmovie()
 	return(say)
 
+def deletetonightsmovie():
+	command = "DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\""
+        cur.execute(command)
+        sql.commit()
+
 
 def openqueue():
 	name = "queue"
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
-	command = 'SELECT State FROM States WHERE Option LIKE \'' + name + '\''
+	command = "SELECT State FROM States WHERE Option LIKE \"" + name + "\""
 	cur.execute(command)
 	queue = cur.fetchone()
 	queue = queue[0]
@@ -2948,14 +2823,11 @@ def openqueue():
 	return queue
 
 def restartblock(block):
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
 	if block == "none":
 		block = playmode()
 		block = block.replace("block.","")
 	try:	
-		command = 'SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \'' + block + '\''
+		command = "SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \"" + block + "\""
 		cur.execute(command)
 		binfo = cur.fetchone()
 		bname = binfo[0]
@@ -2964,18 +2836,40 @@ def restartblock(block):
 	except TypeError:
 		return ("Block not found to restart.")
 	else:
-		command = 'DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\''
+		command = "DELETE FROM Blocks WHERE Name LIKE \"" + bname + "\""
 		cur.execute(command)
 		sql.commit()
-		cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, bitems, int(bcount)))
+		cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (bname, bitems, int(bcount)))
 		sql.commit()
 
 	return ("Done")
+def tvgenrechecker(genre):
+	if "none" not in genre:
+                command = "SELECT TShow from TVshowlist WHERE Genre LIKE \"%" + genre + "%\""
+                cur.execute(command)
+                if not cur.fetchone():
+                        print ("Error. No movies were found associtated with the " + genre + " genre.")
+			thegenres = availgenretv()
+			genre = worklist(thegenres)
+		return (genre)
+
+def moviegenrechecker(genre):
+	if "none" not in genre:
+                command = "SELECT Movie from Movies WHERE Genre LIKE \"%" + genre + "%\""
+                cur.execute(command)
+                if not cur.fetchone():
+                        print ("Error. No movies were found associtated with the " + genre + " genre.")
+			thegenres = availgenremovie()
+			genre = worklist(thegenres)
+	print (genre)
+	return (genre)
+
 def randommovieblock(genre):
-	openme = homedir + 'random_movie_block.txt'
-	with open(openme, "w") as file:
-		file.write("")
-	file.close()
+	if "none" not in genre:
+		command = "SELECT Movie from Movies WHERE Genre LIKE \"%" + genre + "%\""
+		cur.execute(command)
+		if not cur.fetchone():
+			return "Error. No movies were found associtated with the " + genre + " genre."
 	movie1 = suggestmovieblockuse(genre)
 	movie2 = suggestmovieblockuse(genre)
 	if movie2 == movie1:
@@ -2993,37 +2887,64 @@ def randommovieblock(genre):
 	mode1 = "randommovieblock"
 	mode = "block.randommovieblock"
 	addme = movie1 + ";" + movie2 + ";" + movie3 + ";"
-	cur.execute('DELETE FROM Blocks WHERE Name LIKE \'' + mode1 + '\'')
+	cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + mode1 + "\"")
 	sql.commit()
-	cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (mode1, addme, "0"))
+	cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (mode1, addme, "0"))
 	sql.commit()
-	cur.execute('DELETE FROM States WHERE Option LIKE \'Playmode\'')
+	cur.execute("DELETE FROM States WHERE Option LIKE \"Playmode\"")
 	sql.commit()
-	cur.execute('INSERT INTO States VALUES(?,?)', ('Playmode', mode))
+	cur.execute("INSERT INTO States VALUES(?,?)", ('Playmode', mode))
 	sql.commit()
 	return (say)
 
+def randomtvblock(genre):
+	if "none" not in genre:
+		command = "SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + "%\""
+                cur.execute(command)
+                if not cur.fetchone():
+                        return "Error. No shows were found associtated with the " + genre + " genre. Use availtvgenres to see the list of available TV genres."
+	show1 = suggesttvblockuse(genre)
+	show2 = suggesttvblockuse(genre)
+	if show2 == show1:
+		show2 = suggesttvblockuse(genre)
+	show3 = suggesttvblockuse(genre)
+	if ((show2 == show3) or (show1 == show3)):
+		show3 = suggesttvblockuse(genre)
+	say = "I have generated the following " + genre + " show block: \n" + show1 + "\n" + show2 + "\n" + show3
+	mode1 = "randomshowblock"
+	mode = "block.randomshowblock"
+	addme = show1 + ";" + show2 + ";" + show3 + ";"
+	cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + mode1 + "\"")
+        sql.commit()
+        cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (mode1, addme, "0"))
+        sql.commit()
+        cur.execute("DELETE FROM States WHERE Option LIKE \"Playmode\"")
+        sql.commit()
+        cur.execute("INSERT INTO States VALUES(?,?)", ('Playmode', mode))
+        sql.commit()
+        return (say)
+	cur
+
+def randomshowblock(genre):
+	command = "SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + "%\""
+	cur.execute(command)
+	if not cur.fetchone():
+		return ("Error. " + genre + " not found as an availble TV show genre. Use availtvgenres to see the available show genres.")
+	
+
 def suggestmovieblockuse(genre):
-	openp = homedir + 'pending_queue.txt'
 	from random import randint
 	if (genre == "none"):
-		readfilemov = homedir + 'movielist.txt'
-		with open(readfilemov, "r") as file:
-			playfiles = file.readlines()
-		file.close()
+		cur.execute('SELECT Movie FROM Movies')
+		playfiles = cur.fetchall()
 		min = 0
-		max = filenumlines(readfilemov)
+		max = int(len(playfiles)-1)
 		playc = randint(min,max)
-		play = playfiles[playc]
+		play = playfiles[playc][0]
 		play = play.rstrip()
-		addme = "movie." + play
-		openp = homedir + 'pending_queue.txt'
-		with open (openp,'w') as file:
-			file.write(addme)
-		file.close()
 	else:
 		genre = genre.rstrip()
-		cur.execute('SELECT Movie FROM Movies WHERE Genre LIKE \'%' + genre + '%\'')
+		cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\"")
 		found = cur.fetchall()
 		min = 0
 		max = int(len(found))
@@ -3032,17 +2953,35 @@ def suggestmovieblockuse(genre):
 		play = play[0]
 	return play
 
+def suggesttvblockuse(genre):
+	from random import randint
+	if (genre == "none"):
+		cur.execute('SELECT TShow from TVshowlist')
+		playfiles = cur.fetchall()
+		min = 0
+		max = int(len(playfiles)-1)
+		playc = randint(min,max)
+		play = playfiles[playc][0]
+		play = play.strip()
+	else:
+		genre = genre.rstrip()
+		cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + "%\"")
+		found = cur.fetchall()
+		min = 0
+		max = int(len(found)-1)
+		playc = randint(min,max)
+		play = found[playc][0]
+	return play
+
+
 def suggestmovie(genre):
-	link = homedir + 'myplex.db'
-	sql = sqlite3.connect(link)
-	cur = sql.cursor()
 	from random import randint
 	if (genre == "none") or (genre == "all"):
-		command = 'SELECT Movie from Movies WHERE Genre LIKE \'%favorite%\''
+		command = "SELECT Movie from Movies WHERE Genre LIKE \"%favorite%\""
 		cur.execute(command)
 		mvlist = cur.fetchall()
 		if ((int(len(mvlist)) < 9) or (genre == "all")):
-			command = 'SELECT Movie FROM Movies'
+			command = "SELECT Movie FROM Movies"
 			cur.execute(command)
 			mvlist = cur.fetchall()
 		min = 0
@@ -3050,24 +2989,21 @@ def suggestmovie(genre):
 		playc = randint(min,max)
 		play = mvlist[playc]
 		play = play[0].rstrip()
-		#command = 'SELECT Movie from Movies WHERE Movie LIKE\'' + play + '\''
-		#cur.execute(command)
-		#mvlist = cur.fetchall()
 		for mvs in mvlist:
 			if mvs[0].lower() == play.lower():
 				play = mvs[0]	
 		addme = "movie." + play
 
-		command = 'DELETE from States WHERE Option LIKE \'Pending\''
+		command = "DELETE from States WHERE Option LIKE \"Pending\""
 		cur.execute(command)
 		sql.commit()
-		cur.execute('INSERT INTO States VALUES(?,?)', ('Pending',addme))
+		cur.execute("INSERT INTO States VALUES(?,?)", ('Pending',addme))
 		sql.commit()
 		
 	elif ("rating." in genre):
                 rating = genre.split("rating.")
                 rating = rating[1].strip()
-                command = 'SELECT Movie FROM Movies WHERE Rating LIKE \'' + rating + '\''
+                command = "SELECT Movie FROM Movies WHERE Rating LIKE \"" + rating + "\""
                 cur.execute(command)
                 if not cur.fetchone():
                         return ("Error: No Movies found with a " + rating + " rating.")
@@ -3079,15 +3015,15 @@ def suggestmovie(genre):
                         mcount = randint(min,max)
                         play = mlist[mcount][0]
                         addme = "movie." + play
-			command = 'DELETE from States WHERE Option LIKE \'Pending\''
+			command = "DELETE from States WHERE Option LIKE \"Pending\""
 			cur.execute(command)
 			sql.commit()
-			cur.execute('INSERT INTO States VALUES(?,?)', ('Pending',addme))
+			cur.execute("INSERT INTO States VALUES(?,?)", ('Pending',addme))
 			sql.commit()
 	elif ("actor." in genre):
 		rating = genre.split("actor.")
                 rating = rating[1].strip()
-                command = 'SELECT Movie FROM Movies WHERE Actors LIKE \'%' + rating + '%\''
+                command = "SELECT Movie FROM Movies WHERE Actors LIKE \"%" + rating + "%\""
                 cur.execute(command)
                 if not cur.fetchone():
                         return ("Error: No Movies found starring " + rating + ".")
@@ -3099,15 +3035,15 @@ def suggestmovie(genre):
                         mcount = randint(min,max)
                         play = mlist[mcount][0]
                         addme = "movie." + play
-			command = 'DELETE from States WHERE Option LIKE \'Pending\''
+			command = "DELETE from States WHERE Option LIKE \"Pending\""
                         cur.execute(command)
                         sql.commit()
-                        cur.execute('INSERT INTO States VALUES(?,?)', ('Pending',addme))
+                        cur.execute("INSERT INTO States VALUES(?,?)", ('Pending',addme))
                         sql.commit()
 
 	else:
 		genre = genre.rstrip()
-		cur.execute('SELECT Movie FROM Movies WHERE Genre LIKE \'%' + genre + '%\'')
+		cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\"")
 		found = cur.fetchall()
 		min = 0
 		max = int(len(found))
@@ -3115,18 +3051,15 @@ def suggestmovie(genre):
 		play = found[playc]
 		play = play[0].rstrip()
 		addme = "movie." + play
-		command = 'DELETE from States WHERE Option LIKE \'Pending\''
+		command = "DELETE from States WHERE Option LIKE \"Pending\""
 		cur.execute(command)
 		sql.commit()
-		cur.execute('INSERT INTO States VALUES(?,?)', ('Pending',addme))
+		cur.execute("INSERT INTO States VALUES(?,?)", ('Pending',addme))
 		sql.commit()
 
 	return "How does the movie: " + play + " sound, Sir?"
 
 def suggesttv(genre):
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
 	if (genre == "none"):
 		readfiletv = homedir + 'tvshowlist.txt'
 		
@@ -3143,7 +3076,7 @@ def suggesttv(genre):
 	elif("rating." in genre):
 		rating = genre.split("rating.")
 		rating = rating[1].strip()
-		command = 'SELECT TShow FROM TVshowlist WHERE Rating LIKE \'' + rating + '\''
+		command = "SELECT TShow FROM TVshowlist WHERE Rating LIKE \"" + rating + "\""
 		cur.execute(command)
 		if not cur.fetchall():
 			return("Error: Rating " + rating + " not found in library. Check and try again.")
@@ -3158,7 +3091,7 @@ def suggesttv(genre):
 	elif("duration." in genre):
                 rating = genre.split("duration.")
                 rating = rating[1].strip()
-                command = 'SELECT TShow FROM TVshowlist WHERE Duration LIKE \'' + rating + '\''
+                command = "SELECT TShow FROM TVshowlist WHERE Duration LIKE \"" + rating + "\""
                 cur.execute(command)
                 if not cur.fetchall():
                         return("Error: Duration length " + rating + " not found in library. Check and try again.")
@@ -3171,7 +3104,7 @@ def suggesttv(genre):
                         pcnt = randint(0, max)
                         play = foundt[pcnt][0]
 	else:
-		command = 'SELECT TShow FROM TVshowlist WHERE Genre LIKE \'%' + genre + ';%\''
+		command = "SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + ";%\""
 		cur.execute(command)
 		if not cur.fetchall():
 			return("Error. Genre: " + genre + " not found. Please try again.")
@@ -3184,10 +3117,10 @@ def suggesttv(genre):
 			pcnt = randint(0, max)
 			play = foundt[pcnt][0]
 	play = play.rstrip()
-	command = 'DELETE FROM States WHERE Option LIKE \'Pending\''
+	command = "DELETE FROM States WHERE Option LIKE \"Pending\""
 	cur.execute(command)
 	sql.commit()
-	cur.execute('INSERT INTO States VALUES(?,?)', ('Pending',play))
+	cur.execute("INSERT INTO States VALUES(?,?)", ('Pending',play))
 	sql.commit()
 
 	return "How does the TV Show " + play + " sound, Sir?"
@@ -3203,9 +3136,8 @@ def listshows(genre):
 	for item in play:
 		shows.append(item[0].strip())
 	shows = sorted(shows)
-	worklist(shows)	
 
-	return ("Done.")
+	return (shows)
 
 def listmovies():
 	cur.execute("SELECT Movie FROM Movies")
@@ -3213,15 +3145,11 @@ def listmovies():
 	movies = []
 	for movie in thelist:
 		movies.append(movie[0])
-	worklist(movies)
 
-	return ("Done.")
+	return (movies)
 		
 def whatispending():
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
-	command = 'SELECT State FROM States WHERE Option LIKE \'Pending\''
+	command = "SELECT State FROM States WHERE Option LIKE \"Pending\""
 	cur.execute(command)
 	if not cur.fetchone():
 		return ("Nothing is pending.")
@@ -3233,10 +3161,7 @@ def whatispending():
 	
 
 def addsuggestion():
-	consql = homedir + 'myplex.db'
-	sql = sqlite3.connect(consql)
-	cur = sql.cursor()
-	command = 'SELECT State FROM States WHERE Option LIKE \'Pending\''
+	command = "SELECT State FROM States WHERE Option LIKE \"Pending\""
 	cur.execute(command)
 	if not cur.fetchone():
 		return ("Nothing is pending.")
@@ -3253,7 +3178,7 @@ def addsuggestion():
 		pending = pending.replace('movie.', 'The Movie ')
 		
 		say = pending + " has been added to the queue."
-		command = 'DELETE FROM States WHERE Option LIKE \'Pending\''
+		command = "DELETE FROM States WHERE Option LIKE \"Pending\""
 		cur.execute(command)
 		sql.commit()
 
@@ -3332,8 +3257,17 @@ try:
 	elif ("findnewmovie" in show):
 		say = findnewmovie()
 	elif ("randommovieblock" in show):
-		genre = str(sys.argv[2])
+		try:
+			genre = str(sys.argv[2])
+		except IndexError:
+			genre = "none"
 		say = randommovieblock(genre)
+	elif ("randomtvblock" in show):
+		try:
+			genre = str(sys.argv[2])
+		except IndexError:
+			genre = "none"
+		say = randomtvblock(genre)
 	elif ("listclients" in show):
 		plexlogin()
 		listclients()
@@ -3488,9 +3422,12 @@ try:
 		try:
 			genre = str(sys.argv[2])
 			say = listshows(genre)
+			worklist(say)
+			say = "Done"
 		except IndexError:
 			show = availableshows()
-			say = show
+			worklist(show)
+			say = "Done"
 	elif ("listepisodes" in show):
 		try:
 			show = str(sys.argv[2])
@@ -3499,6 +3436,8 @@ try:
 			say = "Specificy a show to use this command."
 	elif ("listmovies" in show):
 		say = listmovies()
+		worklist(say)
+		say = "Done"
 
 	elif ("addsuggestion" in show):
 		say = addsuggestion()
@@ -3544,9 +3483,12 @@ try:
 	elif ("addtoblock" in show):
 		try:
 			block = str(sys.argv[2])
+		except Exception:
+			block = "none"
+		try:
 			item = str(sys.argv[3])
 		except Exception:
-			say = "You must provide both a block name and movie/show title to use this command."
+			item = "none"
 		say = addtoblock(block, item)
 	elif ("removefromblock" in show):
 		try:
@@ -3582,9 +3524,12 @@ try:
 		except Exception:
 			mode = show.split("setplaymode ")
 			mode = mode[1]
-		setplaymode(mode)
-		say = whatupnext()
-		say = say.replace("is active.", "is now active.")
+		try:
+			say = setplaymode(mode)
+		except Exception:
+			setplaymode(mode)
+			say = whatupnext()
+			say = say.replace("is active.", "is now active.")
 
 	elif ("epdetails" in show):
 		try:
@@ -3594,15 +3539,15 @@ try:
 				episode = str(sys.argv[4])
 				say = epdetails(show, season, episode)
 			except Exception:
-				command = 'SELECT Number FROM TVCounts WHERE Show LIKE \'' + show + '\''
+				command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + show + "\""
 				cur.execute(command)
 				if not cur.fetchone():
-					command = 'SELECT Summary FROM shows WHERE TShow LIKE \'' + show + '\' AND Season = 1 AND Enum = 1'
+					command = "SELECT Summary FROM shows WHERE TShow LIKE \"" + show + "\" AND Season = 1 AND Enum = 1"
 				else:
 					cur.execute(command)
 					Tnum = cur.fetchone()[0]
 					Tnum = int(Tnum)
-					command = "SELECT Summary FROM shows WHERE TShow LIKE \'" + show + "\' AND Tnum = " + str(Tnum)
+					command = "SELECT Summary FROM shows WHERE TShow LIKE \"" + show + "\" AND Tnum = " + str(Tnum)
 				presay = nextep(show)
 				cur.execute(command)
 				say = presay + "\n" + cur.fetchone()[0]
@@ -3613,26 +3558,26 @@ try:
 			unext = upnext()
 			if ("block." in unext):
 				block = unext.split('block.')[1].strip()
-				command = 'SELECT Items, Count FROM Blocks WHERE Name LIKE \'' + block + '\''
+				command = "SELECT Items, Count FROM Blocks WHERE Name LIKE \"" + block + "\""
 				cur.execute(command)
 				found = cur.fetchone()
 				items = found[0]
 				count = found[1]
 				items = items.split(';')
 				item = items[int(count)]
-				command = 'SELECT Number FROM TVCounts WHERE Show LIKE \'' + item + '\''
+				command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + item + "\""
                                 cur.execute(command)
                                 if not cur.fetchone():
-                                        command = 'SELECT Summary FROM shows WHERE TShow LIKE \'' + item + '\' AND Season = 1 AND Enum = 1'
+                                        command = "SELECT Summary FROM shows WHERE TShow LIKE \"" + item + "\" AND Season = 1 AND Enum = 1"
                                 else:
                                         cur.execute(command)
                                         Tnum = cur.fetchone()[0]
                                         Tnum = int(Tnum)
-                                        command = "SELECT Summary FROM shows WHERE TShow LIKE \'" + item + "\' AND Tnum = " + str(Tnum)
+                                        command = "SELECT Summary FROM shows WHERE TShow LIKE \"" + item + "\" AND Tnum = " + str(Tnum)
 			elif ("movie." in unext):
-				command = 'SELECT Summary FROM Movies WHERE Movie LIKE \'' + unext.split('movie.')[1].strip() + '\''
+				command = "SELECT Summary FROM Movies WHERE Movie LIKE \"" + unext.split('movie.')[1].strip() + "\""
 			else:
-				command = 'SELECT Summary FROM shows WHERE TShow LIKE \'' + unext.strip() + '\''
+				command = "SELECT Summary FROM shows WHERE TShow LIKE \"" + unext.strip() + "\""
 			cur.execute(command)
 			say3 = cur.fetchone()[0] + " ..."
 			wsay = whatupnext()
@@ -3651,6 +3596,7 @@ try:
 		say = findmovie(movie)
 	elif ("findshow" in show):
 		show = str(sys.argv[2])
+		show = show.replace("'","''")
 		say = findshow(show)
 	elif ("setnextep" in show):
 		show = str(sys.argv[2])
