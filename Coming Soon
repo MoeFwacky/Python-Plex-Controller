@@ -9,3 +9,5 @@ WIP/Feature Requests:
 3- Make sure the Random TV playback mode actually works.
 
 4- Make the spell checking "titlecheck" function smarter. 
+
+5- Improve the setup script so it automatically backups files and downloads latest versions. 
