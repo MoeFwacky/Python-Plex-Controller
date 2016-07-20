@@ -4,10 +4,14 @@ WIP/Feature Requests:
 
 1a- Add reset that drops tables mentioned in #1 and rebuilds them with current setup. This will be used in future when we add columns or support for currently unsupported characters. 
 
-2- Rearrange Block. This is a minor request that will be done at some point. 
+2- Rearrange Block. This is a minor request that will be done at some point. -- DONE, Testing for next release.
 
-3- Make sure the Random TV playback mode actually works.
+3- Make sure the Random TV playback mode actually works. -- DONE, Testing for next release.
 
 4- Make the spell checking "titlecheck" function smarter. 
 
 5- Improve the setup script so it automatically backups files and downloads latest versions. 
+
+6- Replace item in block. -- Done, testing for next release. 
+
+7- Updated explainblock feature to list next up show/movie for an active block. -- Done, Testing for next release.
