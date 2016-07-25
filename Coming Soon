@@ -15,3 +15,15 @@ WIP/Feature Requests:
 6- Replace item in block. -- Done, testing for next release. 
 
 7- Updated explainblock feature to list next up show/movie for an active block. -- Done, Testing for next release.
+
+8- Added Mini-Marathon(minithon in the commands) playmode. This mode will play a specific show back to back x number of times before reverting to normal play mode. The default number of plays is 3. This can be changed using "setminithonmax numberhere". The current settings is viewed with "showminithonmax". Example of how to enable- setplaymode "minithon.Brooklyn Nine-Nine" -- Done, testing for next release.
+
+9- Changed setplaymode command so you no longer need to specify block. when enabling a block package. --Done. 
+
+10- Changed various functions so you no longer need to specify "movie." when referring to a movie. When two idential options are presented, you will be prompted for which you mean. You can still use "movie." to get around this. --Done.
+
+11- Changed the worklist function. You can jump to a letter by entering 'letter.x' where x is the desired letter. There is a help splash that details how to use the desc option to view a description of the corresponding item. You can also use setupnext and queueadd by name or number in these lists. -- WIP
+
+12- Added options to suggest movies/shows by genre (genre.), rating (rating.), actor (actor.), and duration (duration.). Note: some of these are options only currently work with movies or shows. - WIP
+
+13- when using querry mode to add a block, you can now use "listshows genre" or "listmovies genre" to be given a list of corresponding items. You can then select an item that is returned as the item to add. -- Done. 
