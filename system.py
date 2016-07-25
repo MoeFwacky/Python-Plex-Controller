@@ -23,8 +23,7 @@ global file
 global show
 global play
 
-#location of your TBN home directory
-
+SLEEPTIME = 5
 try:
 	input = raw_input
 except NameError:
@@ -333,12 +332,14 @@ def explainblock(block):
 
 			for things in stuff:
 				things = things.rstrip()
-				if "Random_movie" in things:
+				if "random_movie" in things.lower():
 					things = things.replace("Random_movie.", "A random ")
+					things = things.replace("random_movie.", "A random ")
 					things = things + " movie"
 					things = things.replace(";","")
-				elif "Random_tv" in things:
+				elif "random_tv" in things.lower():
 					things = things.replace("Random_tv.", "A Random ")
+					things = things.replace("random_tv.", "A Random ")
 					things = things + " TV Show."
 					things = things.replace(";","")
 				try:
@@ -348,6 +349,24 @@ def explainblock(block):
 				tns = tns.replace("movie.", "the movie ")
 			say = "The " + block + " plays the following:\n" + tns
 			say = say.replace("''","'")
+			command = 'SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \'' + block + '\''
+                        cur.execute(command)
+                        binfo = cur.fetchone()
+                        bname = binfo[0]
+                        bitems = binfo[1]
+                        bcount = binfo[2]
+			bitems = bitems.split(';')
+			bitems = bitems[int(bcount)]
+			sayme = ""
+			if ("random_movie." in bitems):
+				bitems = bitems.split("_movie.")
+				bitems = bitems[1].strip()
+				sayme = "Next Random: Movie. Type: " + bitems + ".\n"
+			elif ("random_tv." in bitems):
+				bitems = bitems.split("_tv.")
+                                bitems = bitems[1].strip()
+                                sayme = "Next Random: Show. Type: " + bitems + ".\n"
+			say = say + sayme
 			return say		
 def addblock(name, title):
 	command1 = "SELECT Movie FROM Movies"
@@ -530,11 +549,24 @@ def addblock(name, title):
 					if (xname.lower() == item.lower().rstrip()):
 						xname = item.strip()
 						mycheck = "True"
+				if ("listshows" in xname):
+					mycheck = "True"
 				try:
 					mycheck
 				except Exception:
 					mycheck = "False"
 				if "True" in mycheck:
+					if "listshows" in xname:
+						try:
+							genre = xname.split("listshows ")
+							genre = genre[1].strip()
+							xname = listshows(genre)
+						except Exception:
+							xname = availableshows()
+						xname = worklist(xname)
+						if (xname == "done"):
+							return ("User Quit. No further action taken.")
+						
 					blname = str(name)
 					xname = xname.replace("'","''")
 					adtitle = bitems+str(xname)+";"
@@ -627,7 +659,7 @@ def addtoblock(blockname, name):
 		if mchoice == 1:
 			name = availableshows()
 		elif mchoice ==2:
-			name = listmovies()
+			name = listmovies("none")
 		else:
 			return ("Error. Invalid Selection. No action taken.")
 		name = worklist(name)
@@ -743,7 +775,8 @@ def removefromblock(blockname, name):
 			bxitems = bitems.split(';')
 			ccheck = "fail"
 			for item in bxitems:
-				if name == item:
+				if name.lower() == item.lower():
+					name = item
 					ccheck = "pass"
 
 			if ("pass" not in ccheck):
@@ -758,6 +791,94 @@ def removefromblock(blockname, name):
 
 			return say
 	return ("Item not found to remove.")
+
+
+def replaceinblock(block, nitem, oitem):
+	oitem = oitem.lower()
+	nitem = nitem.lower()
+	command = "SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \"" + block + "\""
+	cur.execute(command)
+	if not cur.fetchone():
+		return ("Error: " + block + " not found. Check and try again.")
+	cur.execute(command)
+	binfo = cur.fetchone()
+	bname = binfo[0]
+	bitems = binfo[1].lower()
+	bcount = binfo[2]
+	bxitems = bitems.split(';')
+	if oitem not in bxitems:
+		return ("Error: " + oitem + " not in " + block + " to replace.")
+	nitem = titlecheck(nitem)
+	nitem = mediachecker(nitem)
+	if "Quit" in nitem:
+		return ("User Quit. No action taken.")
+	elif ("Error: " in nitem):
+		return (nitem)
+	nitem = nitem + ";"
+	bitems = bitems.replace(oitem, nitem)
+	bitems = bitems.replace(";;",";")
+	print ("Adding the following: ")
+	print (bitems)
+	cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + block + "\"")
+	sql.commit()
+	cur.execute("INSERT INTO Blocks VALUES(?,?,?)",(block, bitems, bcount))
+	sql.commit()
+	nitem = nitem.replace(";","")
+	say = oitem + " has been replaced by " + nitem + " in the " + block + " block."
+	return (say)
+
+def reorderblock(block):
+	command = 'SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \'' + block + '\''
+	cur.execute(command)
+	if not cur.fetchone():
+		print ("Error. " + block + " not found as an available block.")
+	cur.execute(command)
+	binfo = cur.fetchone()
+	bname = binfo[0]
+	bitems = binfo[1]
+	bcount = binfo[2]
+	bxitems = bitems.split(';')
+	lmax = int(len(bxitems)) - 2 
+	lmin = 0
+	newlist = []
+	while lmin <= lmax:
+		cchecker = "false"
+		while cchecker == "false":
+			nmin = 1 
+			print ("Select Item " + str(lmin + 1) + ": ")
+			for item in bxitems:
+				if item == "":
+					pass
+				elif (item in newlist):
+					pass
+				else:
+					print (str(nmin) + ": " + item)
+					nmin = nmin + 1
+			choice = input('New Item ' + str(lmin + 1) + ' ')
+			try:
+				if choice.lower() == "quit":
+					return ("User quit. No action taken.")	
+				choice = int(choice) - 1
+				choice = bxitems[choice]
+				bxitems.remove(choice)
+				newlist.append(choice)
+				lmin = lmin + 1
+				cchecker = "true"
+			except Exception:
+				cls()
+				print ("Error: You must choose one of the available options to proceed or type quit.")
+	for item in newlist:
+		try:
+			nlist = nlist + item + ";"
+		except Exception:
+			nlist = item + ";"
+	bcount = 0
+	cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + block + "\"")
+	sql.commit()
+	cur.execute("INSERT INTO Blocks VALUES (?,?,?)", (block, nlist, int(bcount)))
+	sql.commit()
+	say = "The " + block + " block has been reordered."
+	return (say)
 
 def playblockpackage(play):
 	list = getblockpackagelist()
@@ -786,13 +907,14 @@ def playblockpackage(play):
 			sql.commit()
 			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, bitems, int(bcount)))
 			sql.commit()
-			if "Random_movie." in play:
+			play = play.lower()
+			if "random_movie." in play:
 				type = play
 				type = type.replace(";","")
 				command = 'SELECT State FROM States WHERE Option LIKE \'TONIGHTSMOVIE\''
 				cur.execute(command)
 				if not cur.fetchone():
-					type = type.split("Random_movie.")
+					type = type.split("random_movie.")
 					type = type[1]
 					type = type.replace(";","")
 					play = suggestmovie(type)
@@ -809,26 +931,26 @@ def playblockpackage(play):
 				sql.commit()
 				cur.execute('INSERT INTO States VALUES (?,?)',('TONIGHTSMOVIE',''))
 				sql.commit()
-			elif "Random_tv." in play:
+			elif "random_tv." in play:
 				type = play
-				type = type.replace(";","")
-				tvopen = homedir + "random_tv_chooser.txt"
-				with open(tvopen, "r") as file:
-					play = file.read()
-				file.close()
-				if not play:
-					type = type.split("Random_tv.")
-					type = type[1]
-					type = type.replace(";","")
-					play = suggesttv(type)
-					play = play.split("TV Show ")
-					play = play[1]
-					play = play.split(" sound")
-					play = play[0]
-				play = play.rstrip()
-				with open(tvopen, "w") as file:
-					file.write("")
-				file.close()
+                                type = type.replace(";","")
+                                command = 'SELECT State FROM States WHERE Option LIKE \'TONIGHTSSHOW\''
+                                cur.execute(command)
+                                if not cur.fetchone():
+                                        type = type.split("random_tv.")
+                                        type = type[1]
+                                        type = type.replace(";","")
+                                        play = suggesttv(type)
+                                        play = play.split("does the TV Show ")
+                                        play = play[1]
+                                        play = play.split(" sound, Sir")
+                                        play = play[0]
+                                else:
+                                        cur.execute(command)
+                                        play = cur.fetchone()[0]
+                                play = play.rstrip()
+                                cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSSHOW\'')
+                                sql.commit()
 			
 			playshow(play)	
 
@@ -1413,6 +1535,10 @@ def movierating(movie):
 def moviesummary(movie):
 	movie = titlecheck(movie)
 	movie = mediachecker(movie)
+	if ("Quit." in movie):
+		return ("User Quit. No action taken.")
+	elif ("Error:" in movie):
+		return (movie)
         command = "SELECT Summary FROM Movies WHERE Movie LIKE \"" + movie + "\""
         cur.execute(command)
         if not cur.fetchone():
@@ -1433,6 +1559,10 @@ def moviesummary(movie):
 def setnextep(show, season, episode):
 	show = titlecheck(show)
 	show = mediachecker(show)
+	if ("Quit." in show):
+		return ("User quit. No action taken.")
+	elif ("Error:" in show):
+		return (show)
 	test = show
 	Ssn = season
 	Epnum = episode
@@ -1476,6 +1606,7 @@ def playspshow(show, season, episode):
 	return showsay
 
 def playshow(show):
+	print (show)
 	command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
@@ -1530,6 +1661,42 @@ def playshow(show):
 		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, Sir' 
 		
 		return showsay
+	elif ("minithon." in show):
+		show = show.replace("minithon.","")
+		show = titlecheck(show)
+		show = mediachecker(show)
+		if ("Quit." in show):
+			return show
+		elif ("Error: " in show):
+			return show
+		command = "SELECT State FROM States WHERE Option LIKE \"MINITHONCNT\""
+		cur.execute(command)
+		if not cur.fetchone():
+			MINITHONCNT = 1
+		else:
+			cur.execute(command)
+			MINIITHONCNT = int(cur.fetchone()[0])
+			cur.execute("DELETE FROM States WHERE Option LIKE \"MINITHONCNT\"")
+			sql.commit()
+		MINITHONCNT = MINITHONCNT + 1
+		command = "SELECT State FROM States WHERE Option LIKE \"MINITHONMAX\""
+		cur.execute(command)
+		if not cur.fetchone():
+			MINITHONMAX = 3
+		else:
+			cur.execute(command)
+			MINITHONMAX = cur.fetchone()[0]
+			MINITHONMAX = int(MINITHONMAX)
+		if MINITHONCNT <= MINITHONMAX:
+			cur.execute("INSERT INTO States VALUES (?,?)",("MINITHONCNT",str(MINITHONCNT)))
+			sql.commit()
+		else:
+			setplaymode("normal")
+			print ("Mini-marathon has been played out. Returning to normal mode.")
+		say = playshow(show)
+		
+	
+		return (say)	
 	elif ("movie." in show):
 		show = show.replace("movie.", "")
 		command = "SELECT Movie FROM Movies WHERE Movie like\"" + show + "\""
@@ -1923,6 +2090,8 @@ def upnext():
 		show = playmode.split("marathon.")
 		show = show[1]
 		playme = show
+	elif ("minithon." in playmode):
+		playme = playmode
 
 	return playme
 
@@ -1985,6 +2154,40 @@ def seriesskipahead(show):
                         return (sayme)
 	
 
+def verifyblock(block):
+	command = "SELECT Name FROM Blocks WHERE Name LIKE \"" + block + "\""
+	cur.execute(command)
+	if not cur.fetchone():
+		return ("Error: Block " + block + " not found. Check and try again.")
+	cur.execute(command)
+	block = cur.fetchone()[0]
+	return (block)
+
+def showminithonmax():
+	command = "SELECT State FROM States WHERE Option LIKE \"MINITHONMAX\""
+	cur.execute(command)
+	if not cur.fetchone():
+		MINITHONMAX = 3
+		cur.execute("INSERT INTO States VALUES (?,?)", ("MINITHONMAX",str(MINITHONMAX)))
+		sql.commit()
+	else:
+		cur.execute(command)
+		MINITHONMAX = cur.fetchone()[0]
+	MINITHONMAX = str(MINITHONMAX)
+		
+	return ("The Current Mini-Marathon Maximum is: " + MINITHONMAX + ".")
+
+def setminithonmax(number):
+	try:
+		MINITHONMAX = int(number)
+	except Exception:
+		return ("Error: " + number + " is not a valid option here.")
+	cur.execute("DELETE FROM States WHERE Option LIKE \"MINITHONMAX\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)", ("MINITHONMAX",str(MINITHONMAX)))
+	sql.commit()
+	return ("The Mini-Marathon Maximum has been set to: " + str(number) + ".")
+
 def playmode():
 	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
@@ -1999,14 +2202,29 @@ def playmode():
 	return playmode
 
 def setplaymode(mode):
-	checks = ['normal','block.','marathon.','binge.']
+	cmode = playmode()
+	if mode != cmode:
+		cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
+		sql.commit()
+		cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSSHOW\"")
+                sql.commit()
+		cur.execute("DELETE FROM States WHERE Option LIKE \"MINITHONCNT\"")
+                sql.commit()
+	checks = ['normal','block.','marathon.','binge.', 'minithon.']
 	setcheck = "fail"
 	for item in checks:
 		if item in mode:
 			setcheck = "pass"
 	
 	if "pass" not in setcheck:
-		return ("Error: " + mode + " is not an available playmode. Please try again.")
+		command = "SELECT Name FROM Blocks WHERE Name LIKE \"" + mode + "\""
+		cur.execute(command)
+		if not cur.fetchone():
+			return ("Error: " + mode + " is not an available playmode. Please try again.")
+		else:
+			cur.execute(command)
+			mode = cur.fetchone()[0]
+			mode = "block." + mode
 	from random import randint
 	mode = mode.replace("block_","block.")
 	command = "DELETE FROM States WHERE Option LIKE \"Playmode\""
@@ -2075,7 +2293,8 @@ def mediachecker(title):
                 check2 = "pass"
         if ((check1 == "fail") and (check2 == "fail")):
                 addme = didyoumeanboth(title)
-                if "Quit." in addme:
+		print (addme)
+                if "Quit." in addme.strip():
                         return ("User Quit. No Action Taken.")
                 else:
                         title = addme
@@ -2092,9 +2311,13 @@ def mediachecker(title):
 
 def setupnext(title):
 	title = title.strip()
+	otitle = title
+	
 	if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 		title = titlecheck(title).strip()
 	title = mediachecker(title)
+	if "User Quit." in title:
+		return (title)
 
 	if ("movie." in title):
 		ctitle = title.replace("movie.","")
@@ -2110,7 +2333,15 @@ def setupnext(title):
 			if ("Quit" in say):
 				return ("Done")
 			elif ("Error" in say):
-				return ("Error. Title not found to add to play queue.")
+				try:
+					say = verifyblock(otitle)
+					if "Error." in say:
+						return ("Error. Title not found to add to play queue.")
+					say = setplaymode(say)
+					print ("Block found: " + otitle + ". Changing play mode.")
+					return (say)
+				except Exception:
+					return ("Error. Title not found to add to play queue.")
 			else:
 				say = setupnext(say)
 				return (say)
@@ -2544,32 +2775,17 @@ def whatupnext():
 		upnext = "Up next we have " + playme
 	elif ("block." in playmode):
 		block = getblockpackage(playmode)
-		if ("Random_movie." in block):
+		block = block.lower()
+		if ("random_movie." in block):
 			upnext = idtonightsmovie()
 			if upnext == " ":
 				findnewmovie()
 				upnext = idtonightsmovie()
-		elif ("Random_tv." in block):
-			title = block.split("Random_tv.")
-			title = title[1]
-			title = title.replace(";","")
-			title = title.rstrip()
-			upnext = "Up next is a random " + title + " Show. The current selection is: "
-			rdtv = homedir + 'random_tv_chooser.txt'
-			with open(rdtv, "r") as file:
-				play = file.read()
-			file.close()
-			if not play:
-				play = suggesttv(title.rstrip())
-				play = play.split("TV Show ")
-				play = play[1]
-				play = play.split(" sound")
-				play = play[0]
-				with open(rdtv, "w") as file:
-					file.write(play)
-				file.close()
-			upnext = upnext + play
-			upnext = upnext.replace("movie.", "The movie ")
+		elif ("random_tv." in block):
+			upnext = idtonightsshow()
+			if upnext == " ":
+				findnewshow()
+				upnext = idtonightsshow()
 		else:
 			if ("movie." in block):
 				episode = block.split("movie.")
@@ -2590,49 +2806,206 @@ def whatupnext():
 		upnext = "Up next we have " + episode
 		upnext = upnext.replace("For the show ", "")
 		upnext = upnext.replace(" we have the", ",")
+	elif ("minithon." in playmode):
+		command = ("SELECT State FROM States WHERE Option LIKE \"MINITHONCNT\"")
+		cur.execute(command)
+		if not cur.fetchone():
+			ccount = 0
+		else:
+			cur.execute(command)
+			ccount = cur.fetchone()[0]
+		command = ("SELECT State FROM States WHERE Option LIKE \"MINITHONMAX\"")
+                cur.execute(command)
+                if not cur.fetchone():
+                        mcount = 0
+                else:
+                        cur.execute(command)
+                        mcount = cur.fetchone()[0]
+		sleft = int(mcount) - int(ccount)
+		sleft = ". There are " + str(sleft) + " episodes left in the Mini-Marathon."
+		show = playmode.split("minithon.")
+		show = show[1]
+		episode = nextep(show)
+		episode = episode.rstrip()
+		upnext = "\nWe are in mini-marathon mode, watching " + show
+                upnext = episode + upnext + sleft
+                upnext = upnext.replace("For the show ", "")
+                upnext = upnext.replace(" we have the", ",")
 
 
 	return upnext
+
+def getmovie(genre):
+	from random import randint
+	cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\"")
+	found = cur.fetchall()
+	tnum = randint(0,int(len(found)-1))
+	found = found[tnum]
+	found = found[0]
+	return (found)
+
+def getshow(genre):
+	from random import randint
+	cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + "%\"")
+	found = cur.fetchall()
+        tnum = randint(0,int(len(found)-1))
+        found = found[tnum]
+        found = found[0]
+        return (found)
+
+def idtonightsshow():
+	mode = playmode()
+	if "block." in mode:
+		mode = mode.split("block.")
+                mode = mode[1].strip()
+                cur.execute("SELECT State FROM States WHERE Option LIKE \"TONIGHTSSHOW\"")
+                if ((not cur.fetchone()) or (cur.fetchone() == "")):
+                        command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+                        cur.execute(command)
+                        found = cur.fetchone()[0]
+                        command = "SELECT Count FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+                        cur.execute(command)
+                        bcount = cur.fetchone()[0]
+                        bcount = int(bcount)
+                        found = found.split(";")
+			thing = found[bcount].lower()
+			if "random_tv." in thing:
+				item = thing.split("_tv.")
+				item = item[1]
+				say = getshow(item)
+				say = settonightsshow(say)
+				return (say)
+		else:
+			cur.execute("SELECT State FROM States WHERE Option LIKE \"TONIGHTSSHOW\"")
+                        state = cur.fetchone()[0]
+                        if state == "":
+                                command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+                                cur.execute(command)
+                                found = cur.fetchone()[0]
+                                command = "SELECT Count FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+                                cur.execute(command)
+                                bcount = cur.fetchone()[0]
+                                bcount = int(bcount)-1
+                                found = found.split(";")
+                                for thing in found:	
+					thing = thing.lower()
+                                        if "random_tv." in thing:
+                                                item = thing.split("_tv.")
+                                                item = item[1]
+                                                say = getshow(item)
+                                                say = settonightsshow(say)
+                                                return (say)
+			command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+                        cur.execute(command)
+                        found = cur.fetchone()[0]
+                        command = "SELECT Count FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+                        cur.execute(command)
+                        bcount = cur.fetchone()[0]
+                        bcount = int(bcount)-1
+                        cur.execute("SELECT State FROM States WHERE Option LIKE \"TONIGHTSSHOW\"")
+                        found = cur.fetchone()
+                        found = found[0]
+                        if ((not found) or (found == "")):
+                                command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+                                cur.execute(command)
+                                found = cur.fetchone()[0]
+                                found = found.split(";")
+                                ccnt = 0
+                                for items in found:
+                                        items = items.lower()
+                                        if (("random_tv." in items) and (ccnt <= bcount)):
+                                                genre = items.split("tv.")
+                                                genre = genre[1].strip()
+                                                found = suggesttv(genre)
+                                                found = found.split("the TV Show ")
+                                                found = found[1]
+                                                found = found.split(" sound, Sir")
+                                                found = found[0].strip()
+                                                found = settonightsshow(found)
+                                        ccnt = ccnt + 1
+        else:
+                found = "Not in block playback mode. No movie is scheduled tonight."
+        return (found)
 
 def idtonightsmovie():
 	mode = playmode()
 	if "block." in mode:
 		mode = mode.split("block.")
 		mode = mode[1].strip()
-		command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
-		cur.execute(command)
-		blocki = cur.fetchone()[0]
-		blocki = blocki.split(';')
-		for block in blocki:
-				
-			if ("Random_movie." in block):
-				title = block.split("Random_movie.")
-				title = title[1]
-				title = title.replace(";","")
-				title = title.rstrip()
-				command = "SELECT State FROM States WHERE Option LIKE \'TONIGHTSMOVIE\'"
+		cur.execute("SELECT State FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
+		if ((not cur.fetchone()) or (cur.fetchone() == "")):
+			command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+			cur.execute(command)
+			found = cur.fetchone()[0]
+			command = "SELECT Count FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+			cur.execute(command)
+			bcount = cur.fetchone()[0]
+			bcount = int(bcount)-1	
+			found = found.split(";")
+			for thing in found:
+				thing = thing.lower()
+				if "random_movie." in thing:
+					item = thing.split("_movie.")
+					item = item[1]
+					say = getmovie(item)
+					say = settonightsmovie(say)
+					return (say)
+		else:
+			cur.execute("SELECT State FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
+			state = cur.fetchone()[0]
+			if state == "":
+				command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
 				cur.execute(command)
-				
-				if not cur.fetchone():
-					play = suggestmovie(title)
-					play = play.split("movie: ")
-					play = play[1]
-					play = play.split(" sound")
-					play = play[0]
-					cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
-					sql.commit()
-					cur.execute("INSERT INTO States VALUES(?,?)",('TONIGHTSMOVIE',play))
-					sql.commit()
-				else:
-					cur.execute(command)
-					play = cur.fetchone()[0]
-		play = play.replace("movie.","")
-		play = "Tonights scheduled film is: " + play
+				found = cur.fetchone()[0]
+				command = "SELECT Count FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+				cur.execute(command)
+				bcount = cur.fetchone()[0]
+				bcount = int(bcount)-1
+				found = found.split(";")
+				for thing in found:
+					thing = thing.lower()
+					if "random_movie." in thing:
+						item = thing.split("_movie.")
+						item = item[1]
+						say = getmovie(item)
+						say = settonightsmovie(say)
+						return (say)
+			command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+                        cur.execute(command)
+                        found = cur.fetchone()[0]
+                        command = "SELECT Count FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+                        cur.execute(command)
+                        bcount = cur.fetchone()[0]
+                        bcount = int(bcount)-1
+			cur.execute("SELECT State FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
+			found = cur.fetchone()
+			found = found[0]
+			if ((not found) or (found == "")):
+				command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
+				cur.execute(command)
+				found = cur.fetchone()[0]
+				found = found.split(";")
+				ccnt = 0
+				for items in found:
+					items = items.lower()
+					if (("random_movie." in items) and (ccnt <= bcount)):
+						genre = items.split("movie.")
+						genre = genre[1].strip()
+						found = suggestmovie(genre)
+						found = found.split("the movie: ")
+						found = found[1]
+						found = found.split("sound, Sir")
+						found = found[0].strip()
+						found = settonightsmovie(found)
+					ccnt = ccnt + 1
 	else:
-		play = "No movie currently scheduled."
-	return play
+		found = "Not in block playback mode. No movie is scheduled tonight."
+	return (found)
+		
+		
 
 def settonightsmovie(movie):
+	movie = movie.replace("movie.","")
 	movie = titlecheck(movie)
 	movie = mediachecker(movie)
 	cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
@@ -2641,7 +3014,15 @@ def settonightsmovie(movie):
 	sql.commit()
 	movie = movie.replace('movie.','')
 	return ("Tonights movie has been set to " + movie)
-		
+
+def settonightsshow(show):
+	show = titlecheck(show)
+	show = mediachecker(show)
+	cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSSHOW\"")
+        sql.commit()
+        cur.execute("INSERT INTO States VALUES(?,?)",('TONIGHTSSHOW', show))
+        sql.commit()
+	return ("Tonights show has been set to " + show)
 
 def nextep(show):
 	show = titlecheck(show)
@@ -2719,6 +3100,29 @@ def skipthat():
 				return playme
 		except IndexError:
 			return "No queue to skip."	
+	elif ("minithon." in mode):
+		max = showminithonmax()
+		max = max.split("is: ")
+		max = max[1].strip()
+		max = max.replace(".","")
+		command = "SELECT State FROM States WHERE Option LIKE \"MINITHONCNT\""
+		cur.execute(command)
+		if not cur.fetchone():
+			ccount = 0
+		else:
+			cur.execute(command)
+			ccount = cur.fetchone()[0]
+		ccount = int(ccount) + 1
+		ccount = str(ccount)
+		cur.execute("DELETE FROM States WHERE Option LIKE \"MINITHONCNT\"")
+		sql.commit()
+		if int(ccount) <= int(max):
+			cur.execute("INSERT INTO States VALUES (?,?)",("MINITHONCNT",ccount))
+			sql.commit()
+			return ("We have increased the Mini-Marathon count.")
+		else:
+			say = setplaymode("normal")
+			return (say)
 	elif ("binge." in mode):
 
 		return ("We are in binge mode. Change playmodes to use this option or add 'normal' to your command to skip what is up next in the queue.")
@@ -2729,8 +3133,13 @@ def skipthat():
 			item = item.replace(".txt", "")
 			if (item in play):
 				check = whatupnext()
+				'''
 				if "Tonights scheduled film" in check:
 					deletetonightsmovie()
+				elif "Tonights show is " in check:
+					print ("found.")
+					deletetonightsshow()
+				'''
 				xitem = item
 				yitem = item + ".txt"
 				xitem = xitem.replace('.txt','')
@@ -2743,6 +3152,12 @@ def skipthat():
 				bxitems = bitems.split(';')
 				max_count = len(bxitems)
 				play = bxitems[bcount]
+				rcheck = bxitems[bcount]
+				if "random_movie." in rcheck.lower():
+                                        deletetonightsmovie()
+                                elif "random_tv." in rcheck.lower():
+                                        print ("found.")
+                                        deletetonightsshow()
 				bcount = bcount + 1
 				if int(bcount) == (int(max_count)-1):
 					bcount = 0
@@ -2806,8 +3221,20 @@ def findnewmovie():
 	say = idtonightsmovie()
 	return(say)
 
+def findnewshow():
+	command = "DELETE FROM States WHERE Option LIKE \"TONIGHTSSHOW\""
+        cur.execute(command)
+        sql.commit()
+        say = idtonightsshow()
+        return(say)
+
 def deletetonightsmovie():
 	command = "DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\""
+        cur.execute(command)
+        sql.commit()
+
+def deletetonightsshow():
+	command = "DELETE FROM States WHERE Option LIKE \"TONIGHTSSHOW\""
         cur.execute(command)
         sql.commit()
 
@@ -2861,7 +3288,6 @@ def moviegenrechecker(genre):
                         print ("Error. No movies were found associtated with the " + genre + " genre.")
 			thegenres = availgenremovie()
 			genre = worklist(thegenres)
-	print (genre)
 	return (genre)
 
 def randommovieblock(genre):
@@ -2924,6 +3350,22 @@ def randomtvblock(genre):
         sql.commit()
         return (say)
 	cur
+
+def getnewblock():
+	try:
+		genre = str(sys.argv[2])
+	except IndexError:
+		genre = "none"
+	check = playmode()
+	if "block." not in check:
+		return ("Sorry, but this command only works if randommovieblock or randomshowblock is active.")
+	if "block.randommovieblock" in check:
+		say = randommovieblock(genre)
+	elif ("block.randomshowblock" in check):
+		say = randomtvblock(genre)
+	else:
+		say = "Error. No action taken."
+	return say
 
 def randomshowblock(genre):
 	command = "SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + "%\""
@@ -3060,18 +3502,23 @@ def suggestmovie(genre):
 	return "How does the movie: " + play + " sound, Sir?"
 
 def suggesttv(genre):
+	from random import randint
 	if (genre == "none"):
-		readfiletv = homedir + 'tvshowlist.txt'
-		
-		from random import randint
-		with open(readfiletv, "r") as file:
-			playfiles = file.readlines()
-		file.close()
+		cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%Favorite%\"")
+		if not cur.fetchone():
+			cur.execute("SELECT TShow FROM TVshowlist")
+                        playfiles = cur.fetchall()
+		else:
+			cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%Favorite%\"")
+		playfiles = cur.fetchall()
+		if int(len(playfiles)-1) <= 24:
+			cur.execute("SELECT TShow FROM TVshowlist")
+			playfiles = cur.fetchall()
 		min = 0
-		max = filenumlines(readfiletv)
+		max = int(len(playfiles))-1
 		playc = randint(min,max)
 		play = playfiles[playc]
-		play = play.rstrip()
+		play = play[0].rstrip()
 		addme = play
 	elif("rating." in genre):
 		rating = genre.split("rating.")
@@ -3139,8 +3586,11 @@ def listshows(genre):
 
 	return (shows)
 
-def listmovies():
-	cur.execute("SELECT Movie FROM Movies")
+def listmovies(genre):
+	if genre == "none":
+		cur.execute("SELECT Movie FROM Movies")
+	else:
+		cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\"")
 	thelist = cur.fetchall()
 	movies = []
 	for movie in thelist:
@@ -3248,6 +3698,11 @@ try:
 		say = changewildcard(show)
 	elif ("idtonightsmovie" in show):
 		say = idtonightsmovie()
+		say = say.replace("movie.", "The Movie ")
+		say = "Tonights feature is " + say 
+	elif ("idtonightsshow" in show):
+		say = idtonightsshow()
+		say = "Tonights show is " + say
 	elif ("settonightsmovie" in show):
 		try:
 			movie = str(sys.argv[2])
@@ -3256,6 +3711,8 @@ try:
 			say = "Error: You must provide a movie to use this command."
 	elif ("findnewmovie" in show):
 		say = findnewmovie()
+	elif ("getnewblock" in show):
+		say = getnewblock()
 	elif ("randommovieblock" in show):
 		try:
 			genre = str(sys.argv[2])
@@ -3329,6 +3786,8 @@ try:
 				say = item + " not found in queue to remove."
 	elif ("whatupnext" in show):
 		say = whatupnext()
+		say = say.replace("movie.","The Movie ")
+		say = "Upnext we have " + say
 	elif ("whatsafterthat" in show):
 		say = whatsafterthat()
 	elif ("startnextprogram" in show):
@@ -3345,7 +3804,7 @@ try:
 			skipthat()
 		say = say + "\n"
 		if "On" in checkme:
-			time.sleep(5)
+			time.sleep(SLEEPTIME)
 			playcheckstart()
 	elif ("skipthat" in show):
 		say = skipthat()
@@ -3435,7 +3894,12 @@ try:
 		except IndexError:
 			say = "Specificy a show to use this command."
 	elif ("listmovies" in show):
-		say = listmovies()
+		try:
+			genre = str(sys.argv[2])
+		except IndexError:
+			genre = "none"
+			
+		say = listmovies(genre)
 		worklist(say)
 		say = "Done"
 
@@ -3459,9 +3923,45 @@ try:
 			block = "none"
 		say = restartblock(block)
 	elif ("explainblock" in show):
-		block = str(sys.argv[2])
-		say = explainblock(block)
-		#saythat(say)
+		try:
+			block = str(sys.argv[2])
+			say = explainblock(block)
+		except Exception:
+			block = playmode()
+			if ("block." in block):
+				block = block.replace("block.","")
+				#wmark
+				command = "SELECT Items, Count FROM Blocks WHERE Name LIKE \"" + block + "\""
+                                cur.execute(command)
+                                found = cur.fetchone()
+                                items = found[0]
+                                count = found[1]
+                                items = items.split(';')
+                                item = items[int(count)]
+				say = explainblock(block)
+				try:
+					mve = idtonightsmovie()
+					mve = mve.replace("movie.","The movie ")
+					mve = "The next random movie is: " + mve + "\n"
+				except Exception:
+					mve = ""
+				try:
+					tve = idtonightsshow()
+					tve = "The next random show is: " + tve + "\n"
+				except Exception:
+					tve = ""
+				wve = whatupnext()
+				item = item.lower()
+				if ("random_tv." in item):
+					item = item.replace("random_tv.", "A random ")
+					item = item + " show"
+				elif ("random_movie." in item):
+					item = item.replace("random_movie.", "A random ") 
+					item = item + " movie"
+				wve = "Item " + str(count) + ", " + item + " is next: " + wve
+				say = say + mve + tve + "\n" + wve
+			else:
+				say = "Error: No block specified."
 	elif ("addblock" in show):
 		try:
 			name = str(sys.argv[2])
@@ -3490,6 +3990,21 @@ try:
 		except Exception:
 			item = "none"
 		say = addtoblock(block, item)
+	elif ("replaceinblock" in show):
+		try:
+			block = str(sys.argv[2])
+			nitem = str(sys.argv[3])
+			oitem = str(sys.argv[4])
+			say = replaceinblock(block, nitem, oitem)
+		except Exception:
+			say = "Error. You must supply a block, new item, and old item to use this command."
+	elif ("reorderblock" in show):
+		try:
+			block = str(sys.argv[2])
+			say = reorderblock(block)
+		except Exception:
+			say = "Error. You must supply a block to use this command."
+
 	elif ("removefromblock" in show):
 		try:
 			block = str(sys.argv[2])
@@ -3518,6 +4033,20 @@ try:
 
 	elif ("getplaymode" in show):
 		say = playmode()
+		if ("block." in say):
+			say = say.replace("block.","")
+			say = "We are in block package mode. The active block is: " + say + "."
+		elif ("marathon." in say):
+			say = say.replace("marathon.","")
+			say = "We are in marathon mode watching " + say + "."
+		elif ("binge." in say):
+			say = say.replace("binge.","")
+			say = "We are in binge playmode watching " + say + "."
+		elif ("minithon." in say):
+			say = say.replace("minithon.","")
+			say = "We are in Mini-Marathon mode watching " + say + "."
+		else:
+			say = "We are in " + say + " playmode."
 	elif ("setplaymode" in show):
 		try:
 			mode = str(sys.argv[2])
@@ -3526,10 +4055,22 @@ try:
 			mode = mode[1]
 		try:
 			say = setplaymode(mode)
+			say = say.replace("minithon.","Mini-Marathon: ")
+			say = say.replace("block.", "Block Package Mode: ")
+			say = say.replace("binge.", "Binge Mode: ")
+			say = say.replace("marathon.", "Marathon Mode: ")
 		except Exception:
 			setplaymode(mode)
 			say = whatupnext()
 			say = say.replace("is active.", "is now active.")
+	elif ("setminithonmax" in show):
+		try:
+			number = str(sys.argv[2])
+			say = setminithonmax(number)
+		except Exception:
+			say = "Error: You must supply a number to use this command."
+	elif ("showminithonmax" in show):
+		say = showminithonmax()
 
 	elif ("epdetails" in show):
 		try:
@@ -3643,7 +4184,7 @@ try:
 				playcheckstop()
 			item = str(sys.argv[2])
 			say = playwhereleftoff(item)
-			time.sleep(5)
+			time.sleep(SLEEPTIME)
 			if "On" in checkme:
 				playcheckstart()
 		except IndexError:
@@ -3703,7 +4244,6 @@ try:
 			say = result
 		except Exception:
 			say = "Error. Invalid Syntax. Use 'updatemovies' or 'updateshows' or 'updateall' as a flag for this command. Please try again."
-	#marker
 	else:
 		plexlogin()
 		show = mediachecker(show)
@@ -3722,7 +4262,7 @@ try:
 				
 			say = playshow(show)
                 if "On" in checkme:
-			time.sleep(5)
+			time.sleep(SLEEPTIME)
                         playcheckstart()
 	print (say)
 except IndexError:
