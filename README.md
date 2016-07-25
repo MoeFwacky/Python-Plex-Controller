@@ -13,7 +13,7 @@ TheBaconNation Plex Controller
 <br>enchant. You can use "pip install pyenchant" to get it.
 <br>The python plex api. User "pip install plexapi"
 <br>
-<br>Do to some recent changes, it is recommended you remove the following files, rerun the new system_setup script, and let it refresh your library. Files to remove: aliases, upddatedb_pi.py, system.py, system_setup.py
+<br>Do to some recent changes, it is recommended you remove the following files, rerun the new system_setup script, and let it refresh your library. Files to remove: aliases, system.py. If you have not updated in a while, also replace the setup_system.py and upddated_db.py files.<br>
 <br>3 scripts are necessary to use the TBN Plex Controller:
 <br>system.py - this is the main script used by the controller.
 <br>upddatedb_pi.py - this is the script used to update the controllers database. 
@@ -24,7 +24,7 @@ TheBaconNation Plex Controller
 <br>piplaystate.py - Gets the playback state from your client.
 <br>playstatus.py - Runs in the background. When enabled uses piplaystate.py to get the status of your client. 
 <br>
-<br>Currently the TBN Plex Controller is currently designed to work on a linux based OS. I suppose it is possible to use it on a windows based machine, though you may need to modify some paths to suit that directory structure.
+<br>Currently the TBN Plex Controller is currently designed to work on a linux based OS, however, it can also run on a windows environment without modification, though you may not be able to use the aliases.
 <br>
 <br>To install the TBN Plex Controller, place the system_setup.py script files in your home directory. The system_setup.py script will make a directory in your home folder, "hasystem/", or prompt your for a directory, depending on your OS, which it will store its necessary files and database in.
 <br>
@@ -48,31 +48,44 @@ TheBaconNation Plex Controller
 <br>
 <br>Note- If the option you are giving contains a space(" ") you will need to put quotes ("" or '') around that option. 
 <br>
-<br>Note- When adding movies to your queue, up next, or to play now, you need to append "movie." at the beginning. Example "movie.The Matrix"
-<br>
 <br>Syntax:
 <br>Command (options, if any, don't use the parenthesis)/ Example Usage / Description
 <br>
 <br>playme (tvshow/movie) / playme "The Big Bang Theory" OR playme "movie.The Matrix" / plays the next episode from the specified show or the specified movie.
 <br>addfavoritemovie / addfavoritemovie "The Matrix" / adds the specified movie to the favorites list.
+<br>addfavoriteshow / addfavoriteshow "Marvels Daredevil" / adds the specified show to the favorites list.
+<br>addgenreshow / addgenreshow "Good Eats" "Cooking" / adds a custom genre to the specified shows genre list.
+<br>addgenremovie / addgenremovie "Deadpool" "Not Super Hero" / adds a custom genre to the specified movies genre list.
 <br>queueadd / queueadd psych OR queuadd "movie.The Matrix" / adds the specified item to the end of the queue.
 <br>whereat / whereat / Lists where you are at in the current feature. *relies on optional scripts
 <br>idtonightsmovie / idtonightsmovie / if your block package contains a random movie option, this should list that movie.
+<br>idtonightsshow / idtonightsshow / if your block package contains a random show option, this should list that show.
+<br>getnewblock / getnewblock / if you are playing a random movie or show block, this command will generate a new block.
+<br>listclients / listclients / lists the available clients.
+<br>changeclient / changeclient / gives option to select a new client from the list of available clients.
+<br>
 <br>findnewmovie / findnewmovie / if your block contains a random movie, and you want to find a different random movie, this command replaces that movie with a different one.
 <br>randommovieblock (genre) / randommovieblock Action / gets and creates a 3 movie block using the genre specified
+<br>randomtvblock (genre) / randomtvblock Action / gets and creates a 3 show block using the genre specified
 <br>stopplayback / stopplayback / stops the current playaying feature
 <br>pauseplayback / pauseplayback / stops the current playing feature
 <br>playcheckstart / playcheckstart / starts the play checking for automatic playback *relies on optional scripts
 <br>playcheckstop / playcheckstop / stops the play checking for automatic playback *relies on optional scripts
 <br>playchecksleep / playckecksleep /stops playchecking when the current playing feature ends. useful if you add custom actions to shut things off. *relies on optional scripts
 <br>queueshow / queueshow / shows what is in your queue
+<br>queueremove (item in queue) / queueremove "Deadwood" / removes the specified item from the queue.
+<br>queuefix / queuefix / if for somereason your queue gets messed up this command can be used to kill and rebuild it(does not preseve queue.)
 <br>whatupnext / whatupnext / lists the next item in your queue. returns single item.
 <br>setupnext / setupnext "movie.Predator" / sets the next up item in your queue to be the specified item.
 <br>startnextprogram / startnextprogram / starts the next item from your queue
 <br>skipthat / skipthat / skips the next item in your queue
+<br>seriesskipahead (show) / seriesskipahead Psych / Sets the specified shows playqueue ahead one episode.
+<br>seriesskipback (show) / seriesskipback psych / Sets the specified shows playqueue back one episode.
+<br>skipahead / skipahead / skips ahead 30 seconds in the current feature.
+<br>skipback / skipback / skipts back 15 seconds in the current feature.
 <br>findsomethingelse / findsomethingelse / replaces the next item in your queue with something else
-<br>suggestmovie (genre) / suggestmovie Action / Suggests a random movie. If genre given movie is of that genre.
-<br>suggesttv (genre) / suggesttv Action / Suggests a random TV show. If genre given, show is of that genre. 
+<br>suggestmovie (genre/rating./actor./) / suggestmovie Action / Suggests a random movie. If genre given movie is of that genre.
+<br>suggesttv (genre/rating./duration.) / suggesttv Action / Suggests a random TV show. If genre given, show is of that genre. 
 <br>addsuggestion / addsuggestion / adds the previously suggested media to the queue, if something was previously suggested. 
 <br>whatispending / whatispending / lists what has previously been suggested but not added to the queue. 
 <br>availableblocks / availableblocks / lists the user created block packages
@@ -83,10 +96,21 @@ TheBaconNation Plex Controller
 <br>addtoblock (block) (media name) / addtoblock monday_am_block "My Name Is Earl" / Adds the specified media to an already existing block
 <br>removeblock (block) / removeblock monday_am_block / removes the specified block
 <br>removefromblock (block) (media title) / removefromblock monday_am_block "Married with Children" / removes the specified title from the specified block
+<br>replaceinblock (block) (newitem) (olditem) / replaceinblock Test1 Psych Deadwood / replaces the old item with the new item in the specified block. 
+<br>rearrangeblock (block) / rearragneblock Test1 / Walks you through rearranging the specified block.
+<br>moviegenres / moviegenres / gets a list of the available movie genres.
+<br>tvgenres / tvgenres / gets a list of the available tv genres.
+<br>playwhereleftoff (movie/show) / playwhereleftoff Predator / plays the specified items from where you last left off.
 <br>nextep / nextep "My Name Is Earl" / Lists the episode that will play next from the specified series.
 <br>epdetails (Show) (Season) (Episode) / epdetails "My Name Is Earl" 1 2 / gets the details for the specified episode.
 <br>setnextep (Show) (Season) (Episode) / setnextep "My Name Is Earl" 1 2 / sets the next episode to play from the given show to the specified season and episode. 
-<br>moviedetails (movie) / moviedetails Predator / gets the details for the specified movie
+<br>moviedetails (movie) / moviedetails Predator / gets the details for the specified movie.
+<br>showdetails (show) / showdetails Deadwood / gets the details for the specified show.
+<br>muteaudio / muteaudio / if supported by the client, mutes audio.
+<br>unmuteaudio / unmuteaudio / if supported by the client, sets client volume to 100%.
+<br>mtagline (movie) / mtagline Predator / gets the tagline for the specified movie.
+<br>msummary (movie) / msummary "The Quick and the Dead" / gets the summary for the specified movie.
+<br>mrating (movie) / mrating "The Matrix" / gets the rating for the specified movie.
 <br>findshow (text) / findshow Eureka / finds TV show names containing the given text.
 <br>findmovie (text) / findmovie Terminator / finds movies with names containing the given text.
 <br>findnewmovie / findnewmovie / when using a play mode with a random movie option, this command will replace that pending movie with a new selection of the same genre type. 
@@ -95,3 +119,6 @@ TheBaconNation Plex Controller
 <br>nowplaying / nowplaying / returns what is currently playing
 <br>listwildcard / listwildcard / lists the show currently set as the Wild Card show
 <br>changewildcard (show)/ changewildcard OR changewildcard "My Name Is Earl" / if a show is given it will set the wild card to that show, otherwise it will walk you through choosing a new wildcard show.
+<br>showminithonmax / showminithonmax / Shows the current Mini-Marathon Maximum settings.
+<br>setminithonmax (number) / setminithonmax 4 / Sets the Mini-Marathon Maximum settings to the specified value. Defauls to 3.
+<br>updatedb (updatemovies/updateshows/updateall) / updatedb updateshows / updates your TBN-Plex db.
