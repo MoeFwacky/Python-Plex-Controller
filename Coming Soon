@@ -4,21 +4,21 @@ WIP/Feature Requests:
 
 1a- Add reset that drops tables mentioned in #1 and rebuilds them with current setup. This will be used in future when we add columns or support for currently unsupported characters. 
 
-2- Rearrange Block. This is a minor request that will be done at some point. -- DONE, Testing for next release.
+2- Rearrange Block. This is a minor request that will be done at some point. -- Added
 
-3- Make sure the Random TV playback mode actually works. -- DONE, Testing for next release.
+3- Make sure the Random TV playback mode actually works. -- Confirmed
 
 4- Make the spell checking "titlecheck" function smarter. 
 
 5- Improve the setup script so it automatically backups files and downloads latest versions. 
 
-6- Replace item in block. -- Done, testing for next release. 
+6- Replace item in block. -- Added
 
-7- Updated explainblock feature to list next up show/movie for an active block. -- Done, Testing for next release.
+7- Updated explainblock feature to list next up show/movie for an active block. -- Added
 
-8- Added Mini-Marathon(minithon in the commands) playmode. This mode will play a specific show back to back x number of times before reverting to normal play mode. The default number of plays is 3. This can be changed using "setminithonmax numberhere". The current settings is viewed with "showminithonmax". Example of how to enable- setplaymode "minithon.Brooklyn Nine-Nine" -- Done, testing for next release.
+8- Added Mini-Marathon(minithon in the commands) playmode. This mode will play a specific show back to back x number of times before reverting to normal play mode. The default number of plays is 3. This can be changed using "setminithonmax numberhere". The current settings is viewed with "showminithonmax". Example of how to enable- setplaymode "minithon.Brooklyn Nine-Nine" -- Added
 
-9- Changed setplaymode command so you no longer need to specify block. when enabling a block package. --Done. 
+9- Changed setplaymode command so you no longer need to specify block. when enabling a block package. --Done
 
 10- Changed various functions so you no longer need to specify "movie." when referring to a movie. When two idential options are presented, you will be prompted for which you mean. You can still use "movie." to get around this. --Done.
 
