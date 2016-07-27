@@ -1,8 +1,12 @@
 WIP/Feature Requests:
 
-1- Option to delete the contents of the TVshowlist, shows, and Movies tables so they can be populated with fresh date. This will be used in future when we add columns or support for currently unsupported characters. 
+1- Option to delete the contents of the TVshowlist, shows, and Movies tables so they can be populated with fresh date. This will be used in future when we add columns or support for currently unsupported characters. -- Done, pending next release.
 
-1a- Add reset that drops tables mentioned in #1 and rebuilds them with current setup. This will be used in future when we add columns or support for currently unsupported characters. 
+1a- Add reset that drops tables mentioned in #1 and rebuilds them with current setup. This will be used in future when we add columns or support for currently unsupported characters. -- Done. setup_system.py can rebuild the tables, if that becomes necessary.
+
+1b- Backup contents of shows/Movies tables. -- Done, pending next release. 
+
+1c- Restore from backup shows/Movies tables. --Done, pending next release.
 
 2- Rearrange Block. This is a minor request that will be done at some point. -- Added
 
