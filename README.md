@@ -5,6 +5,12 @@ TheBaconNation Plex Controller
 <br><a href = "https://youtu.be/a5lOLjzunMQ">How To Create a Block Package.</a>
 <br><a href=  "http://thebaconnation.com">Our Homepage.</a>
 
+<br>
+
+<iframe src="https://discordapp.com/widget?id=206249843209797632&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0"></iframe>
+
+<br>
+
 <br>TheBaconNation Plex Controller Help Document
 <br>
 <br>Before You Begin-
