@@ -30,6 +30,6 @@ WIP/Feature Requests:
 
 12- Added options to suggest movies/shows by genre (genre.), rating (rating.), actor (actor.), and duration (duration.). Note: some of these are options only currently work with movies or shows. - WIP
 
-13 - Added favorites mode. This mode restricts the suggestmovie/suggesttv and automated selections to pick from items you have designated as favorites. Includes enablefavoritesmode, disablefavoritesmode and checkmode commands for this option. Need to specify "shows" or "movies" when using. - Done, Testing for next release. 
-
 13- when using querry mode to add a block, you can now use "listshows genre" or "listmovies genre" to be given a list of corresponding items. You can then select an item that is returned as the item to add. -- Done. 
+
+14- Added favorites mode. This mode restricts the suggestmovie/suggesttv and automated selections to pick from items you have designated as favorites. Includes enablefavoritesmode, disablefavoritesmode and checkmode commands for this option. Need to specify "shows" or "movies" when using. - Done, Testing for next release. 
