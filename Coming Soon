@@ -34,4 +34,6 @@ WIP/Feature Requests:
 
 14- Added favorites mode. This mode restricts the suggestmovie/suggesttv and automated selections to pick from items you have designated as favorites. Includes enablefavoritesmode, disablefavoritesmode and checkmode commands for this option. Need to specify "shows" or "movies" when using. - Done, Testing for next release. 
 
-15 - moviechoice - similar to the suggestmovie feature, only this option will present 3 movies of the requested genre., rating., or actor.. If an option is not found, or there are less than 3 available, an error is returned, else, you can select one of the returned items to add to the queue, or use any of the worklist shortcuts for the returned list. -- Added, Testing for next release. 
+15- moviechoice - similar to the suggestmovie feature, only this option will present 3 movies of the requested genre., rating., or actor.. If an option is not found, or there are less than 3 available, an error is returned, else, you can select one of the returned items to add to the queue, or use any of the worklist shortcuts for the returned list. -- Added, Testing for next release.
+
+16- Kidsmode - This mode restricts the playback options to movies/shows in the G/TV-G type ratings. Playback will error if you try to manually play something not kids approprate. resumeplayback is disabled. You can add approved and rejected exceptions for kids mode as well. -- Done, testing for next release. 
