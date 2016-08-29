@@ -1,4 +1,3 @@
-
 import urllib3
 import requests
 import time
@@ -13,6 +12,11 @@ try:
 except NameError:
 	pass
 
+global favtv
+global favmve
+
+favtv = []
+favmve = []
 
 MYDB = homedir + "myplex.db"
 http = urllib3.PoolManager()
@@ -174,10 +178,13 @@ def getshows():
 			studio = studio[0]
 		except IndexError:
 			studio = "None"
-		cur.execute('SELECT * FROM TVshowlist WHERE TShow LIKE \'' + TShow + '\'')
+		TShow = TShow.replace("'","''")
+		summary = summary.replace("'","''")
+		summary = str(summary.decode('ascii','ignore')).strip()
+		cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE \"" + TShow + "\"")
 		try:
 			if not cur.fetchone():
-				cur.execute('INSERT INTO TVshowlist VALUES(?, ?, ?, ?, ?, ?)', (TShow, summary, genre, rating, int(duration), int(totalnum)))
+				cur.execute("INSERT INTO TVshowlist VALUES(?, ?, ?, ?, ?, ?)", (TShow, summary, genre, rating, int(duration), int(totalnum)))
 				sql.commit()
 		except Exception: 
 			print ("Error adding " + TShow)
@@ -275,6 +282,9 @@ def getshow(show):
 
 		name = title
 		TShow = name
+		if (("'" in TShow) and ("''" not in TShow)):
+			TShow = TShow.replace("'","''")
+			print (TShow)
 		title = title + '.txt.'
 		title = homedir + title
 
@@ -461,10 +471,6 @@ def getshow(show):
 				#print (Summary)
 				Link = str(Link.strip().encode('ascii','replace'))
 				#print (Link)
-
-				if ("'" in TShow):
-					TShow = TShow.replace("'","\'")
-					print (TShow)
 				try:
 					cur.execute('SELECT * FROM shows WHERE TShow LIKE \'' + TShow + '\' AND Tnum LIKE \'' + str(Tnum) + '\'')
 					if not cur.fetchone():
@@ -530,6 +536,9 @@ def gettvshows():
 		
 		name = title
 		TShow = name
+		if (("'" in TShow) and ("''" not in TShow)):
+			TShow = TShow.replace("'","''")
+			print (TShow)
 		title = title + '.txt.'
 		title = homedir + title
 		
@@ -701,8 +710,10 @@ def gettvshows():
 					Link = Link[0]
 					
 					TShow = str(TShow)
+					#TShow = TShow.replace("'","''")
 					#print (TShow)
 					Episode = str(Episode)
+					Episode = Episode.replace("'","''")
 					#print (Episode)
 					Season = int(Season)
 					#print (str(Season))
@@ -711,17 +722,15 @@ def gettvshows():
 					Tnum = int(Tnum)
 					#print (str(Tnum))
 					Summary = str(Summary.encode('ascii','ignore').strip())
+					Summary = Summary.replace("'","''")
 					#print (Summary)
 					Link = str(Link.strip().encode('ascii','replace'))
 					#print (Link)
 
-					if ("'" in TShow):
-						TShow = TShow.replace("'","\'")
-						print (TShow)
-					cur.execute('SELECT * FROM shows WHERE TShow LIKE \'' + TShow + '\' AND Tnum LIKE \'' + str(Tnum) + '\'')
+					cur.execute("SELECT * FROM shows WHERE TShow LIKE \"" + TShow + "\" AND Tnum LIKE \"" + str(Tnum) + "\"")
 					try:
 						if not cur.fetchone():
-							cur.execute('INSERT INTO shows VALUES(?, ?, ?, ?, ?, ?, ?)', (TShow, Episode, Season, Enum, Tnum, Summary, Link))
+							cur.execute("INSERT INTO shows VALUES(?, ?, ?, ?, ?, ?, ?)", (TShow, Episode, Season, Enum, Tnum, Summary, Link))
 							sql.commit()
 							print ("New Episode Found: " + TShow + " Episode: " + Episode)
 					except Exception: 
@@ -967,6 +976,51 @@ def getmovies():
 		counter = counter + 1
 
 	fixmvfiles()
+def startupaction():
+	getfavorites()
+	cur.execute("DELETE FROM TVshowlist")
+	sql.commit()
+	cur.execute("DELETE FROM Movies")
+	sql.commit()
+	cur.execute("DELETE FROM shows")
+	sql.commit()
+	print ("Tables purged and ready for data.")
+
+def getfavorites():
+	global favtv
+	global favmve
+	cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\"")
+	mlist = cur.fetchall()
+	for mve in mlist:
+		mve = mve[0]
+		if mve.strip() not in favmve:
+			favmve.append(mve)
+
+	cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%favorite%\"")
+	tvlist = cur.fetchall()
+	for item in tvlist:
+		item = item[0]
+		if item not in favtv:
+			favtv.append(item)
+
+	print ("Favorites Acquired. Moving On.")
+
+def restorefavorites():
+	global favtv
+        global favmve
+	cmdtv = "python ./system.py addfavoriteshow "
+	cmdmv = "python ./system.py addfavoritemovie "
+	
+	for show in favtv:
+		command = cmdtv + "\"" + show.strip() + "\""
+		os.system(command)
+	
+	for movie in favmve:
+		command = cmdmv + "\"" + movie.strip() + "\""
+		os.system(command)
+
+	print ("Favorites Restored.")
+	
 
 try:
 	if "Windows" not in ostype:
@@ -980,19 +1034,12 @@ try:
 	elif ("updatemovies" in option):
 		getmovies()
 	elif ("all" in option):
+		startupaction()
 		gettvshows()
 		getshows()
 		getmovies()
-	elif ("reset" in option):
-		print ("Warning: This option will remove your stored data tree settings and they will be rebuilt. There is no going back.")
-		command = 'DELETE FROM settings WHERE item LIKE \'TVPART\''
-		cur.execute(command)
-		command = 'DELETE FROM settings WHERE item LIKE \'TVGET\''
-		cur.execute(command)
-		command = 'DELETE FROM settings WHERE item LIKE \'MOVIEGET\''
-		cur.execute(command)
-		sql.commit()
-		print ("It has been done. You will be asked to restore these settings next time upddatedb_pi.py runs.")
+		restorefavorites()
+
 except IndexError:
 	print ("No option specified. Use 'updatetv' or 'updatemovies' or 'all' to update your db.")		
 print ("Done")

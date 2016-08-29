@@ -1,4 +1,3 @@
-
 import os
 import getpass
 import time
@@ -22,6 +21,7 @@ user = getpass.getuser()
 global file
 global show
 global play
+global pcmd
 
 SLEEPTIME = 5
 try:
@@ -135,8 +135,360 @@ def maxaudio():
         plexlogin()
         client.setVolume(100, 'Video')
 	
+def checkmode(option):
+	option = option.lower()
+	if "show" in option:
+		command = "SELECT State FROM States WHERE Option LIKE \"ENABLEFAVORITESMODESHOW\""
+		cur.execute(command)
+		if not cur.fetchall():
+			cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODESHOW","Off"))
+			sql.commit()
+	elif "movie" in option:
+		command = "SELECT State FROM States WHERE Option LIKE \"ENABLEFAVORITESMODEMOVIE\""
+		cur.execute(command)
+		if not cur.fetchall():
+                        cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODEMOVIE","Off"))
+                        sql.commit()
+	cur.execute(command)
+	say = cur.fetchone()[0]
+	return (say)
+
+def addapproved(title):
+	title = titlecheck(title)
+	title = mediachecker(title)
+	command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDLIST\""
+        cur.execute(command)
+	if not cur.fetchone():
+		writeme = title + ";"
+		cur.execute("DELETE FROM States WHERE Option LIKE \"APPROVEDLIST\"")
+		sql.commit()
+		cur.execute("INSERT INTO States VALUES (?,?)",("APPROVEDLIST",writeme.strip()))
+		sql.commit()
+		
+	else:
+		cur.execute(command)
+		writeme = cur.fetchone()[0]
+		check = writeme.split(";")
+		chks = []
+		for item in check:
+			chks.append(item)
+		if (title not in chks):
+			writeme = writeme + title + ";"
+			cur.execute("DELETE FROM States WHERE Option LIKE \"APPROVEDLIST\"")
+			sql.commit()
+			cur.execute("INSERT INTO States VALUES (?,?)",("APPROVEDLIST",writeme.strip()))
+			sql.commit()
+		else:
+			return (title + " is already in the approved list.")
+	return (title + " has been added to the approved list.")
+
+def addrejected(title):
+        title = titlecheck(title)
+        title = mediachecker(title)
+        command = "SELECT State FROM States WHERE Option LIKE \"REJECTEDLIST\""
+        cur.execute(command)
+        if not cur.fetchone():
+                writeme = title + ";"
+                cur.execute("DELETE FROM States WHERE Option LIKE \"REJECTEDLIST\"")
+                sql.commit()
+                cur.execute("INSERT INTO States VALUES (?,?)",("REJECTEDLIST",writeme.strip()))
+                sql.commit()
+
+        else:
+                cur.execute(command)
+                writeme = cur.fetchone()[0]
+                check = writeme.split(";")
+                chks = []
+                for item in check:
+                        chks.append(item)
+                if (title not in chks):
+                        writeme = writeme + title + ";"
+                        cur.execute("DELETE FROM States WHERE Option LIKE \"REJECTEDLIST\"")
+                        sql.commit()
+                        cur.execute("INSERT INTO States VALUES (?,?)",("REJECTEDLIST",writeme.strip()))
+                        sql.commit()
+                else:
+                        return (title + " is already in the rejected list.")
+        return (title + " has been added to the rejected list.")
+
+def showrejected():
+	command = "SELECT State FROM States WHERE Option LIKE \"REJECTEDLIST\""
+        cur.execute(command)
+        if not cur.fetchone():
+		print ("The Rejected List is currently empty.")
+	else:
+		cur.execute(command)
+		rlist = cur.fetchone()[0]
+		rlist = rlist.split(";")
+		print ("The following items are in the Rejected List:\n")
+		for item in rlist:
+			item = item.replace("movie.","the movie ")
+			if item == "":
+				pass
+			else:
+				print (item)
+
+def showapproved():
+	command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDLIST\""
+        cur.execute(command)
+        if not cur.fetchone():
+                print ("The Approved List is currently empty.")
+	else:
+		cur.execute(command)
+		rlist = cur.fetchone()[0]
+		rlist = rlist.split(";")
+		print ("The following items are in the Approved List:\n")
+		for item in rlist:
+			item = item.replace("movie.","the movie ")
+			if item == "":
+				pass
+			else:
+				print (item)
+
+def addapprovedrating(rating):
+	command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDRATINGS\""
+        cur.execute(command)
+        if not cur.fetchone():
+                allowed = ['TV-Y','TV-Y7','TV-G','G','PG']
+                for item in allowed:
+                        try:
+                                xallowed = xallowed + ";" + item
+                        except NameError:
+                                xallowed = item
+
+                cur.execute("INSERT INTO States VALUES (?,?)",("APPROVEDRATINGS",xallowed))
+                sql.commit()
+		del xallowed
+        cur.execute(command)
+        allowed = cur.fetchone()[0]
+	allowed = allowed.split(";")
+	if rating in allowed:
+		return ("Error: " + rating + " is already in the allowed list.")
+	for item in allowed:
+		try:
+			if item == "":
+				pass
+			else:
+				xallowed = xallowed + ";" + item
+		except NameError:
+			xallowed = item
+	xallowed = xallowed + ";" + rating
+	cur.execute("DELETE FROM States WHERE Option LIKE \"APPROVEDRATINGS\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("APPROVEDRATINGS",xallowed))
+	sql.commit()
+	return (rating + " has been added to the approved ratings list.")
+
+def removeapprovedrating(rating):
+	rating = rating.strip()
+	command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDRATINGS\""
+        cur.execute(command)
+        if not cur.fetchone():
+                allowed = ['TV-Y','TV-Y7','TV-G','G', 'PG']
+                for item in allowed:
+                        try:
+                                xallowed = xallowed + ";" + item
+                        except NameError:
+                                xallowed = item
+
+                cur.execute("INSERT INTO States VALUES (?,?)",("APPROVEDRATINGS",xallowed))
+                sql.commit()
+		del xallowed
+        cur.execute(command)
+        allowed = cur.fetchone()[0]
+        yallowed = allowed.split(";")
+        if rating not in yallowed:
+                return ("Error: " + rating + " is not in the allowed list.")
+	allowed = allowed.replace(rating,"")
+	allowed = allowed.replace(";;",";")
+	allowed = allowed.strip()
+	allowed = allowed.split(";")
+	print (allowed)
+	for item in allowed:
+                try:
+			if item == "":
+				pass
+			else:
+				xallowed = xallowed + ";" + item
+                except NameError:
+                        xallowed = item
+        cur.execute("DELETE FROM States WHERE Option LIKE \"APPROVEDRATINGS\"")
+        sql.commit()
+        cur.execute("INSERT INTO States VALUES (?,?)",("APPROVEDRATINGS",xallowed))
+        sql.commit()
+	return (rating + " has been removed from the approved ratings list.")
+	
 
 
+def approvedratings():
+	command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDRATINGS\""
+        cur.execute(command)
+	if not cur.fetchone():
+                allowed = ['TV-Y','TV-Y7','TV-G','G', 'PG']
+                for item in allowed:
+                        try:
+                                xallowed = xallowed + ";" + item
+                        except NameError:
+                                xallowed = item
+
+                cur.execute("INSERT INTO States VALUES (?,?)",("APPROVEDRATINGS",xallowed))
+                sql.commit()
+	cur.execute(command)
+	allowed = cur.fetchone()[0]
+	allowed = allowed.split(";")
+	print ("The following ratings are currently allowed in kids mode:\n")
+	for item in allowed:
+		print (item)
+	return ("\nDone.")
+
+def kidscheck(option, title):
+	command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDLIST\""
+	command2 = "SELECT State FROM States WHERE Option LIKE \"REJECTEDLIST\""
+	command3 = "SELECT State FROM States WHERE Option LIKE \"APPROVEDRATINGS\""
+	cur.execute(command)
+	approved = []
+	rejected = []
+	try:
+		alist = cur.fetchone()[0]
+	except Exception:
+		alist = ""
+	cur.execute(command2)
+	try:
+		rlist = cur.fetchone()[0]
+	except Exception:
+		rlist = ""
+	alist = alist.split(";")
+	for item in alist:
+		approved.append(item)
+	rlist = rlist.split(";")
+	for item in rlist:
+		rejected.append(item)
+	if title in approved:
+		return ("pass")
+	if title in rejected:
+		return ("fail")
+	cur.execute(command3)
+	if not cur.fetchone():
+		allowed = ['TV-Y','TV-Y7','TV-G','G', 'PG']
+		for item in allowed:
+			try:
+				xallowed = xallowed + ";" + item
+			except NameError:
+				xallowed = item
+			
+		cur.execute("INSERT INTO States VALUES (?,?)",("APPROVEDRATINGS",xallowed))
+		sql.commit()
+	cur.execute(command3)
+	allowed = cur.fetchone()[0]
+	allowed = allowed.split(";")
+	option = option.lower()
+	title = title.lower()
+	if option == "show":
+		command = "SELECT Rating FROM TVshowlist WHERE TShow LIKE \"" + title + "\""
+	elif option == "movie":
+		title = title.replace("movie.","")
+		command = "SELECT Rating FROM Movies WHERE Movie LIKE \"" + title + "\""
+	cur.execute(command)
+	found = cur.fetchone()[0]
+	if found in allowed:
+		return ("pass")
+	else:
+		return ("fail")
+def setkidspassword(option):
+	checkpw = getkidspw()
+	checkme = input('Current Password: ')
+	if checkpw.strip() != checkme.strip():
+		return ("Error: Password Missmatch. No action taken.")
+	option = option.strip()
+	command = "DELETE FROM States WHERE Option LIKE \"KIDSPW\""
+	cur.execute(command)
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("KIDSPW",option))
+	sql.commit()
+	return ("The KIDSPW has been set to : " + option + ".")
+
+def getkidspw():
+	command = "SELECT State FROM States WHERE Option LIKE \"KIDSPW\""
+	cur.execute(command)
+	if not cur.fetchone():
+		password = "supersneakey"
+		cur.execute("INSERT INTO States VALUES (?,?)",("KIDSPW",password))
+		sql.commit()
+	cur.execute(command)
+	pw = cur.fetchone()[0]
+	return (pw)
+
+def checkkidspw():
+	pw = getkidspw()
+	pw2 = str(input('Kids Password: '))
+	if pw != pw2:
+		return ("Error: Invalid Password.")
+	return pw	
+
+def enablekidsmode():
+	cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODESHOW\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODESHOW","Kids"))
+	sql.commit()
+	cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODEMOVIE\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODEMOVIE","Kids"))
+	sql.commit()
+
+        return ("Favories mode has been turned Kids.")
+
+def disablekidsmode():
+	kcheck = checkmode("movie")
+	if "Kids" in kcheck:
+		checkpw = checkkidspw()
+		if ("Error:" in checkpw):
+			return checkpw
+		cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODESHOW\"")
+		sql.commit()
+		cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODESHOW","Off"))
+		sql.commit()
+		cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODEMOVIE\"")
+		sql.commit()
+		cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODEMOVIE","Off"))
+		sql.commit()
+
+		return ("Favories mode has been turned Off.")
+	else:
+		return ("Not in Kids mode. Unable to disable.")
+
+def enablefavoritesmode(mode):
+	mode = mode.lower()
+	if "show" in option:
+		cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODESHOW\"")
+		sql.commit()
+		cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODESHOW","On"))
+		sql.commit()
+	elif ("movie" in option):
+		cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODEMOVIE\"")
+                sql.commit()
+                cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODEMOVIE","On"))
+                sql.commit()
+	else:
+		return ("Error: You must specify either \"show\" or \"movie\" to use this command.")
+
+	return ("Favories mode " + mode + " has been turned On.")
+
+def disablefavoritesmode(mode):
+	mode = mode.lower()
+        if "show" in option:
+                cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODESHOW\"")
+                sql.commit()
+                cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODESHOW","Off"))
+                sql.commit()
+        elif ("movie" in option):
+                cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODEMOVIE\"")
+                sql.commit()
+                cur.execute("INSERT INTO States VALUES (?,?)",("ENABLEFAVORITESMODEMOVIE","Off"))
+                sql.commit()
+        else:
+                return ("Error: You must specify either \"show\" or \"movie\" to use this command.")
+
+        return ("Favories mode " + mode + " has been turned Off.")
 
 def listclients():
 	daclients = []
@@ -190,6 +542,10 @@ def whereat():
 			check = int(check)/60000
 			check2 = int(check2)/60000
 			say = ("We are at minute " + str(check) + " out of " + str(check2) + ".")
+	try:
+		say
+	except NameError:
+		say = "Nothing is currently playing."
 	return (say)
 
 def skipahead():
@@ -566,6 +922,8 @@ def addblock(name, title):
 						xname = worklist(xname)
 						if (xname == "done"):
 							return ("User Quit. No further action taken.")
+						elif ("Error:" in xname):
+							return xname
 						
 					blname = str(name)
 					xname = xname.replace("'","''")
@@ -653,6 +1011,8 @@ def addtoblock(blockname, name):
 	if (blockname == "select"):
 		print ("Block select mode enabled. Generating list\n")
 		blockname = worklist(blist)
+		if (("Error:" in blockname) or (blockname == "done")):
+			return blockname
 	if (name == "select"):
 		print ("Title select mode enabled.\n")
 		mchoice = int(raw_input('1- TV Show or 2- Movie? '))
@@ -663,6 +1023,8 @@ def addtoblock(blockname, name):
 		else:
 			return ("Error. Invalid Selection. No action taken.")
 		name = worklist(name)
+		if (("Error:" in name) or (name == "done")):
+			return name
 
 	for item in blist:
 		check = item.rstrip()
@@ -880,6 +1242,42 @@ def reorderblock(block):
 	say = "The " + block + " block has been reordered."
 	return (say)
 
+def mediachecker(title):
+	title = title.strip().lower()
+        check1 = "start"
+        check2 = "start"
+        ctitle = title.replace("movie.","")
+        cur.execute("SELECT Movie FROM Movies WHERE Movie LIKE \"" + ctitle + "\"")
+        if not cur.fetchone():
+                check1 = "fail"
+        else:
+                check1 = "pass"
+                newt = "movie." + title
+		#return (newt)
+        cur.execute("SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + title + "\"")
+        if not cur.fetchone():
+                check2 = "fail"
+        else:
+                check2 = "pass"
+		return (title)
+        if ((check1 == "fail") and (check2 == "fail")):
+                addme = didyoumeanboth(title)
+                print (addme)
+                if "Quit." in addme.strip():
+                        return ("User Quit. No Action Taken.")
+                else:
+                        title = addme
+        elif ((check1 == "pass") and (check2 == "pass") and ("Fail" not in externalcheck())):
+                addme = didyoumeanboth(title)
+                if "Quit." in addme:
+                        return ("User Quit. No Action Taken.")
+                else:
+                        title = addme
+        elif ((check1 == "pass") and (check2 == "fail")):
+                title = newt
+        title = title.replace("'","''")
+        return (title)
+
 def playblockpackage(play):
 	list = getblockpackagelist()
 	for item in list:
@@ -900,7 +1298,6 @@ def playblockpackage(play):
 			bcount = bcount + 1
 			if int(bcount) == (int(max_count)-1):
 				bcount = 0
-				setplaymode("normal")
 				print ("Playmode has been set to normal.")
 			command = 'DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\''
 			cur.execute(command)
@@ -909,27 +1306,9 @@ def playblockpackage(play):
 			sql.commit()
 			play = play.lower()
 			if "random_movie." in play:
-				type = play
-				type = type.replace(";","")
-				command = 'SELECT State FROM States WHERE Option LIKE \'TONIGHTSMOVIE\''
-				cur.execute(command)
-				if not cur.fetchone():
-					type = type.split("random_movie.")
-					type = type[1]
-					type = type.replace(";","")
-					play = suggestmovie(type)
-					play = play.split("movie: ")
-					play = play[1]
-					play = play.split(" sound")
-					play = play[0]
-					play = "movie." + play
-				else:
-					cur.execute(command)
-					play = cur.fetchone()[0]
+				play = idtonightsmovie()
 				play = play.rstrip()
 				cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSMOVIE\'')
-				sql.commit()
-				cur.execute('INSERT INTO States VALUES (?,?)',('TONIGHTSMOVIE',''))
 				sql.commit()
 			elif "random_tv." in play:
 				type = play
@@ -951,6 +1330,13 @@ def playblockpackage(play):
                                 play = play.rstrip()
                                 cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSSHOW\'')
                                 sql.commit()
+			if int(bcount) == 0:
+                                setplaymode("normal")
+                                print ("Playmode has been set to normal.")
+			print (play)
+			play = play.replace("Tonights movie has been set to ","")
+			play = titlecheck(play)
+			play = mediachecker(play).strip()
 			
 			playshow(play)	
 
@@ -966,6 +1352,8 @@ def availableshows():
 	return (theshows)
 
 def worklist(thearray):
+	if int(len(thearray) == 0):
+		return ("Error: No results found.")
 	movies = thearray
 	mcount = 1
 	mvcount = 0
@@ -1061,6 +1449,7 @@ def worklist(thearray):
 			media = media.replace("movie.","The Movie ")
 			print (media + " will play next from the queue.")
 			exitc = "quit"
+			return ("Done.")
 		elif ("queueadd" in getme.lower()):
 			media = getme.lower().split("queueadd ")
 			media = media[1].strip()
@@ -1069,6 +1458,9 @@ def worklist(thearray):
 			queueadd(media)
 			print (media + " has been added to the queue.")
 			exitc = "quit"
+			return ("Done.")
+		elif (getme.lower() == "reroll"):
+			return ("reroll")
 		else:
 			Error = "Invalid Selection. Please Try Again."
 			mmin = mmin - 10
@@ -1091,20 +1483,54 @@ def availableblocks():
 			blist = item + "\n"
 	return blist
 
+def moviegenrefixer():
+	command = "Select Movie from Movies"
+	cur.execute(command)
+	mlist = cur.fetchall()
+	for item in mlist:
+		item = item[0].strip()
+		command = "SELECT * FROM Movies WHERE Movie LIKE \"" + item + "\""
+		cur.execute(command)
+		found = cur.fetchone()
+		genre = found[4].strip()
+		if (("  " in genre) or (";" in genre)):
+			print (item)
+			print (genre)
+			cur.execute("DELETE FROM Movies WHERE Movie LIKE \"" + item + "\"")
+			sql.commit()
+			movie = found[0]
+			summary = found[1]
+			rating = found[2]
+			tagline = found[3]
+			genre = found[4]
+			genre = genre.replace("  "," ")
+			genre = genre.replace(";","")
+			director = found[5]
+			actors = found[6]
+			cur.execute('INSERT INTO Movies VALUES(?,?,?,?,?,?,?)', (movie, summary, rating, tagline, genre, director, actors))
+			sql.commit()
+		
+
+	print ("Movie Genres Fixed.")
+
+
 def findmovie(movie):
+	movie = movie.strip()
 	if ("genre." in movie.lower()):
 		genre = movie.split("genre.")
 		genre = genre[1]
-		command = 'SELECT Movie FROM Movies WHERE Genre LIKE \'%' + genre + '%\' ORDER BY Movie ASC'
+		command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\" ORDER BY Movie ASC"
 		cur.execute(command)
-		if not cur.fetchone():
-                        return ("Error: No movies in the " + genre + " genre have been found.")
-                else:
-                        tlist = cur.fetchall()
-                        mlist = []
-                        for movie in tlist:
-                                mlist.append(movie[0])
-                        worklist(mlist)
+		tlist = cur.fetchall()
+		try:
+			mlist = []
+			for item in tlist:
+				if item not in mlist:
+					mlist.append(item[0])
+			worklist(mlist)
+		except Exception:
+			return ("Error: No movies in the " + genre + " genre have been found.")
+		
 	elif ("rating." in movie.lower()):
 		from random import randint
 		rating = movie.split('.')
@@ -1137,33 +1563,35 @@ def findmovie(movie):
 		command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'%' + movie + '%\''
 		cur.execute(command)
 		xep = cur.fetchall()
-		try:
-			print ("The Following Movies were found containing \'" + movie + "\':")
+		mlist = []
+		if xep != []:
 			for item in xep:
-				print (item[0])
-			print ("\n")
-			say = ""
-		except Exception:
+				item = item[0].strip()
+				if item not in mlist:
+					mlist.append(item)
+			worklist(mlist)
+		else:
 			say = "No results found for " + movie + ". Did you mean:\n"
 
-		if xep == []:
-			movie = movie.split(' ')
-			for title in movie:
-				print ("Found containing " + title + "\n")
-				command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'%' + title + '%\''
-				cur.execute(command)
-				xep = cur.fetchall()
-				try:
-					for item in xep:
-						print (item[0])
-					print ("\n")
-					say = ""
-				except Except:
-					print ("No items found containing " + title)
+			if xep == []:
+				del xep
+				movie = movie.split(' ')
+				for title in movie:
+					print ("Found containing " + title + "\n")
+					command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'%' + title + '%\''
+					cur.execute(command)
+					xep = cur.fetchall()
+					if xep != []:
+						for item in xep:
+							print (item[0])
+						print ("\n")
+						say = ""
+					else:
+						say = ("No items found containing " + title)
 
 
 
-		return (say)
+			return (say)
 
 def listepisodes(show):
 	command = "SELECT TShow, Episode, Season, Enum FROM shows WHERE TShow LIKE \'" + show + "\'"
@@ -1278,7 +1706,13 @@ def epdetails(show, season, episode):
 	return showplay
 
 def moviedetails(movie):
-	command = 'SELECT Movie, Summary, Rating, Tagline, Summary FROM Movies WHERE Movie LIKE \'' + movie + '\''
+	movie = titlecheck(movie)
+	movie = mediachecker(movie)
+	movie = movie.replace("movie.","")
+	if (("Error" in movie) or (movie == "done")):
+		return movie
+	print (movie)
+	command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + movie + '\''
 	cur.execute(command)
 	xep = cur.fetchone()
 	ep = str(xep[0])
@@ -1287,8 +1721,12 @@ def moviedetails(movie):
 	summary = summary.replace("&#xA;", "")
 	xmovie = "movie." + movie.strip()
 	leftoff = whereleftoff(xmovie)
+	genres = str(xep[4]).strip()
+	genres = genres.replace("  "," ")
+	starring = str(xep[6]).strip()
+	director = str(xep[5]).strip()
 
-	showplay = "Movie: " + ep + "\nRated: " + str(xep[2]) + "\nTagline: " + str(xep[3]) + "\nSummary: " + summary + "\n\nResume from minute option: " + str(leftoff) + "."
+	showplay = "Movie: " + ep + "\nRated: " + str(xep[2]) + "\nStarring: " + starring + "\nDirected By: " + director + "\nGenres: " + genres + "\nTagline: " + str(xep[3]) + "\nSummary: " + summary + "\n\nResume from minute option: " + str(leftoff) + "."
 	return showplay
 
 def showdetails(show):
@@ -1606,7 +2044,10 @@ def playspshow(show, season, episode):
 	return showsay
 
 def playshow(show):
-	print (show)
+	global pcmd
+	kcheckshow = checkmode("show")
+	kcheckmovie = checkmode("movie")
+	#print (show)
 	command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
@@ -1620,6 +2061,17 @@ def playshow(show):
 		schecker = "lost"
 		
 	if ("found" in schecker):
+		if ("Kids" in kcheckshow):
+			kcheck = kidscheck("show",show)
+			if "fail" in kcheck.lower():
+				print ("Kids mode fail:" + show)
+				print (sys.argv)
+				try:
+					if ("playme" not in pcmd):
+						skipthat()
+				except Exception:
+					skipthat()
+				return ("Kids mode is currently active. Unable to start " + show + ". It has been skipped.")
 		try:
 			command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + show + "\""
 			cur.execute(command)
@@ -1639,6 +2091,8 @@ def playshow(show):
 		sql.commit()
 		xshow = cur.fetchone()
 		xshow = xshow[0].rstrip()
+		xshow = xshow.replace("''","'")
+		#print (xshow)
 		thecountx = (thecount + 1)
 		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecountx) + "\""
 		cur.execute(command)
@@ -1698,6 +2152,12 @@ def playshow(show):
 	
 		return (say)	
 	elif ("movie." in show):
+		if ("Kids" in kcheckmovie):
+                        kcheck = kidscheck("movie",show)
+                        if "fail" in kcheck.lower():
+				print ("Kids show fail: " + show)
+                                #skipthat()
+                                return ("Kids mode is currently active. Unable to start " + show + ". It has been skipped.")
 		show = show.replace("movie.", "")
 		command = "SELECT Movie FROM Movies WHERE Movie like\"" + show + "\""
 		cur.execute(command)
@@ -1804,7 +2264,6 @@ def playwhereleftoff(show):
 		cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecountx))
 		sql.commit()	
 		thecount = str(thecount)
-	
 		shows = plex.library.section('TV Shows')
 		the_show = shows.get(show)
 		#showplay = the_show.rstrip()
@@ -1813,7 +2272,6 @@ def playwhereleftoff(show):
 		client.playMedia(ep, leftoff)
 		nowplaywrite("TV Show: " + show + " Episode: " + xshow)
 		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, Sir' 
-		
 		return showsay
 	elif ("movie." in show):
 		show = show.replace("movie.", "")
@@ -1830,7 +2288,6 @@ def playwhereleftoff(show):
 				#playfile(show)
 				showplay = show
 				nowplaywrite("Movie: " + showplay)
-				
 				return ("Playing the movie " + show + " now, Sir.") 
 		return ("Error. " + show + " Not found!")
 	elif ("block." in show):
@@ -1838,16 +2295,19 @@ def playwhereleftoff(show):
 		show = show.replace("_", " ")
 		return ("Starting the " + show)
 	else:
-		
 		return ("Media not found to launch. Check the title and try again.")
-	
-		
 
 
 def queueadd(addme):
         title = addme.strip()
 	type = "queue"
-        if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
+	if ("block." in title):
+		title = title.replace("block.","")
+		name = verifyblock(title)
+		name = "block." + name
+		
+		
+        elif (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
                 title = titlecheck(title).strip()
 		title = title.replace("'","")
 		xname = title
@@ -1860,6 +2320,11 @@ def queueadd(addme):
 		name = mediachecker(xname)
 	else:
 		name = mediachecker(title)
+
+	if ("User Quit" in name):
+		return (name)
+	elif ("Error:" in name):
+		return (name)
 
 	if ("movie." in name):
 		xname = name + ";"
@@ -1877,6 +2342,7 @@ def queueadd(addme):
 		cur.execute("INSERT INTO States VALUES(?,?)", (type, queue))
 		sql.commit()	
 		xname = xname.replace("movie.","")
+		xname = xname.replace(";","")
 		say = ("The Movie " + xname.rstrip() + " has been added to the queue.")
 		return say	
 	else:
@@ -1894,6 +2360,7 @@ def queueadd(addme):
 		cur.execute(command)
 		cur.execute("INSERT INTO States VALUES(?,?)", (type, queue))
 		sql.commit()
+		xname = xname.replace(";","")
 
 		say = ("The TV Show " + xname.rstrip() + " has been added to the queue.")
 		return say
@@ -1923,9 +2390,11 @@ def nowplaying():
 				say = "Now Playing: " + title
 			else:
 				say = "Content Type: " + sess.type + ".\n Title: " + sess.title + "."
+	try:
+		say
+	except NameError:
+		say = "Nothing is currently playing."
 	return (say)
-
-
 
 def queueget():
 	name = "queue"
@@ -1960,9 +2429,15 @@ def queuefill():
 	from random import randint, shuffle
 	playme = randint(1,7)
 	#random TV show
+	showmode = checkmode("show")
+	moviemode = checkmode("movie")
 	if ((playme == 1) or (playme ==5) or (playme == 7)):
-		if (playme == 1):
+		if ((playme == 1) and (showmode == "Off")):
 			command = "SELECT TShow FROM TVshowlist"
+			cur.execute(command)
+		elif (showmode == "Kids"):
+			print ("Finding a kid friendly show now.")
+			command = "SELECT TShow FROM TVshowlist WHERE Rating IN (\"TV-Y\",\"TV-Y7\", \"TV-G\")"
 			cur.execute(command)
 		else:
 			print ("Using Favorites TV")
@@ -1983,11 +2458,15 @@ def queuefill():
 		addme = tlist[playc]
 	#random Movie
 	if ((playme == 2) or (playme ==4) or (playme == 6)):
-		if ((playme == 2) or (playme == 6)):
+		if ((playme == 4) and (moviemode == "Off")):
+			command = "SELECT Movie FROM Movies"
+		elif (showmode == "Kids"):
+                        print ("Finding a kid friendly movie now.")
+                        command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\", \"PG\")"
+                        cur.execute(command)
+		else:
 			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\""
 			print ("Using Favorites.")
-		else:
-			command = "SELECT Movie FROM Movies"
                 cur.execute(command)
 		mvlist = cur.fetchall()
 		mlist = []
@@ -2000,10 +2479,17 @@ def queuefill():
 		play = mlist[playc]
 		addme = "movie." + play
 	if (playme == 3):
-		cur.execute("SELECT setting FROM settings WHERE item LIKE \"WILDCARD\"")
-		addme = cur.fetchone()
-		addme = addme[0]
-	#addme = "The Big Bang Theory"
+		if (showmode == "Kids"):
+			print ("Wildcard kids mode- Finding a kid friendly movie now.")
+                        command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\", \"PG\")"
+                        cur.execute(command)
+			addme = cur.fetchall()
+			found = randint(0,int(len(addme)))
+			addme = addme[found][0]
+		else:
+			cur.execute("SELECT setting FROM settings WHERE item LIKE \"WILDCARD\"")
+			addme = cur.fetchone()
+			addme = addme[0]
 	return queueadd(addme)
 
 def queueremove(item):
@@ -2201,6 +2687,21 @@ def playmode():
 		return ("We are binge  watching: " + option)
 	return playmode
 
+def availplaymodes():
+	say = """
+""" + bcolors.WARNING + """The following modes are supported:""" + bcolors.ENDC + """
+1- normal(""" + bcolors.OKGREEN + """normal""" + bcolors.ENDC + """) - Plays content from your TBN-Plex queue.
+2- Block(""" + bcolors.OKGREEN + """block.blocknamehere""" + bcolors.ENDC + """) - Plays a user created block of content.
+3- Marathon(""" + bcolors.OKGREEN + """marathon.shownamehere""" + bcolors.ENDC + """) - Plays a specific show continuously until you return us to normal mode.
+4- Mini-Marathon(""" + bcolors.OKGREEN + """minithon.shownamehere""" + bcolors.ENDC + """) - Plays a show x number of times before reverting to normal mode. 
+5- Binge(""" + bcolors.OKGREEN + """binge.shownamehere""" + bcolors.ENDC + """) - Plays a specific show continususly until you return us to normal mode.
+
+You can change the current playmode by using "setplaymode" and one of the options above. 
+ex- setplaymode block.crime_drama_block
+ex2- setplaymode normal
+	"""
+	return (say)
+
 def setplaymode(mode):
 	cmode = playmode()
 	if mode != cmode:
@@ -2263,7 +2764,6 @@ def getblockpackage(play):
 	list = getblockpackagelist()
 	play = play.replace("block.","")
 	for item in list:
-		item = item.replace(".txt", "")
 		if (item in play):
 			command = "SELECT Items, Count FROM Blocks WHERE Name LIKE \"" + play + "\""
 			cur.execute(command)
@@ -2276,47 +2776,26 @@ def getblockpackage(play):
 			play = play.rstrip()
 	return play
 
-def mediachecker(title):
-	check1 = "start"
-        check2 = "start"
-        ctitle = title.replace("movie.","")
-        cur.execute("SELECT Movie FROM Movies WHERE Movie LIKE \"" + ctitle + "\"")
-        if not cur.fetchone():
-                check1 = "fail"
-        else:
-                check1 = "pass"
-                newt = "movie." + title
-        cur.execute("SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + title + "\"")
-        if not cur.fetchone():
-                check2 = "fail"
-        else:
-                check2 = "pass"
-        if ((check1 == "fail") and (check2 == "fail")):
-                addme = didyoumeanboth(title)
-		print (addme)
-                if "Quit." in addme.strip():
-                        return ("User Quit. No Action Taken.")
-                else:
-                        title = addme
-        elif ((check1 == "pass") and (check2 == "pass") and ("Fail" not in externalcheck())):
-                addme = didyoumeanboth(title)
-                if "Quit." in addme:
-                        return ("User Quit. No Action Taken.")
-                else:
-                        title = addme
-        elif ((check1 == "pass") and (check2 == "fail")):
-                title = newt
-	title = title.replace("'","''")
-	return (title)
-
 def setupnext(title):
-	title = title.strip()
-	otitle = title
+	otitle = title.strip()
+	if ("block." in title):
+		block = title.replace("block.","")
+		block = verifyblock(block)
+		say = setplaymode(block)
+		return (say)
+	elif ("minithon." in title):
+		say = setplaymode(title)
+		return say
+	elif ("marathin." in title):
+		say = setplaymode(title)
+		return say
 	
 	if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 		title = titlecheck(title).strip()
 	title = mediachecker(title)
 	if "User Quit." in title:
+		return (title)
+	elif ("Error: " in title):
 		return (title)
 
 	if ("movie." in title):
@@ -2427,6 +2906,9 @@ def addgenremovie(movie, genre):
 	cur.execute(command)
 	if not cur.fetchone():
 		say = didyoumeanmovie(movie)
+		if (("Error:" in say) or (say == "done") or (say == "Quit")):
+			return (say)
+		say = say.replace("movie.","")
 		command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + say + '\''
 	cur.execute(command)
 	stuff = cur.fetchone()
@@ -2437,9 +2919,9 @@ def addgenremovie(movie, genre):
 	genres = stuff[4]
 	director = stuff[5]
 	actor = stuff[6]
-	if genre in genres:
+	if genre.lower() in genres.lower():
 		return("Error: " + genre + " is already associated with the movie " + movie)
-	genres = genres + genre + ';'
+	genres = genres.strip() + " " + genre 
 	command = 'DELETE FROM Movies WHERE Movie LIKE \'' + movie + '\''
 	cur.execute(command)
 	sql.commit()
@@ -2532,6 +3014,7 @@ def titlecheck(title):
 			pass
 	else:
 		newt = title
+	newt = newt.strip()
 	return (newt)
 
 def didyoumeanboth(title):
@@ -2548,19 +3031,24 @@ def didyoumeanboth(title):
 		if (" " in show):
 			show = show.split(' ')
 			for item in show:
-				if ((item.lower() not in passcheck) and (int(len(item)) > 3)):
+				if ((item.lower() not in passcheck) and (int(len(item)) > 3) and (item not in checks)):
 					checks.append(item)
 		else:
-			checks.append(show)
-		for item in checks:
-			command = "SELECT Movie FROM Movies WHERE Movie LIKE \"%" + item + "%\""
-			cur.execute(command)
-			if cur.fetchall():
-				cur.execute(command)
-				foundme = cur.fetchall()
-				for items in foundme:
-					if items[0].strip().lower() not in found:
-						found.append('movie.' + items[0].strip().lower())
+			try:
+				if (item not in checks):
+					checks.append(show)
+				for item in checks:
+					command = "SELECT Movie FROM Movies WHERE Movie LIKE \"%" + item + "%\""
+					cur.execute(command)
+					if cur.fetchall():
+						cur.execute(command)
+						foundme = cur.fetchall()
+						for items in foundme:
+							mchk = "movie." + items[0].strip().lower()
+							if mchk not in found:
+								found.append(mchk)
+			except Exception:
+				pass
 		del checks
 	show = title
 	tshow = show
@@ -2661,13 +3149,15 @@ def didyoumeanmovie(movie):
                         cur.execute(command)
                         foundme = cur.fetchall()
                         for items in foundme:
-                                if items[0].strip() not in found:
-                                        found.append(items[0].strip())
+				mchk = "movie." + items[0].strip().lower()
+                                if mchk not in found:
+                                        found.append(mchk)
         if not found:
                 return ("Error: " + tshow + ", nor anything close was found in your library.")
         choicecount = 1
         max = int(len(found))
         for item in found:
+		item = item.replace("movie.","")
                 print (str(choicecount) + ":" + item + "\n")
                 choicecount = choicecount + 1
         print (str(choicecount) + ": Quit")
@@ -2794,6 +3284,7 @@ def whatupnext():
 			else:
 				episode = nextep(block)
 				block = playmode.replace("block.","")
+			#upnext = upnext.replace("''","'")
 			upnext = "Up next we have " + episode
 			upnext = upnext.replace("For the show ", "")
 			upnext = upnext.replace("Up next is ", "")
@@ -2947,7 +3438,8 @@ def idtonightsmovie():
 				if "random_movie." in thing:
 					item = thing.split("_movie.")
 					item = item[1]
-					say = getmovie(item)
+					say = suggestmovieblockuse(item)
+					#say = getmovie(item)
 					say = settonightsmovie(say)
 					return (say)
 		else:
@@ -2967,7 +3459,8 @@ def idtonightsmovie():
 					if "random_movie." in thing:
 						item = thing.split("_movie.")
 						item = item[1]
-						say = getmovie(item)
+						#say = getmovie(item)
+						say = suggestmovieblockuse(item)
 						say = settonightsmovie(say)
 						return (say)
 			command = "SELECT Items FROM Blocks WHERE Name LIKE \'" + mode + "\'"
@@ -2991,15 +3484,19 @@ def idtonightsmovie():
 					if (("random_movie." in items) and (ccnt <= bcount)):
 						genre = items.split("movie.")
 						genre = genre[1].strip()
-						found = suggestmovie(genre)
+						found = suggestmovieblockuse(genre)
+						'''
 						found = found.split("the movie: ")
 						found = found[1]
 						found = found.split("sound, Sir")
 						found = found[0].strip()
+						'''
+						print (found)
 						found = settonightsmovie(found)
 					ccnt = ccnt + 1
 	else:
 		found = "Not in block playback mode. No movie is scheduled tonight."
+	#print (found)
 	return (found)
 		
 		
@@ -3024,9 +3521,26 @@ def settonightsshow(show):
         sql.commit()
 	return ("Tonights show has been set to " + show)
 
+def restartshow(show):
+	show = titlecheck(show)
+	show = mediachecker(show)
+	show = show.strip()
+	sayme = "Restart " + show + "- Yes or No?"
+	checkme = input(sayme)
+	if (checkme.lower() == "yes"):
+		command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
+		cur.execute(command)
+		sql.commit()
+		say = show + " will start from the beginning of the series."
+	else:
+		say = "Error: Invalid response. No action taken."
+	return say
+
 def nextep(show):
 	show = titlecheck(show)
 	show = mediachecker(show)
+	if ("Quit." in show):
+		return ("User quit. No action taken.")
 	try:
 		command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + show + "\""
 		cur.execute(command)
@@ -3050,6 +3564,7 @@ def nextep(show):
 	ssn = str(ep[0])
 	xep = str(ep[1])
 	episode = str(ep[2])
+	episode = episode.replace("''","'")
 	episode = "For the show " + show + ", Up next is Season " + ssn + ", Episode " + xep + ", " + episode
 	episode = episode.rstrip()
 
@@ -3372,21 +3887,130 @@ def randomshowblock(genre):
 	cur.execute(command)
 	if not cur.fetchone():
 		return ("Error. " + genre + " not found as an availble TV show genre. Use availtvgenres to see the available show genres.")
+
+def moviechoice(option):
+	found = []
+	option = option.lower()
+	if (("genre." in option)):
+		noption = option.replace("genre.","")
+		while (int(len(found)) <3):
+			fnd = suggestmovieblockuse(noption)
+			if "Error:" in fnd:
+				return fnd
+			elif fnd not in found:
+				found.append(fnd)
+	elif (("rating." in option) or ("actor." in option)):
+		while (int(len(found))<3):
+			fnd = suggestmovieblockuse(option)
+			if "Error:" in fnd:
+				return fnd
+			elif fnd not in found:
+				found.append(fnd)
+	else:
+		return ("Error: You must specify a \"genre.\" or a \"rating.\" or a \"actor.\" to use this command.")
+			
+	say = worklist(found)
+	if (say == "done"):
+		return ("User Quit. No Action Taken.")
+	elif ("Error:" in say):
+		return (say)
+	elif (say == "reroll"):
+		say = moviechoice(option)
+		return (say)
+	say = setupnext(say)
+	return say
+
+def tvchoice(option):
+	found = []
+	option = option.lower()
+	if ("genre." in option):
+		noption = option.replace("genre.","")
+		while (int(len(found)) <3):
+			fnd = suggesttvblockuse(noption)
+			if "Error:" in fnd:
+				return fnd
+			elif fnd not in found:
+				found.append(fnd)
+	elif (("rating." in option) or ("duration." in option)):
+		while (int(len(found)) <3):
+			fnd = suggesttvblockuse(option)
+			if "Error:" in fnd:
+				return fnd
+			elif fnd not in found:
+				found.append(fnd)
+	else:
+		return ("Error: You must specify  a \"genre.\" or a \"rating.\" or a \"duration.\" to use this command")
+	say = worklist(found)
+        if (say == "done"):
+                return ("User Quit. No Action Taken.")
+        elif (say == "reroll"):
+                say = tvchoice(option)
+                return (say)
+	elif ("Error:" in say):
+		return say
+        say = setupnext(say)
+        return say
+
+	
+		
 	
 
 def suggestmovieblockuse(genre):
+	check = checkmode("movie")
+	#command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\")"
 	from random import randint
 	if (genre == "none"):
-		cur.execute('SELECT Movie FROM Movies')
+		if ("Kids" in check):
+			cur.execute("SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\")")
+		else:
+			cur.execute('SELECT Movie FROM Movies')
 		playfiles = cur.fetchall()
 		min = 0
 		max = int(len(playfiles)-1)
 		playc = randint(min,max)
 		play = playfiles[playc][0]
 		play = play.rstrip()
+	elif ("rating." in genre):
+		genre = genre.replace("rating.","").strip().upper()
+		if ("Kids" in check):
+			command = "SELECT Movie FROM Movies WHERE Rating LIKE \"" + genre + "\" AND Rating NOT IN (\"R\",\"none\", \"PG-13\")"
+		else:
+			command = "SELECT Movie FROM Movies WHERE Rating LIKE \"" + genre + "\""
+		cur.execute(command)
+		if not cur.fetchone():
+			return ("Error: "  + genre + " not found as an available rating.")
+		cur.execute(command)
+                playfiles = cur.fetchall()
+                min = 0
+                max = int(len(playfiles)-1)
+                playc = randint(min,max)
+                play = playfiles[playc][0]
+                play = play.rstrip()
+	elif ("actor." in genre):
+                genre = genre.replace("actor.","").strip()
+		if ("Kids" in check):
+			command = "SELECT Movie FROM Movies WHERE Actors LIKE \"%" + genre + "%\" AND Rating NOT IN (\"R\",\"none\", \"PG-13\")"
+		else:
+			command = "SELECT Movie FROM Movies WHERE Actors LIKE \"%" + genre + "%\""
+                cur.execute(command)
+                if not cur.fetchone():
+                        return ("Error: "  + genre + " not found as an available Actor.")
+                cur.execute(command)
+                playfiles = cur.fetchall()
+                min = 0
+                max = int(len(playfiles)-1)
+                playc = randint(min,max)
+                play = playfiles[playc][0]
+                play = play.rstrip()
 	else:
 		genre = genre.rstrip()
-		cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\"")
+		if ("Kids" in check):
+			command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\") AND Genre LIKE \"%" + genre + "%\""
+			cur.execute(command)
+		elif (genre == "none"):
+			cur.execute("SELECT Movie FROM Movies")
+		else:
+			cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\"")
 		found = cur.fetchall()
 		min = 0
 		max = int(len(found))
@@ -3405,6 +4029,32 @@ def suggesttvblockuse(genre):
 		playc = randint(min,max)
 		play = playfiles[playc][0]
 		play = play.strip()
+	elif ("rating." in genre):
+                genre = genre.replace("rating.","").strip().upper()
+                command = "SELECT TShow FROM TVshowlist WHERE Rating LIKE \"" + genre + "\""
+                cur.execute(command)
+                if not cur.fetchone():
+                        return ("Error: "  + genre + " not found as an available rating.")
+                cur.execute(command)
+                playfiles = cur.fetchall()
+                min = 0
+                max = int(len(playfiles)-1)
+                playc = randint(min,max)
+                play = playfiles[playc][0]
+                play = play.rstrip()
+	elif ("duration." in genre):
+                genre = genre.replace("duration.","").strip().upper()
+                command = "SELECT TShow FROM TVshowlist WHERE Duration LIKE \"" + genre + "\""
+                cur.execute(command)
+                if not cur.fetchone():
+                        return ("Error: "  + genre + " not found as an available duration.")
+                cur.execute(command)
+                playfiles = cur.fetchall()
+                min = 0
+                max = int(len(playfiles)-1)
+                playc = randint(min,max)
+                play = playfiles[playc][0]
+                play = play.rstrip()
 	else:
 		genre = genre.rstrip()
 		cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + "%\"")
@@ -3417,15 +4067,17 @@ def suggesttvblockuse(genre):
 
 
 def suggestmovie(genre):
+	favcheck = checkmode("movie")
 	from random import randint
 	if (genre == "none") or (genre == "all"):
-		command = "SELECT Movie from Movies WHERE Genre LIKE \"%favorite%\""
+		if ("On" in favcheck):
+			command = "SELECT Movie from Movies WHERE Genre LIKE \"%favorite%\""
+		elif ("Kids" in favcheck):
+			command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\")"
+		else:
+			command = "SELECT Movie FROM Movies"
 		cur.execute(command)
 		mvlist = cur.fetchall()
-		if ((int(len(mvlist)) < 9) or (genre == "all")):
-			command = "SELECT Movie FROM Movies"
-			cur.execute(command)
-			mvlist = cur.fetchall()
 		min = 0
 		max = int(len(mvlist)-1)
 		playc = randint(min,max)
@@ -3445,7 +4097,12 @@ def suggestmovie(genre):
 	elif ("rating." in genre):
                 rating = genre.split("rating.")
                 rating = rating[1].strip()
-                command = "SELECT Movie FROM Movies WHERE Rating LIKE \"" + rating + "\""
+		if ("On" in favcheck):
+                        command = "SELECT Movie from Movies WHERE Genre LIKE \"%favorite%\" AND Rating LIKE \"" + rating + "\""
+		elif ("Kids" in favcheck):
+                        command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\") AND Rating LIKE \"" + rating + "\""
+		else:
+			command = "SELECT Movie FROM Movies WHERE Rating LIKE \"" + rating + "\""
                 cur.execute(command)
                 if not cur.fetchone():
                         return ("Error: No Movies found with a " + rating + " rating.")
@@ -3465,7 +4122,12 @@ def suggestmovie(genre):
 	elif ("actor." in genre):
 		rating = genre.split("actor.")
                 rating = rating[1].strip()
-                command = "SELECT Movie FROM Movies WHERE Actors LIKE \"%" + rating + "%\""
+		if ("On" in favcheck):
+                        command = "SELECT Movie from Movies WHERE Genre LIKE \"%favorite%\" AND Actors LIKE \"%" + rating + "%\""
+                elif ("Kids" in favcheck):
+                        command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\") AND Actors LIKE \"%" + rating + "%\""
+                else:
+			command = "SELECT Movie FROM Movies WHERE Actors LIKE \"%" + rating + "%\""
                 cur.execute(command)
                 if not cur.fetchone():
                         return ("Error: No Movies found starring " + rating + ".")
@@ -3504,12 +4166,22 @@ def suggestmovie(genre):
 def suggesttv(genre):
 	from random import randint
 	if (genre == "none"):
+		favcheck = checkmode("show")
+                if ("On" in favcheck):
+                        command = "SELECT TShow from TVshowlist WHERE Genre LIKE \"%favorite%\""
+		elif ("Kids" in favcheck):
+			command = "SELECT TShow FROM TVshowlist WHERE Rating IN (\"TV-Y\",\"TV-Y7\", \"TV-PG\", \"TV-G\")"
+                else:
+                        command = "SELECT TShow FROM TVshowlist"
+		'''
 		cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%Favorite%\"")
 		if not cur.fetchone():
 			cur.execute("SELECT TShow FROM TVshowlist")
                         playfiles = cur.fetchall()
 		else:
 			cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%Favorite%\"")
+		'''
+		cur.execute(command)
 		playfiles = cur.fetchall()
 		if int(len(playfiles)-1) <= 24:
 			cur.execute("SELECT TShow FROM TVshowlist")
@@ -3655,10 +4327,126 @@ def playcheckstart():
 		file.write("On")
         file.close()
 
+def backuptvdb():
+	cur.execute("DELETE FROM backupshows")
+	sql.commit()
+	cur.execute("INSERT INTO backupshows SELECT * FROM shows")
+	sql.commit()
+	print ("Shows table has been successfully backed up.")
+	
+
+#commandsgohere
 try:	
 	show = str(sys.argv[1])
 	show = show.replace("+"," ")
-	if ("addfavoritemovie" in show):
+	if ("backuptvdb" in show):
+		backuptvdb()
+		say = "Done."
+	elif ("removetvdb" in show):
+		removetvdb()
+		say = "Done."
+	elif ("restoretvdb" in show):
+		restoretvdb()
+		say = "Done."
+	elif ("backupmoviedb" in show):
+                backupmoviedb()
+                say = "Done."
+        elif ("removemoviedb" in show):
+                removemoviedb()
+                say = "Done."
+        elif ("restoremoviedb" in show):
+                restoremoviedb()
+                say = "Done."
+	elif ("moviegenrefixer" in show):
+		moviegenrefixer()
+		say = "Done."
+	elif ("approvedratings" in show):
+		say = approvedratings()
+	elif ("addapprovedrating" in show):
+		try:
+			rating = str(sys.argv[2])
+			say = addapprovedrating(rating)
+		except IndexError:
+			say = "Error: You must provide a rating to use this command."
+	elif ("removeapprovedrating" in show):
+                try:
+                        rating = str(sys.argv[2])
+                        say = removeapprovedrating(rating)
+                except IndexError:
+                        say = "Error: You must provide a rating to use this command."
+	elif ("setkidspassword" in show):
+		try:
+			pw = str(sys.argv[2])
+			say = setkidspassword(pw)
+		except Exception:
+			say = "Error: You must provide a new password to use this command."
+	elif ("restartshow" in show):
+		try:
+			show = str(sys.argv[2])
+			say = restartshow(show)
+		except IndexError:
+			say = "Error: You must provide a show name to use this command."
+	elif ("moviechoice" in show):
+		try:
+			option = str(sys.argv[2])
+			say = moviechoice(option)
+		except IndexError:
+			#say = "Error. You must include an genre. rating. or actor. to use this command."
+			option = "genre.none"
+			say = moviechoice(option)
+	elif ("tvchoice" in show):
+		try:
+                        option = str(sys.argv[2])
+                        say = tvchoice(option)
+                except IndexError:
+                        say = "Error. You must include an genre. rating. or duration. to use this command."
+	elif ("enablekidsmode" in show):
+		say = enablekidsmode()
+	elif ("disablekidsmode" in show):
+		say = disablekidsmode()
+	elif ("addapproved" in show):
+		try:
+			title = str(sys.argv[2])
+			say = addapproved(title)
+		except IndexError:
+			say = "Error: You must specify a title to use this command"
+	elif ("addrejected" in show):
+		try:
+                        title = str(sys.argv[2])
+                        say = addrejected(title)
+                except IndexError:
+                        say = "Error: You must specify a title to use this command"
+	elif ("showrejected" in show):
+		showrejected()
+		say = "Done."
+	elif ("showapproved" in show):
+		showapproved()
+		say = "Done."
+	elif ("enablefavoritesmode" in show):
+		try:
+			option = str(sys.argv[2])
+			say = enablefavoritesmode(option)
+		except IndexError:
+			say = "Error: You must supply add either 'shows' or 'movies' to use this command."
+	elif ("disablefavoritesmode" in show):
+		try:
+                        option = str(sys.argv[2])
+                        say = disablefavoritesmode(option)
+                except IndexError:
+                        say = "Error: You must supply add either 'shows' or 'movies' to use this command."
+	elif ("checkfavoritesmode" in show):
+		try:
+                        option = str(sys.argv[2])
+			option = option.replace("shows","show")
+			option = option.replace("movies","movie")
+                        say = checkmode(option)
+			if ("Error" in say):
+				say = "Error: You must supply add either 'shows' or 'movies' to use this command."
+			else:
+				say = "Favorites " + show + " mode is currently: " + say
+                except IndexError:
+                        say = "Error: You must supply add either 'shows' or 'movies' to use this command."
+	elif ("addfavoritemovie" in show):
 		title = str(sys.argv[2])
 		say = addfavoritemovie(title)
 	elif ("addfavoriteshow" in show):
@@ -3787,7 +4575,7 @@ try:
 	elif ("whatupnext" in show):
 		say = whatupnext()
 		say = say.replace("movie.","The Movie ")
-		say = "Upnext we have " + say
+		#say = "Upnext we have " + say
 	elif ("whatsafterthat" in show):
 		say = whatsafterthat()
 	elif ("startnextprogram" in show):
@@ -3799,6 +4587,7 @@ try:
 			playcheckstop()
 		plexlogin()
 		show = upnext()
+		print (show)
 		say = playshow(show)
 		if (("block." or "binge.") not in say):
 			skipthat()
@@ -3808,8 +4597,11 @@ try:
 			playcheckstart()
 	elif ("skipthat" in show):
 		say = skipthat()
-		if "No queue to skip." in say:
-			say = queuefill()
+		try:
+			if "No queue to skip." in say:
+				say = queuefill()
+		except TypeError:
+			say = skipthat()
 		#saythat(say)
 	elif ("seriesskipback" in show):
 		try:
@@ -3951,6 +4743,7 @@ try:
 				except Exception:
 					tve = ""
 				wve = whatupnext()
+				wve = wve.replace("movie.","")
 				item = item.lower()
 				if ("random_tv." in item):
 					item = item.replace("random_tv.", "A random ")
@@ -3958,7 +4751,7 @@ try:
 				elif ("random_movie." in item):
 					item = item.replace("random_movie.", "A random ") 
 					item = item + " movie"
-				wve = "Item " + str(count) + ", " + item + " is next: " + wve
+				wve = "Item " + str(count+1) + ", " + item + " is next: " + wve
 				say = say + mve + tve + "\n" + wve
 			else:
 				say = "Error: No block specified."
@@ -4063,6 +4856,9 @@ try:
 			setplaymode(mode)
 			say = whatupnext()
 			say = say.replace("is active.", "is now active.")
+	elif ("availplaymodes" in show):
+		cls()
+		say = availplaymodes()
 	elif ("setminithonmax" in show):
 		try:
 			number = str(sys.argv[2])
@@ -4175,20 +4971,24 @@ try:
 		except IndexError:
 			say = "Error. You must specify an item to use this command."
 	elif (("playwhereleftoff" in show) or ("resumeplay" in show)):
-		try:
-			openme = homedir + 'playstatestatus.txt'
-			with open(openme, "r") as file:
-				checkme = file.read()
-			file.close()
-			if "On" in checkme:
-				playcheckstop()
-			item = str(sys.argv[2])
-			say = playwhereleftoff(item)
-			time.sleep(SLEEPTIME)
-			if "On" in checkme:
-				playcheckstart()
-		except IndexError:
-			say = "Error. You must specify a movie or show to use this command."
+		kcheck = checkmode("movie")
+		if "Kids" not in kcheck:
+			try:
+				openme = homedir + 'playstatestatus.txt'
+				with open(openme, "r") as file:
+					checkme = file.read()
+				file.close()
+				if "On" in checkme:
+					playcheckstop()
+				item = str(sys.argv[2])
+				say = playwhereleftoff(item)
+				time.sleep(SLEEPTIME)
+				if "On" in checkme:
+					playcheckstart()
+			except IndexError:
+				say = "Error. You must specify a movie or show to use this command."
+		else:
+			say = "Error: Unable to use resumeplay while in kids mode."
 
 	elif "mtagline" in show:
 		try:
@@ -4245,7 +5045,9 @@ try:
 		except Exception:
 			say = "Error. Invalid Syntax. Use 'updatemovies' or 'updateshows' or 'updateall' as a flag for this command. Please try again."
 	else:
+		pcmd = "playme"
 		plexlogin()
+		show = titlecheck(show)
 		show = mediachecker(show)
 		openme = homedir + 'playstatestatus.txt'
                 with open(openme, "r") as file:
