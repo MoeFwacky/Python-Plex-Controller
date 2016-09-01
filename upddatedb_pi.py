@@ -1,4 +1,5 @@
 import urllib3
+import subprocess
 import requests
 import time
 import os
@@ -14,9 +15,13 @@ except NameError:
 
 global favtv
 global favmve
+global tvgenres
+global moviegenres
 
 favtv = []
 favmve = []
+tvgenres = []
+moviegenres = []
 
 MYDB = homedir + "myplex.db"
 http = urllib3.PoolManager()
@@ -976,15 +981,17 @@ def getmovies():
 		counter = counter + 1
 
 	fixmvfiles()
-def startupaction():
-	getfavorites()
+def startupactiontv():
 	cur.execute("DELETE FROM TVshowlist")
-	sql.commit()
-	cur.execute("DELETE FROM Movies")
 	sql.commit()
 	cur.execute("DELETE FROM shows")
 	sql.commit()
-	print ("Tables purged and ready for data.")
+	print ("TV Tables purged and ready for data.")
+
+def startupactionmovie():
+	cur.execute("DELETE FROM Movies")
+	sql.commit()
+        print ("TV Tables purged and ready for data.")
 
 def getfavorites():
 	global favtv
@@ -1020,8 +1027,146 @@ def restorefavorites():
 		os.system(command)
 
 	print ("Favorites Restored.")
-	
 
+def getgenrestv():
+	global tvgenres
+	command = "SELECT Genre FROM TVshowlist ORDER BY Genre ASC"
+        cur.execute(command)
+        fgenres = cur.fetchall()
+        xshowlist = []
+        for genres in fgenres:
+                genre = genres[0].split(";")
+                for xgen in genre:
+                        if xgen not in xshowlist:
+                                xshowlist.append(xgen)
+	for genre in xshowlist:
+		genre = genre.strip()
+		command = "SELECT TShow from TVshowlist where Genre LIKE \"%" + genre + "%\""
+		cur.execute(command)
+		shows = cur.fetchall()
+		for show in shows:
+			show = show[0]
+
+			try:
+				writeme = writeme + "," + show
+			except NameError:
+				writeme = genre + ":" + show
+		tvgenres.append(writeme)
+		del writeme
+	print ("TV Genres Saved.")
+
+def getgenresmovie():
+	global moviegenres
+	command = "SELECT Genre FROM Movies ORDER BY Genre ASC"
+	cur.execute(command)
+	fgenres = cur.fetchall()
+	xmovies = []
+	for genres in fgenres:
+		genre = genres[0].split(" ")
+		for xgen in genre:
+			if ((xgen not in xmovies) and (xgen != "")):
+				xmovies.append(xgen)
+	for genre in xmovies:
+		if genre == " ":
+			pass
+		else:
+			genre = genre.strip()
+			#print (genre)
+			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\""
+			cur.execute(command)
+			movies = cur.fetchall()
+			for movie in movies:
+				movie = movie[0]
+				try:
+					writeme = writeme + "," + movie
+				except NameError:
+					writeme = genre + ":" + movie
+				moviegenres.append(writeme)
+				#print (writeme)
+				del writeme
+	#print moviegenres
+	print ("Movie Genres Saved.")
+	
+def restoregenrestv():
+	global tvgenres
+	for genre in tvgenres:
+		genre = genre.split(":")
+		shows = genre[1]
+		genre = genre[0]
+		shows = shows.split(",")
+		for show in shows:
+			show = show.strip()
+			say = addgenreshow(show,genre)
+			#print (say)
+	print ("TV Genres Restored.")
+
+def restoregenremovies():
+	global moviegenres
+	for gre in moviegenres:
+		if gre == " ":
+			pass
+		else:
+			gre = gre.split(":")
+			shows = gre[1]
+			genre = gre[0]
+			shows = shows.split(",")
+			for show in shows:
+				show = show.strip()
+				say = addgenremovie(show, genre)
+				#print (say)
+        print ("Movie Genres Restored.")
+
+def addgenreshow(show, genre):
+        command = 'SELECT * FROM TVshowlist WHERE TShow LIKE \'' + show + '\''
+        cur.execute(command)
+        if not cur.fetchone():
+                return ("Error: " + show + " not found. Check title and try again.")
+        cur.execute(command)
+        stuff = cur.fetchone()
+        TShow = stuff[0]
+        summary = stuff[1]
+        try:
+                genres = stuff[2]
+        except Exception:
+                genres = ""
+        rating = stuff[3]
+        duration = stuff[4]
+        totalnum = stuff[5]
+        if genre.lower() in genres.lower():
+                return("Error: " + genre + " is already associated with the show " + show)
+        genres = genres + " " + genre
+        command = 'DELETE FROM TVshowlist WHERE TShow LIKE \'' + show + '\''
+        cur.execute(command)
+        sql.commit()
+        cur.execute('INSERT INTO TVshowlist VALUES(?,?,?,?,?,?)',(TShow, summary, genres, rating, int(duration), int(totalnum)))
+        sql.commit()
+        return (genre + " has been associated with " + show)
+
+def addgenremovie(movie, genre):
+        command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + movie + '\''
+        cur.execute(command)
+        if not cur.fetchone():
+		say = "Error restoring genre " + genre + " to movie " + movie
+		return ("Error restoring genre " + genre + " to movie " + movie)
+        cur.execute(command)
+        stuff = cur.fetchone()
+        title = stuff[0]
+        summary = stuff[1]
+        rating = stuff[2]
+        tagline = stuff[3]
+        genres = stuff[4]
+        director = stuff[5]
+        actor = stuff[6]
+        if genre.lower() in genres.lower():
+                return("Error: " + genre + " is already associated with the movie " + movie)
+        genres = genres.strip() + " " + genre
+        command = 'DELETE FROM Movies WHERE Movie LIKE \'' + movie + '\''
+        cur.execute(command)
+        sql.commit()
+        cur.execute('INSERT INTO Movies VALUES(?,?,?,?,?,?,?)',(title, summary, rating, tagline, genres, director, actor))
+        sql.commit()
+        return (genre + " successfully associated with the movie " + movie )
+	
 try:
 	if "Windows" not in ostype:
 		option = str(sys.argv[1])
@@ -1029,16 +1174,26 @@ try:
 		print ("Notice: For Windows, the update db script may default to 'all' when there is an argument failure.\n")
 		option = "all"
 	if ("updatetv" in option):
+		getgenrestv()
+		startupactiontv()
 		gettvshows()
 		getshows()
+		restoregenrestv()
 	elif ("updatemovies" in option):
+		getgenresmovie()
+		startupactionmovie()
 		getmovies()
+		restoregenremovies()
 	elif ("all" in option):
-		startupaction()
+		getgenrestv()
+		getgenresmovie()
+		startupactiontv()
+		startupactionmovie()
 		gettvshows()
 		getshows()
 		getmovies()
-		restorefavorites()
+		restoregenrestv()
+		restoregenremovies()
 
 except IndexError:
 	print ("No option specified. Use 'updatetv' or 'updatemovies' or 'all' to update your db.")		
