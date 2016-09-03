@@ -14,6 +14,7 @@ except Exception:
 
 from os import listdir
 from os.path import isfile, join
+from random import randint, shuffle
 
 #top
 user = getpass.getuser()
@@ -101,6 +102,14 @@ def plexlogin():
 
 	except IndexError:
 		print ("Error getting necessary plex api variables. Run system_setup.py.")
+
+def changeplexpw(password):
+	password = password.strip()
+	cur.execute("DELETE FROM settings WHERE item LIKE \'PLEXPW\'")
+	sql.commit()
+	cur.execute("INSERT INTO settings VALUES(?,?)",('PLEXPW',password))
+	sql.commit()
+	return ("The Plex PW has been changed to: " + password)
 
 def cls():
 	os.system('cls' if os.name=='nt' else 'clear')
@@ -489,6 +498,20 @@ def disablefavoritesmode(mode):
                 return ("Error: You must specify either \"show\" or \"movie\" to use this command.")
 
         return ("Favories mode " + mode + " has been turned Off.")
+
+def disablecommercials():
+        cur.execute("DELETE FROM States WHERE Option LIKE \"COMMERCIALMODE\"")
+        sql.commit()
+        cur.execute("INSERT INTO States VALUES (?,?)",("COMMERCIALMODE","Off"))
+        sql.commit()
+	return ("Commercial Mode has been disabled.")
+
+def enablecommercials():
+	cur.execute("DELETE FROM States WHERE Option LIKE \"COMMERCIALMODE\"")
+        sql.commit()
+        cur.execute("INSERT INTO States VALUES (?,?)",("COMMERCIALMODE","On"))
+        sql.commit()
+        return ("Commercial Mode has been enabled.")
 
 def listclients():
 	daclients = []
@@ -1035,7 +1058,7 @@ def addtoblock(blockname, name):
 	except Exception:
 		acheck = "False"
 	name = name.replace("random_movie.","Random_movie.")
-	if "Random_movie." not in name:
+	if (("Random_movie." not in name) and ("playcommercial" not in name) and ("preroll" not in name)):
 		name = titlecheck(name.strip())
 		name = mediachecker(name)
 		if ("Quit." in name):
@@ -1061,6 +1084,10 @@ def addtoblock(blockname, name):
 		if ("Error" in gcheck):
 			print (gcheck)
 			return ("Error. No action taken.")
+	elif ("playcommercial" in name):
+		name = "playcommercial"
+	elif ("preroll" in name):
+		name = "preroll"
 		
 	else:
 		command = 'SELECT TShow FROM TVshowlist WHERE TShow LIKE \'' + name + '\''
@@ -1211,8 +1238,8 @@ def reorderblock(block):
 			for item in bxitems:
 				if item == "":
 					pass
-				elif (item in newlist):
-					pass
+				#elif (item in newlist):
+					#pass
 				else:
 					print (str(nmin) + ": " + item)
 					nmin = nmin + 1
@@ -1221,7 +1248,7 @@ def reorderblock(block):
 				if choice.lower() == "quit":
 					return ("User quit. No action taken.")	
 				choice = int(choice) - 1
-				choice = bxitems[choice]
+				choice = bxitems[choice].strip()
 				bxitems.remove(choice)
 				newlist.append(choice)
 				lmin = lmin + 1
@@ -1279,6 +1306,7 @@ def mediachecker(title):
         return (title)
 
 def playblockpackage(play):
+	oblock = play
 	list = getblockpackagelist()
 	for item in list:
 		item = item.replace(".txt", "")
@@ -1330,10 +1358,30 @@ def playblockpackage(play):
                                 play = play.rstrip()
                                 cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSSHOW\'')
                                 sql.commit()
+			elif ("playcommercial" in play):
+				play = whatupnext()
+				play = play.replace("Up next we have The Movie ","movie.")
+                                if "The TV Show " in play:
+                                        play = play.split("The TV Show ")
+                                        play = play[1]
+                                        play = play.split(" Season ")
+                                        play = play[0]
+				skipthat()
+				playcommercial()
+			elif ("preroll" in play):
+				play = whatupnext()
+				play = play.replace("Up next we have The Movie ","movie.")
+				if "The TV Show " in play:
+					play = play.split("The TV Show ")
+					play = play[1]
+					play = play.split(" Season ")
+					play = play[0]
+				skipthat()
+				playpreroll()
+				print (play)
 			if int(bcount) == 0:
-                                setplaymode("normal")
-                                print ("Playmode has been set to normal.")
-			print (play)
+				setplaymode("normal")
+				print ("Playmode has been set to normal.")
 			play = play.replace("Tonights movie has been set to ","")
 			play = titlecheck(play)
 			play = mediachecker(play).strip()
@@ -1532,7 +1580,6 @@ def findmovie(movie):
 			return ("Error: No movies in the " + genre + " genre have been found.")
 		
 	elif ("rating." in movie.lower()):
-		from random import randint
 		rating = movie.split('.')
 		rating = rating[1].strip()
 		command = "SELECT Movie FROM Movies WHERE Rating LIKE \'" + rating + "\'"
@@ -1546,7 +1593,6 @@ def findmovie(movie):
 				mlist.append(movie[0])
 			worklist(mlist)
 	elif ('actor.' in movie.lower()):
-		from random import randint
                 rating = movie.split('actor.')
                 rating = rating[1].strip()
                 command = "SELECT Movie FROM Movies WHERE Actors LIKE \'%" + rating + "%\'"
@@ -1773,7 +1819,6 @@ def movietlgame_gettagline():
 	for tags in tgs:
 		taglines.append(tags)
 	max = int(len(taglines)-1)
-	from random import randint, shuffle
 	shuffle(taglines)
 	getme = randint(0,max)
 	found = taglines[getme]
@@ -2044,6 +2089,7 @@ def playspshow(show, season, episode):
 	return showsay
 
 def playshow(show):
+	global PLEXCLIENT
 	global pcmd
 	kcheckshow = checkmode("show")
 	kcheckmovie = checkmode("movie")
@@ -2109,7 +2155,7 @@ def playshow(show):
 		the_show = shows.get(show)
 		#showplay = the_show.rstrip()
 		ep = the_show.get(xshow)
-		client = plex.client("RasPlex")
+		client = plex.client(PLEXCLIENT)
 		client.playMedia(ep)
 		nowplaywrite("TV Show: " + show + " Episode: " + xshow)
 		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, Sir' 
@@ -2182,6 +2228,55 @@ def playshow(show):
 	else:
 		
 		return ("Media not found to launch. Check the title and try again.")
+
+def commercialcheck():
+	command = "SELECT State FROM States WHERE Option LIKE \"COMMERCIALMODE\""
+        if not cur.fetchone():
+                cur.execute("INSERT INTO States VALUES (?,?)",("COMMERCIALMODE","Off"))
+                sql.commit()
+        cur.execute(command)
+        check = cur.fetchone()[0]
+	return check
+
+def playcommercial():
+	global plex
+	global client
+	global PLEXCLIENT
+	plexlogin()
+	cur.execute("SELECT * FROM commercials")
+	found = cur.fetchall()
+	max = int(len(found)) - 1
+	min = 0
+	pcnt = randint(min,max)
+	playme = found[pcnt]
+	show = playme[0]
+	duration = playme[1]
+	duration = int(duration)
+	commercial = plex.library.section('Commercials').get(show)
+	client = plex.client(PLEXCLIENT)
+	client.playMedia(commercial)
+	print ("Now Playing: " + show + ".")
+	time.sleep(duration)
+
+def playpreroll():
+	global plex
+        global client
+        global PLEXCLIENT
+        plexlogin()
+        cur.execute("SELECT * FROM prerolls")
+        found = cur.fetchall()
+        max = int(len(found)) - 1
+        min = 0
+        pcnt = randint(min,max)
+        playme = found[pcnt]
+        show = playme[0]
+        duration = playme[1]
+        duration = int(duration)
+        commercial = plex.library.section('Prerolls').get(show)
+        client = plex.client(PLEXCLIENT)
+        client.playMedia(commercial)
+        #print ("Now Playing: " + show + ".")
+        time.sleep(duration)
 
 def whereleftoff(item):
 	global plex
@@ -2426,7 +2521,6 @@ def queuefix():
 	return ("The Queue has been rebuilt.")
 
 def queuefill():
-	from random import randint, shuffle
 	playme = randint(1,7)
 	#random TV show
 	showmode = checkmode("show")
@@ -2726,7 +2820,6 @@ def setplaymode(mode):
 			cur.execute(command)
 			mode = cur.fetchone()[0]
 			mode = "block." + mode
-	from random import randint
 	mode = mode.replace("block_","block.")
 	command = "DELETE FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
@@ -2891,7 +2984,7 @@ def addgenreshow(show, genre):
 	rating = stuff[3]
 	duration = stuff[4]
 	totalnum = stuff[5]
-	if genre in genres:
+	if genre.lower() in genres.lower():
 		return("Error: " + genre + " is already associated with the show " + show)
 	genres = genres + " " + genre
 	command = 'DELETE FROM TVshowlist WHERE TShow LIKE \'' + show + '\''
@@ -3276,6 +3369,10 @@ def whatupnext():
 			if upnext == " ":
 				findnewshow()
 				upnext = idtonightsshow()
+		elif ("playcommercial" in block):
+			upnext = "A random commercial"
+		elif ("preroll" in block):
+			upnext = "A Preroll"
 		else:
 			if ("movie." in block):
 				episode = block.split("movie.")
@@ -3327,7 +3424,6 @@ def whatupnext():
 	return upnext
 
 def getmovie(genre):
-	from random import randint
 	cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\"")
 	found = cur.fetchall()
 	tnum = randint(0,int(len(found)-1))
@@ -3336,7 +3432,6 @@ def getmovie(genre):
 	return (found)
 
 def getshow(genre):
-	from random import randint
 	cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + "%\"")
 	found = cur.fetchall()
         tnum = randint(0,int(len(found)-1))
@@ -3694,7 +3789,6 @@ def findsomethingelse():
 		queue = queue.split(';')
 		queue[0]
 		queueremovenofill()
-		from random import randint
 		playme = randint(1,5)
 		if ((playme == 1) or (playme ==5)):
 			with open(Readfiletv, "r") as file:
@@ -3958,7 +4052,6 @@ def tvchoice(option):
 def suggestmovieblockuse(genre):
 	check = checkmode("movie")
 	#command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\")"
-	from random import randint
 	if (genre == "none"):
 		if ("Kids" in check):
 			cur.execute("SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\")")
@@ -4020,7 +4113,6 @@ def suggestmovieblockuse(genre):
 	return play
 
 def suggesttvblockuse(genre):
-	from random import randint
 	if (genre == "none"):
 		cur.execute('SELECT TShow from TVshowlist')
 		playfiles = cur.fetchall()
@@ -4068,7 +4160,6 @@ def suggesttvblockuse(genre):
 
 def suggestmovie(genre):
 	favcheck = checkmode("movie")
-	from random import randint
 	if (genre == "none") or (genre == "all"):
 		if ("On" in favcheck):
 			command = "SELECT Movie from Movies WHERE Genre LIKE \"%favorite%\""
@@ -4110,7 +4201,6 @@ def suggestmovie(genre):
                         mlist = cur.fetchall()
                         min = 0
                         max = int(len(mlist)-1)
-                        from random import randint
                         mcount = randint(min,max)
                         play = mlist[mcount][0]
                         addme = "movie." + play
@@ -4135,7 +4225,6 @@ def suggestmovie(genre):
                         mlist = cur.fetchall()
                         min = 0
                         max = int(len(mlist)-1)
-                        from random import randint
                         mcount = randint(min,max)
                         play = mlist[mcount][0]
                         addme = "movie." + play
@@ -4164,7 +4253,6 @@ def suggestmovie(genre):
 	return "How does the movie: " + play + " sound, Sir?"
 
 def suggesttv(genre):
-	from random import randint
 	if (genre == "none"):
 		favcheck = checkmode("show")
                 if ("On" in favcheck):
@@ -4204,7 +4292,6 @@ def suggesttv(genre):
 			foundt = cur.fetchall()
                         max = len(foundt)
                         max = int(max) - 1
-                        from random import randint
                         pcnt = randint(0, max)
                         play = foundt[pcnt][0]
 	elif("duration." in genre):
@@ -4219,7 +4306,6 @@ def suggesttv(genre):
                         foundt = cur.fetchall()
                         max = len(foundt)
                         max = int(max) - 1
-                        from random import randint
                         pcnt = randint(0, max)
                         play = foundt[pcnt][0]
 	else:
@@ -4232,7 +4318,6 @@ def suggesttv(genre):
 			foundt = cur.fetchall()
 			max = len(foundt)
 			max = int(max) - 1
-			from random import randint
 			pcnt = randint(0, max)
 			play = foundt[pcnt][0]
 	play = play.rstrip()
@@ -4333,6 +4418,13 @@ def backuptvdb():
 	cur.execute("INSERT INTO backupshows SELECT * FROM shows")
 	sql.commit()
 	print ("Shows table has been successfully backed up.")
+
+def backupmoviedb():
+	cur.execute("DELETE FROM backupmovies")
+        sql.commit()
+        cur.execute("INSERT INTO backupmovies SELECT * FROM Movies")
+        sql.commit()
+        print ("Movies table has been successfully backed up.")
 	
 
 #commandsgohere
@@ -4357,6 +4449,12 @@ try:
         elif ("restoremoviedb" in show):
                 restoremoviedb()
                 say = "Done."
+	elif ("changeplexpw" in show):
+		try:
+			password = str(sys.argv[2])
+			say = changeplexpw(password)
+		except IndexError:
+			say = "Error: No Password supplied. No action taken."
 	elif ("moviegenrefixer" in show):
 		moviegenrefixer()
 		say = "Done."
@@ -4404,6 +4502,16 @@ try:
 		say = enablekidsmode()
 	elif ("disablekidsmode" in show):
 		say = disablekidsmode()
+	elif ("enablecommercials" in show):
+		say = enablecommercials()
+	elif ("disablecommercials" in show):
+		say = disablecommercials()
+	elif ("playcommercial" in show):
+		playcommercial()
+		say = "Done."
+	elif ("commercialcheck" in show):
+		say = commercialcheck()
+		say = "Commercials are currently: " + say + "."
 	elif ("addapproved" in show):
 		try:
 			title = str(sys.argv[2])
@@ -4586,6 +4694,9 @@ try:
 		if "On" in checkme:
 			playcheckstop()
 		plexlogin()
+		commcheck = commercialcheck()
+		if "On" in commcheck:
+			playcommercial()
 		show = upnext()
 		print (show)
 		say = playshow(show)
