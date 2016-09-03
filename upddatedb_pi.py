@@ -981,6 +981,93 @@ def getmovies():
 		counter = counter + 1
 
 	fixmvfiles()
+
+def getcommercials():
+	cur.execute("CREATE TABLE IF NOT EXISTS commercials(name TEXT, duration INT)")
+	sql.commit()
+	command = "SELECT setting FROM settings WHERE item LIKE \"COMPART\""
+	cur.execute(command)
+	if not cur.fetchone():
+		print ("You need to supply the link to find your commercials.\nExample: http://192.168.1.134:32400/library/metadata/\n")
+		COMPART = str(input('Link:'))
+		cur.execute("INSERT INTO settings VALUES(?,?)", ("COMPART",COMPART.strip()))
+		sql.commit()
+		print (COMPART + " has been added to the settings table. Moving on.")
+	else:
+		cur.execute(command)
+		COMPART = cur.fetchone()[0]
+	
+	response = http.urlopen('GET', COMPART, preload_content=False).read()
+	response = str(response)
+	commercials = response.split("<Video ratingKey=")
+	counter = 1
+
+	while counter <= int(len(commercials)-1):
+		comc = commercials[counter]
+		duration = comc
+
+		comc = comc.split("title=\"")
+		comc = comc[1]
+		comc = comc.split("\"")
+		comc = comc[0].strip()
+
+		duration = duration.split("duration=\"")
+		duration = duration[1]
+		duration = duration.split("\"")
+		duration = duration[0].strip()
+		duration = int(duration)/1000
+		cur.execute("SELECT * FROM commercials WHERE name LIKE \"" + comc + "\"")
+		if not cur.fetchone():
+			cur.execute("INSERT INTO commercials VALUES (?,?)", (comc, duration))
+			sql.commit()
+			print ("New Commercial Found: " + comc)
+		counter = counter + 1
+	
+	print ("Done")
+
+def getprerolls():
+        cur.execute("CREATE TABLE IF NOT EXISTS prerolls(name TEXT, duration INT)")
+        sql.commit()
+        command = "SELECT setting FROM settings WHERE item LIKE \"PREROLLPART\""
+        cur.execute(command)
+        if not cur.fetchone():
+                print ("You need to supply the link to find your prerolls.\nExample: http://192.168.1.134:32400/library/metadata/\n")
+                PREROLLPART = str(input('Link:'))
+                cur.execute("INSERT INTO settings VALUES(?,?)", ("PREROLLPART",PREROLLPART.strip()))
+                sql.commit()
+                print (PREROLLPART + " has been added to the settings table. Moving on.")
+        else:
+                cur.execute(command)
+                PREROLLPART = cur.fetchone()[0]
+
+        response = http.urlopen('GET', PREROLLPART, preload_content=False).read()
+        response = str(response)
+        commercials = response.split("<Video ratingKey=")
+        counter = 1
+
+        while counter <= int(len(commercials)-1):
+                comc = commercials[counter]
+                duration = comc
+
+                comc = comc.split("title=\"")
+                comc = comc[1]
+                comc = comc.split("\"")
+                comc = comc[0].strip()
+
+                duration = duration.split("duration=\"")
+                duration = duration[1]
+                duration = duration.split("\"")
+                duration = duration[0].strip()
+                duration = int(duration)/1000
+                cur.execute("SELECT * FROM prerolls WHERE name LIKE \"" + comc + "\"")
+                if not cur.fetchone():
+                        cur.execute("INSERT INTO prerolls VALUES (?,?)", (comc, duration))
+                        sql.commit()
+                        print ("New preroll Found: " + comc)
+                counter = counter + 1
+
+        print ("Done")
+
 def startupactiontv():
 	cur.execute("DELETE FROM TVshowlist")
 	sql.commit()
@@ -1194,6 +1281,12 @@ try:
 		getmovies()
 		restoregenrestv()
 		restoregenremovies()
+	elif ("getcommercials" in option):
+		getcommercials()
+		print ("Commercial Get Finished.")
+	elif ("getprerolls" in option):
+		getprerolls()
+		print ("Preroll Get Finished.")
 
 except IndexError:
 	print ("No option specified. Use 'updatetv' or 'updatemovies' or 'all' to update your db.")		
