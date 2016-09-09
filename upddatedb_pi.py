@@ -1053,6 +1053,7 @@ def getprerolls():
                 comc = comc[1]
                 comc = comc.split("\"")
                 comc = comc[0].strip()
+		print (comc)
 
                 duration = duration.split("duration=\"")
                 duration = duration[1]
@@ -1288,6 +1289,6 @@ try:
 		getprerolls()
 		print ("Preroll Get Finished.")
 
-except IndexError:
+except TypeError:
 	print ("No option specified. Use 'updatetv' or 'updatemovies' or 'all' to update your db.")		
 print ("Done")

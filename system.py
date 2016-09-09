@@ -24,7 +24,7 @@ global show
 global play
 global pcmd
 
-SLEEPTIME = 5
+SLEEPTIME = 15 
 try:
 	input = raw_input
 except NameError:
@@ -143,6 +143,127 @@ def maxaudio():
 	global client
         plexlogin()
         client.setVolume(100, 'Video')
+
+def holidaycheck(title):
+	title=title.lower().strip()
+	cur.execute("SELECT * FROM Holidays WHERE name LIKE \"" + title + "\"")
+	hcheck = cur.fetchone()
+	if not hcheck:
+		return ("Error: " + title + " does not exist as a holiday.")
+	return title
+
+def checkholidays():
+	try:
+		command = "SELECT * FROM Holidays"
+		cur.execute(command)	
+	except sqlite3.OperationalError:
+		cur.execute("CREATE TABLE IF NOT EXISTS Holidays(name TEXT, items TEXT)")
+		sql.commit()
+	cur.execute(command)
+	test = cur.fetchall()
+	if not test:
+		print ("No Holidays are currently saved.")
+	else:
+		for thing in test:
+			name = thing[0]
+			titles = thing[1]
+			titles = titles.split(";")
+			print (name + ":")
+			for ttl in titles:
+				if ttl == "":
+					pass
+				else:
+					ttl = ttl.replace("movie.","the movie ")
+					print (ttl)
+			print ("---")
+
+def removeholiday(holiday):
+	print ("Warning: This will remove the " + holiday + " and all associations. Are you sure you want to proceed?")
+	validate = str(raw_input("Yes or No:"))
+	if "yes" not in validate.lower():
+		return ("Error: You must type yes to remove the holiday.") 
+	name = holiday.lower()
+	cur.execute("SELECT FROM Holidays WHERE name LIKE \"" + name + "\"")
+	if not cur.fetchone():
+		return ("Error: " + holiday + " not found to remove.")
+	cur.execute("DELETE FROM Holidays WHERE name LIKE \"" + name + "\"")
+	sql.commit()
+	return ("Successfully removed " + holiday + ".")
+def removefromholiday(holiday, title):
+	holiday = holiday.lower()
+        if ":" not in title:
+                title = titlecheck(title.strip())
+                title = mediachecker(title)
+                if ("Quit." in title):
+                        return ("User Quit. No action taken.")
+                elif ("Error" in title):
+                        return title
+        else:
+                title = title.split(":")
+                ssn = title[1].strip()
+                ep = title[2].strip()
+                title = title[0].strip()
+                command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + title + "\" and Season LIKE \"" + ssn + "\" and Enum LIKE \"" + ep + "\""
+                cur.execute(command)
+                tcheck = cur.fetchone()
+                if not tcheck:
+                        return ("Error: " + title + " not found to add.")
+                title = title + ":" + ssn + ":" + ep
+        cur.execute("SELECT * FROM Holidays WHERE name LIKE \"" + holiday.strip() + "\"")
+        hcheck = cur.fetchone()
+	name = hcheck[0]
+	items = hcheck[1]
+	print title
+	if title in items:
+		items = items.replace(";;;",";")
+		items = items.replace(";;",";")
+		items = items.replace(title.strip()+";","")
+		cur.execute("DELETE FROM Holidays WHERE name LIKE \"" + name + "\"")
+		sql.commit()
+		cur.execute("INSERT INTO Holidays VALUES(?,?)",(name,items))
+		sql.commit()
+		return (title + " has been unassociated with the " + name + " holiday.")
+	else:
+		return (title + " not found associated with the " + name + " holiday.")
+		
+
+def addholiday(holiday, title):
+	holiday = holiday.lower()
+	if ":" not in title:
+		title = titlecheck(title.strip())
+		title = mediachecker(title)
+		if ("Quit." in title):
+			return ("User Quit. No action taken.")
+		elif ("Error" in title):
+			return title
+	else:
+		title = title.split(":")
+		ssn = title[1].strip()
+		ep = title[2].strip()
+		title = title[0].strip()
+		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + title + "\" and Season LIKE \"" + ssn + "\" and Enum LIKE \"" + ep + "\""
+		cur.execute(command)
+		tcheck = cur.fetchone()
+		if not tcheck:
+			return ("Error: " + title + " not found to add.")
+		title = title + ":" + ssn + ":" + ep
+	cur.execute("SELECT * FROM Holidays WHERE name LIKE \"" + holiday.strip() + "\"")
+	hcheck = cur.fetchone()
+	if not hcheck:
+		name = holiday.strip()
+		items = title + ";"
+	else:
+		name = hcheck[0]
+		items = hcheck[1]
+		if title in items:
+			return ("Error: " + title + " is already associated with the following holiday: " + holiday + ".")
+		items = items + title + ";"
+	cur.execute("DELETE FROM Holidays WHERE name LIKE \"" + holiday + "\"")
+	sql.commit()
+	cur.execute("INSERT INTO Holidays VALUES(?,?)",(holiday,items))
+	sql.commit()
+	return (title + " has been associated with the " + holiday + " holiday.")
+	
 	
 def checkmode(option):
 	option = option.lower()
@@ -163,6 +284,9 @@ def checkmode(option):
 	return (say)
 
 def addapproved(title):
+	checkpw = checkkidspw()
+	if ("Error:" in checkpw):
+		return checkpw
 	title = titlecheck(title)
 	title = mediachecker(title)
 	command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDLIST\""
@@ -191,6 +315,30 @@ def addapproved(title):
 			return (title + " is already in the approved list.")
 	return (title + " has been added to the approved list.")
 
+def removeapproved(title):
+	title = titlecheck(title)
+        title = mediachecker(title)
+        command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDLIST\""
+        cur.execute(command)
+        if not cur.fetchone():
+		return ("No approvied list to modify.")
+	cur.execute(command)
+	writeme = cur.fetchone()[0]
+	check = writeme.split(";")
+	chks = []
+	for item in check:
+		chks.append(item)
+	if title in chks:
+		repl = title.strip() + ";"
+		writeme = writeme.replace(repl,"")
+		cur.execute("DELETE FROM States WHERE Option LIKE \"APPROVEDLIST\"")
+		sql.commit()
+		cur.execute("INSERT INTO States VALUES (?,?)",("APPROVEDLIST",writeme.strip()))
+		sql.commit()
+		#chks.remove(title.strip())
+		return (title + " has been removed from the approved list.")
+	else:
+		return (title + " not found in approved list to remove.")	
 def addrejected(title):
         title = titlecheck(title)
         title = mediachecker(title)
@@ -255,6 +403,9 @@ def showapproved():
 				print (item)
 
 def addapprovedrating(rating):
+	checkpw = checkkidspw()
+	if ("Error:" in checkpw):
+		return checkpw
 	command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDRATINGS\""
         cur.execute(command)
         if not cur.fetchone():
@@ -312,7 +463,6 @@ def removeapprovedrating(rating):
 	allowed = allowed.replace(";;",";")
 	allowed = allowed.strip()
 	allowed = allowed.split(";")
-	print (allowed)
 	for item in allowed:
                 try:
 			if item == "":
@@ -1085,9 +1235,21 @@ def addtoblock(blockname, name):
 			print (gcheck)
 			return ("Error. No action taken.")
 	elif ("playcommercial" in name):
-		name = "playcommercial"
+		#name = "playcommercial"
+		name = name.strip()
 	elif ("preroll" in name):
-		name = "preroll"
+		name = name.strip() 
+		if "preroll." in name:
+			check = name.split("preroll.")
+			check = check[1].strip()
+			cur.execute("SELECT name FROM prerolls WHERE name LIKE \"" + check + "\"")
+			if not cur.fetchone():
+				return ("Error: " + name + " not found as an available preroll.")
+			else:
+				cur.execute("SELECT name FROM prerolls WHERE name LIKE \"" + check + "\"")
+				checks = cur.fetchone()
+				if check not in checks:
+					return ("Error: " + name + " not found as an available preroll.")
 		
 	else:
 		command = 'SELECT TShow FROM TVshowlist WHERE TShow LIKE \'' + name + '\''
@@ -1146,8 +1308,11 @@ def addtoblock(blockname, name):
 		return ("Done.")
 
 def removefromblock(blockname, name):
-	name = titlecheck(name)
-	name = mediachecker(name)
+	if (("preroll" in name) or ("playcommercial" in name)):
+		pass
+	else:
+		name = titlecheck(name)
+		name = mediachecker(name)
 	list = getblockpackagelist()
 	for item in list:
 		item = item.replace(".txt", "")
@@ -1195,6 +1360,7 @@ def replaceinblock(block, nitem, oitem):
 	bitems = binfo[1].lower()
 	bcount = binfo[2]
 	bxitems = bitems.split(';')
+	
 	if oitem not in bxitems:
 		return ("Error: " + oitem + " not in " + block + " to replace.")
 	nitem = titlecheck(nitem)
@@ -1206,13 +1372,15 @@ def replaceinblock(block, nitem, oitem):
 	nitem = nitem + ";"
 	bitems = bitems.replace(oitem, nitem)
 	bitems = bitems.replace(";;",";")
-	print ("Adding the following: ")
-	print (bitems)
+	#print ("Adding the following: ")
+	#print (bitems)
 	cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + block + "\"")
 	sql.commit()
 	cur.execute("INSERT INTO Blocks VALUES(?,?,?)",(block, bitems, bcount))
 	sql.commit()
 	nitem = nitem.replace(";","")
+	nitem = nitem.replace("movie.","the movie ")
+	oitem = oitem.replace("movie.","the movie ")
 	say = oitem + " has been replaced by " + nitem + " in the " + block + " block."
 	return (say)
 
@@ -1286,7 +1454,7 @@ def mediachecker(title):
                 check2 = "fail"
         else:
                 check2 = "pass"
-		return (title)
+		#return (title)
         if ((check1 == "fail") and (check2 == "fail")):
                 addme = didyoumeanboth(title)
                 print (addme)
@@ -1295,6 +1463,7 @@ def mediachecker(title):
                 else:
                         title = addme
         elif ((check1 == "pass") and (check2 == "pass") and ("Fail" not in externalcheck())):
+		print (1)
                 addme = didyoumeanboth(title)
                 if "Quit." in addme:
                         return ("User Quit. No Action Taken.")
@@ -1359,16 +1528,42 @@ def playblockpackage(play):
                                 cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSSHOW\'')
                                 sql.commit()
 			elif ("playcommercial" in play):
+				commercial = play
 				play = whatupnext()
 				play = play.replace("Up next we have The Movie ","movie.")
+				print (play)
                                 if "The TV Show " in play:
                                         play = play.split("The TV Show ")
                                         play = play[1]
                                         play = play.split(" Season ")
                                         play = play[0]
 				skipthat()
-				playcommercial()
+				if commercial == "playcommercial":
+					commercial = "none"
+				else:
+					commercial = commercial.split("playcommercial.")
+					commercial = commercial[1].strip()
+				playcommercial(commercial)
+				while "The commercial: " in play:
+                                        play = play.replace("The commercial: ", "playcommercial.")
+                                        commercial = play
+                                        play = whatupnext()
+                                        play = play.replace("Up next we have The Movie ","movie.")
+                                        print (play)
+                                        if "The TV Show " in play:
+                                                play = play.split("The TV Show ")
+                                                play = play[1]
+                                                play = play.split(" Season ")
+                                                play = play[0]
+                                        skipthat()
+                                        if commercial == "playcommercial":
+                                                commercial = "none"
+                                        else:
+                                                commercial = commercial.split("playcommercial.")
+                                                commercial = commercial[1].strip()
+                                        playcommercial(commercial)
 			elif ("preroll" in play):
+				preroll = play
 				play = whatupnext()
 				play = play.replace("Up next we have The Movie ","movie.")
 				if "The TV Show " in play:
@@ -1376,18 +1571,43 @@ def playblockpackage(play):
 					play = play[1]
 					play = play.split(" Season ")
 					play = play[0]
+				elif ("Up next we have " in play):
+					play = play.split("Up next we have ")
+					play = play[1]
+					play = play.split(", ")
+					play = play[0].strip()
 				skipthat()
-				playpreroll()
-				print (play)
+				if preroll == "preroll":
+					preroll = "none"
+				else:
+					preroll = preroll.split("preroll.")
+					preroll = preroll[1].strip()
+				playpreroll(preroll)
+				while "The commercial: " in play:
+					play = play.replace("The commercial: ", "playcommercial.")
+					commercial = play
+					play = whatupnext()
+					play = play.replace("Up next we have The Movie ","movie.")
+					print (play)
+					if "The TV Show " in play:
+						play = play.split("The TV Show ")
+						play = play[1]
+						play = play.split(" Season ")
+						play = play[0]
+					skipthat()
+					if commercial == "playcommercial":
+						commercial = "none"
+					else:
+						commercial = commercial.split("playcommercial.")
+						commercial = commercial[1].strip()
+					playcommercial(commercial)	
 			if int(bcount) == 0:
 				setplaymode("normal")
 				print ("Playmode has been set to normal.")
 			play = play.replace("Tonights movie has been set to ","")
 			play = titlecheck(play)
 			play = mediachecker(play).strip()
-			
 			playshow(play)	
-
 
 def availableshows():
 	command = 'SELECT TShow FROM shows WHERE Tnum = 1'
@@ -1542,8 +1762,8 @@ def moviegenrefixer():
 		found = cur.fetchone()
 		genre = found[4].strip()
 		if (("  " in genre) or (";" in genre)):
-			print (item)
-			print (genre)
+			#print (item)
+			#print (genre)
 			cur.execute("DELETE FROM Movies WHERE Movie LIKE \"" + item + "\"")
 			sql.commit()
 			movie = found[0]
@@ -1757,7 +1977,7 @@ def moviedetails(movie):
 	movie = movie.replace("movie.","")
 	if (("Error" in movie) or (movie == "done")):
 		return movie
-	print (movie)
+	#print (movie)
 	command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + movie + '\''
 	cur.execute(command)
 	xep = cur.fetchone()
@@ -2068,32 +2288,64 @@ def setnextep(show, season, episode):
 
 
 def playspshow(show, season, episode):
+	global PLEXCLIENT
+	plexlogin()
 	test = show
 	Ssn = season
 	Epnum = episode
 	command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + test + "\" and Season LIKE \"" + Ssn + "\" and Enum LIKE \"" + Epnum + "\""
 	cur.execute(command)
-	ep = cur.fetchall()
-	for item in ep:
-		theep = item[0]
+	ep = cur.fetchall()[0]
+	ep = ep[0].replace("''","'")
 
 	shows = plex.library.section('TV Shows')
 	the_show = shows.get(show)
 	#showplay = the_show.rstrip()
-	epx = the_show.get(theep)
-	client = plex.client("RasPlex")
+	epx = the_show.get(ep)
+	client = plex.client(PLEXCLIENT)
 	client.playMedia(epx)
-	nowplaywrite("TV Show: " + show + " Episode: " + theep)
-	showsay = 'Playing ' + theep + ' From the show ' + show + ' Now, Sir'
+	nowplaywrite("TV Show: " + show + " Episode: " + ep)
+	showsay = 'Playing ' + ep + ' From the show ' + show + ' Now, Sir'
 
 	return showsay
+
+def movielink(movie):
+	plexlogin()
+	mve = plex.library.section('Movies').get(movie)
+	print mve.getStreamURL()
+
+def playholiday(holiday):
+	print (holiday)
+	holiday = holiday.replace("holiday.","")
+	cur.execute("SELECT items FROM Holidays WHERE name LIKE \"" + holiday.strip() + "\"")
+	titles = cur.fetchone()[0]
+	titles = titles.split(";")
+	ttls = []
+	for item in titles:
+		if item != "":
+			ttls.append(item)
+	min = 0
+	max = int(len(ttls)) - 1
+	pcnt = randint(min,max)
+	#print (ttls[pcnt])
+	plexlogin()
+	if "movie." in ttls[pcnt]:
+		playshow(ttls[pcnt])
+		return "Playing " + ttls[pcnt] + " for the holiday " + holiday + " now."
+	else:
+		title = ttls[pcnt]
+		title = title.split(":")
+		ssn = title[1].strip()
+		ep = title[2].strip()
+		title = title[0].strip()
+		playspshow(title, ssn, ep)
+		return "Playing " + title + " for the holiday " + holiday + " now."
 
 def playshow(show):
 	global PLEXCLIENT
 	global pcmd
 	kcheckshow = checkmode("show")
 	kcheckmovie = checkmode("movie")
-	#print (show)
 	command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
@@ -2111,7 +2363,7 @@ def playshow(show):
 			kcheck = kidscheck("show",show)
 			if "fail" in kcheck.lower():
 				print ("Kids mode fail:" + show)
-				print (sys.argv)
+				#print (sys.argv)
 				try:
 					if ("playme" not in pcmd):
 						skipthat()
@@ -2225,25 +2477,127 @@ def playshow(show):
 		playblockpackage(show)
 		show = show.replace("_", " ")
 		return ("Starting the " + show)
+	elif ("holiday." in show):
+		say = playholiday(show)
+		return (say)
 	else:
 		
 		return ("Media not found to launch. Check the title and try again.")
 
 def commercialcheck():
-	command = "SELECT State FROM States WHERE Option LIKE \"COMMERCIALMODE\""
-        if not cur.fetchone():
+	command = "SELECT * FROM States WHERE Option LIKE \"COMMERCIALMODE\""
+	cur.execute(command)
+	#print (cur.fetchall())
+        if not cur.fetchall():
+		print ("Commercial Mode not set. Setting to Off")
+		cur.execute("DELETE FROM States WHERE Option LIKE \"COMMERCIALMODE\"")
+		sql.commit()
                 cur.execute("INSERT INTO States VALUES (?,?)",("COMMERCIALMODE","Off"))
                 sql.commit()
         cur.execute(command)
-        check = cur.fetchone()[0]
+        check = cur.fetchone()[1]
 	return check
 
-def playcommercial():
+def commercialbreak():
+	cur.execute("SELECT State FROM States WHERE Option LIKE \"COMMERCIALBREAK\"")
+	if not cur.fetchone():
+		print ("No commercial break settings found. Settings to 2.")
+		cur.execute("INSERT INTO States VALUES(?,?)",("COMMERCIALBREAK","2"))
+		sql.commit()
+	cur.execute("SELECT State FROM States WHERE Option LIKE \"COMMERCIALBREAK\"")
+	COMMERCIALBREAK = cur.fetchone()[0]
+	playme = []
+	ccnt = 1
+	while ccnt <= int(COMMERCIALBREAK):
+		playc = getcommercial()
+		if playc not in playme:
+			playme.append(playc)
+			ccnt = ccnt + 1
+			#print ("Adding " + playc + " to commercial queue.")
+	nowp = nowplaying()
+	if "Content Type: movie" in nowp:
+		nowp = nowp.split("Title: ")
+		nowp = nowp[1]
+		nowp = nowp.split(".")
+		nowp = nowp[0].strip()
+		type = "movie"
+	elif ("Content Type: episode" in nowp):
+		nowp = nowp.split("Title: ")
+		nowp = nowp[1].strip()
+		nowp = nowp.split(".")
+		nowp = nowp[0].strip()
+		cur.execute("SELECT TShow FROM shows WHERE Episode LIKE \"" + nowp + "\"")
+		show = cur.fetchone()[0]
+		type = "show"
+	elif ("Now Playing: Movie: " in nowp):
+		nowp = nowp.split("Movie: ")
+		nowp = nowp[1].strip()
+		type = "movie"
+	else:
+		nowp = nowp.split("TV Show: ")
+		nowp = nowp[1].strip()
+		nowp = nowp.split("Episode: ")
+		show = nowp[0].strip()
+		nowp = nowp[1].strip()
+		type = "show"
+	#print (nowp)
+	if type == "show":
+		whrat = whereat()
+		whrat = whrat.split(" minute ")
+		whrat = whrat[1]
+		whrat = whrat.split(" out of ")
+		whrat = whrat[0].strip()
+		whrat = int(whrat)*60000
+		#print whrat
+	#print ("Starting Commercial Break Now.")
+	openme = homedir + 'playstatestatus.txt'
+	with open(openme, "r") as file:
+		checkme = file.read()
+	file.close()
+	if "On" in checkme:
+		playcheckstop()
+	pcnt = 1
+	while pcnt <= int(COMMERCIALBREAK):
+		cur.execute("SELECT duration FROM commercials WHERE name LIKE \"" + playme[pcnt-1] + "\"")
+		duration = cur.fetchone()
+		duration = duration[0]
+		playcommercial(playme[pcnt-1])
+		pcnt = pcnt + 1
+		if int(duration) >= 60:
+			pcnt = pcnt + 1
+	if type == "show":
+		plexlogin()
+		whrat = int(whrat)
+		shows = plex.library.section('TV Shows')
+		the_shows = shows.get(show)
+		ep = the_shows.get(nowp)
+		client = plex.client(PLEXCLIENT)
+		client.playMedia(ep, offset=whrat)
+	else:
+		playwhereleftoff(nowp)
+	if "On" in checkme:
+		time.sleep(SLEEPTIME)
+		playcheckstart()
+
+def getcommercial():
+	cur.execute("SELECT * FROM commercials")
+	found = cur.fetchall()
+        max = int(len(found)) - 1
+        min = 0
+        pcnt = randint(min,max)
+        playme = found[pcnt]
+        show = playme[0]
+	return show
+
+def playcommercial(commercial):
 	global plex
 	global client
 	global PLEXCLIENT
 	plexlogin()
-	cur.execute("SELECT * FROM commercials")
+	if commercial == "none":
+		cur.execute("SELECT * FROM commercials")
+	else:
+		cur.execute("SELECT * FROM commercials WHERE name LIKE \"" + commercial + "\"")
 	found = cur.fetchall()
 	max = int(len(found)) - 1
 	min = 0
@@ -2251,32 +2605,59 @@ def playcommercial():
 	playme = found[pcnt]
 	show = playme[0]
 	duration = playme[1]
-	duration = int(duration)
+	duration = int(duration) + 1
 	commercial = plex.library.section('Commercials').get(show)
 	client = plex.client(PLEXCLIENT)
 	client.playMedia(commercial)
-	print ("Now Playing: " + show + ".")
+	#print ("Now Playing: " + show + ".")
 	time.sleep(duration)
 
-def playpreroll():
+def playpreroll(preroll):
 	global plex
         global client
         global PLEXCLIENT
         plexlogin()
-        cur.execute("SELECT * FROM prerolls")
-        found = cur.fetchall()
-        max = int(len(found)) - 1
+	if preroll == "none":
+		cur.execute("SELECT * FROM prerolls")
+	else:
+		cur.execute("SELECT * FROM prerolls WHERE name LIKE \"" + preroll + "\"")
+        fnd = cur.fetchall()
+        max = int(len(fnd)) - 1
         min = 0
         pcnt = randint(min,max)
-        playme = found[pcnt]
-        show = playme[0]
-        duration = playme[1]
-        duration = int(duration)
-        commercial = plex.library.section('Prerolls').get(show)
+        plyme = fnd[pcnt]
+        shw = plyme[0]
+        durn = plyme[1]
+        durn = int(durn) + 1
+        commercial = plex.library.section('Prerolls').get(shw)
         client = plex.client(PLEXCLIENT)
         client.playMedia(commercial)
-        #print ("Now Playing: " + show + ".")
-        time.sleep(duration)
+        time.sleep(durn)
+
+def listprerolls():
+	cur.execute("SELECT name FROM prerolls")
+	list = cur.fetchall()
+	prelist = []
+	for item in list:
+		item = item[0].strip()
+		if item not in prelist:
+			prelist.append(item)	
+	worklist(prelist)
+
+def listcommercials():
+	cur.execute("SELECT name FROM commercials")
+	list = cur.fetchall()
+	prelist = []
+	for item in list:
+		item = item[0].strip()
+		if item not in prelist:
+			prelist.append(item)
+	say = worklist(prelist)
+	if say == "done":
+		pass
+	else:
+		playcommercial(say)
+	#print say
 
 def whereleftoff(item):
 	global plex
@@ -2313,6 +2694,8 @@ def whereleftoff(item):
 		return (0)
 
 def playwhereleftoff(show):
+	global PLEXCLIENT
+	plexlogin()
 	show = titlecheck(show)
 	show = mediachecker(show)
 	leftoff = int(whereleftoff(show)) * 60000
@@ -2345,27 +2728,19 @@ def playwhereleftoff(show):
 		
 		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecount) + "\""
 		cur.execute(command)
-		sql.commit()
 		xshow = cur.fetchone()
 		xshow = xshow[0].rstrip()
 		thecountx = (thecount + 1)
 		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecountx) + "\""
 		cur.execute(command)
 		check = cur.fetchone()
-		if not check:
-			thecountx = 1
-		command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
-		cur.execute(command)
-		cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecountx))
-		sql.commit()	
-		thecount = str(thecount)
 		shows = plex.library.section('TV Shows')
 		the_show = shows.get(show)
 		#showplay = the_show.rstrip()
 		ep = the_show.get(xshow)
-		client = plex.client("RasPlex")
-		client.playMedia(ep, leftoff)
-		nowplaywrite("TV Show: " + show + " Episode: " + xshow)
+		client = plex.client(PLEXCLIENT)
+		client.playMedia(ep, offset=leftoff)
+		#nowplaywrite("TV Show: " + show + " Episode: " + xshow)
 		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, Sir' 
 		return showsay
 	elif ("movie." in show):
@@ -2664,8 +3039,11 @@ def upnext():
 		else:
 			playme = playme.replace(";"," ")	
 			playme = playme.rstrip()
+	elif "holiday." in playmode:
+		playme = playmode
 	elif "block" in playmode:
 		playme = playmode
+		#print (playme)
 	elif "marathon." in playmode:
 		show = playmode.split("marathon.")
 		show = show[1]
@@ -2805,11 +3183,19 @@ def setplaymode(mode):
                 sql.commit()
 		cur.execute("DELETE FROM States WHERE Option LIKE \"MINITHONCNT\"")
                 sql.commit()
-	checks = ['normal','block.','marathon.','binge.', 'minithon.']
+	checks = ['normal','block.','marathon.','binge.', 'minithon.', 'holiday.']
 	setcheck = "fail"
 	for item in checks:
 		if item in mode:
 			setcheck = "pass"
+
+	if ("holiday." in mode):
+		hcheck = mode.replace("holiday.","")
+		hcheck = hcheck.strip()
+		hxcheck = holidaycheck(hcheck)
+		#print (hxcheck)
+		if "Error" in hxcheck:
+			return hxcheck
 	
 	if "pass" not in setcheck:
 		command = "SELECT Name FROM Blocks WHERE Name LIKE \"" + mode + "\""
@@ -3118,6 +3504,7 @@ def didyoumeanboth(title):
 	found = []
 	#darker
 	if "Fail" not in externalcheck():
+		print ("2")
 		tshow = movie
 		show = movie
 		checks = []
@@ -3125,23 +3512,24 @@ def didyoumeanboth(title):
 			show = show.split(' ')
 			for item in show:
 				if ((item.lower() not in passcheck) and (int(len(item)) > 3) and (item not in checks)):
+					print (item)
 					checks.append(item)
 		else:
 			try:
 				if (item not in checks):
 					checks.append(show)
-				for item in checks:
-					command = "SELECT Movie FROM Movies WHERE Movie LIKE \"%" + item + "%\""
-					cur.execute(command)
-					if cur.fetchall():
-						cur.execute(command)
-						foundme = cur.fetchall()
-						for items in foundme:
-							mchk = "movie." + items[0].strip().lower()
-							if mchk not in found:
-								found.append(mchk)
 			except Exception:
 				pass
+		for item in checks:
+			command = "SELECT Movie FROM Movies WHERE Movie LIKE \"%" + item + "%\""
+			cur.execute(command)
+			if cur.fetchall():
+				cur.execute(command)
+				foundme = cur.fetchall()
+				for items in foundme:
+					mchk = "movie." + items[0].strip().lower()
+					if mchk not in found:
+						found.append(mchk)
 		del checks
 	show = title
 	tshow = show
@@ -3356,6 +3744,10 @@ def whatupnext():
 			playme = playme.rstrip()
 
 		upnext = "Up next we have " + playme
+	elif ("holiday." in playmode):
+		say = playmode.replace("holiday.","")
+		say = "Up next a random " + say + " holiday program will play."
+		return (say)
 	elif ("block." in playmode):
 		block = getblockpackage(playmode)
 		block = block.lower()
@@ -3370,9 +3762,15 @@ def whatupnext():
 				findnewshow()
 				upnext = idtonightsshow()
 		elif ("playcommercial" in block):
-			upnext = "A random commercial"
+			upnext = block
+			upnext = upnext.replace("playcommercial.","The commercial: ")
+			if ("The commercial: " not in upnext):
+				upnext = "A random Commercial"
 		elif ("preroll" in block):
-			upnext = "A Preroll"
+			upnext = block
+			upnext = upnext.replace("preroll.","The preroll: ")
+			if ("The preroll: " not in upnext):
+				upnext = "A random preroll"
 		else:
 			if ("movie." in block):
 				episode = block.split("movie.")
@@ -3386,6 +3784,16 @@ def whatupnext():
 			upnext = upnext.replace("For the show ", "")
 			upnext = upnext.replace("Up next is ", "")
 			upnext = upnext.replace(" we have the", ",")
+	elif ("playcommercial" in playmode):
+		upnext = playmode 
+		upnext = upnext.replace("playcommercial.","The commercial: ")
+		if ("The commercial: " not in upnext):
+			upnext = "A random Commercial"
+	elif ("preroll" in playmode):
+		upnext = playmode 
+		upnext = upnext.replace("preroll.","The preroll: ")
+		if ("The preroll: " not in upnext):
+			upnext = "A random preroll"
 	elif ("marathon." in playmode):
 		show = playmode.split("marathon.")
 		show = show[1]
@@ -3586,7 +3994,7 @@ def idtonightsmovie():
 						found = found.split("sound, Sir")
 						found = found[0].strip()
 						'''
-						print (found)
+						#print (found)
 						found = settonightsmovie(found)
 					ccnt = ccnt + 1
 	else:
@@ -3766,7 +4174,6 @@ def skipthat():
 				if "random_movie." in rcheck.lower():
                                         deletetonightsmovie()
                                 elif "random_tv." in rcheck.lower():
-                                        print ("found.")
                                         deletetonightsshow()
 				bcount = bcount + 1
 				if int(bcount) == (int(max_count)-1):
@@ -4449,6 +4856,39 @@ try:
         elif ("restoremoviedb" in show):
                 restoremoviedb()
                 say = "Done."
+	elif ("checkholidays" in show):
+		checkholidays()
+		say = "Done."
+	elif ("addholiday" in show):
+		try:
+			holiday = str(sys.argv[2])
+			title = str(sys.argv[3])
+			say = addholiday(holiday,title)
+		except IndexError:
+			say = "Error: You must supply both a holiday and a title to use this command"
+	elif ("removeholiday" in show):
+		try:
+			holiday = str(sys.argv[2])
+			say = removeholiday(holiday)
+		except IndexError:
+			say = "Error: You must provide a holiday to use this command."
+	elif ("removefromholiday" in show):
+                try:
+                        holiday = str(sys.argv[2])
+                        title = str(sys.argv[3])
+                        say = removefromholiday(holiday,title)
+                except IndexError:
+                        say = "Error: You must supply both a holiday and a title to use this command"
+	elif ("playholiday" in show):
+		try:
+			holiday = str(sys.argv[2])
+			say = playholiday(holiday)
+		except IndexError:
+			say = "Error: You must specify a holiday to use this command."
+	elif ("movielink" in show):
+		movie = str(sys.argv[2])
+		movielink(movie)
+		say = "Done"
 	elif ("changeplexpw" in show):
 		try:
 			password = str(sys.argv[2])
@@ -4507,7 +4947,28 @@ try:
 	elif ("disablecommercials" in show):
 		say = disablecommercials()
 	elif ("playcommercial" in show):
-		playcommercial()
+		try:
+			comm = str(sys.argv[2])
+		except IndexError:
+			comm = "none"
+		playcommercial(comm)
+		say = "Done."
+	elif ("commercialbreak" in show):
+		commercialbreak()
+		say = "Done."
+	elif ("playpreroll" in show):
+		try:
+			comm = str(sys.argv[2])
+			comm = comm.replace("preroll.","")
+		except IndexError:
+			comm = "none"
+		playpreroll(comm)
+		say = "done"
+	elif ("listprerolls" in show):
+		listprerolls()
+		say = "Done."
+	elif ("listcommercials" in show):
+		listcommercials()
 		say = "Done."
 	elif ("commercialcheck" in show):
 		say = commercialcheck()
@@ -4518,6 +4979,12 @@ try:
 			say = addapproved(title)
 		except IndexError:
 			say = "Error: You must specify a title to use this command"
+	elif ("removeapproved" in show):
+		try:
+			title = str(sys.argv[2])
+			say = removeapproved(title)
+		except IndexError:
+			say = "Error: You must specify a title to use this command."
 	elif ("addrejected" in show):
 		try:
                         title = str(sys.argv[2])
@@ -4696,9 +5163,8 @@ try:
 		plexlogin()
 		commcheck = commercialcheck()
 		if "On" in commcheck:
-			playcommercial()
+			playcommercial("none")
 		show = upnext()
-		print (show)
 		say = playshow(show)
 		if (("block." or "binge.") not in say):
 			skipthat()
@@ -5181,4 +5647,4 @@ try:
 except IndexError:
 	show = "We're Sorry, but either that command wasn't recognized, or no input was received. Please try again."  
  
-	print (show)
+	#print (show)
