@@ -43,9 +43,12 @@ def plexlogin():
 		PLEXCLIENT = cur.fetchone()
 		PLEXCLIENT = PLEXCLIENT[0]
 		
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXTOKEN\'')
-		PLEXTOKEN = cur.fetchone()
-		PLEXTOKEN = PLEXTOKEN[0]
+		try:
+			cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERTOKEN\'')
+			PLEXTOKEN = cur.fetchone()
+			PLEXTOKEN = PLEXTOKEN[0]
+		except TypeError:
+			print ("Error getting server Token. Local Access will fail. Try running system_setup.py to correct.")
 		
 		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
 		PLEXSERVERIP = cur.fetchone()
@@ -70,7 +73,7 @@ def plexlogin():
 		plex = user.resource(PLEXSVR).connect()
 		client = plex.client(PLEXCLIENT)
 
-	except IndexError:
+	except TypeError:
 		print ("Error getting necessary plex api variables. Run system_setup.py.")
 	
 
