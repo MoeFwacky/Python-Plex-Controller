@@ -997,6 +997,9 @@ def getcommercials():
 		cur.execute(command)
 		COMPART = cur.fetchone()[0]
 	
+	cur.execute("DELETE FROM commercials")
+	sql.commit()
+	
 	response = http.urlopen('GET', COMPART, preload_content=False).read()
 	response = str(response)
 	commercials = response.split("<Video ratingKey=")
@@ -1039,6 +1042,9 @@ def getprerolls():
         else:
                 cur.execute(command)
                 PREROLLPART = cur.fetchone()[0]
+                
+        cur.execute("DELETE FROM prerolls")
+        sql.commit()
 
         response = http.urlopen('GET', PREROLLPART, preload_content=False).read()
         response = str(response)
