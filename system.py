@@ -192,8 +192,6 @@ def removeholiday(holiday):
 def removefromholiday(holiday, title):
 	holiday = holiday.lower()
         if ":" not in title:
-                title = titlecheck(title.strip())
-                title = mediachecker(title)
                 if ("Quit." in title):
                         return ("User Quit. No action taken.")
                 elif ("Error" in title):
@@ -203,6 +201,8 @@ def removefromholiday(holiday, title):
                 ssn = title[1].strip()
                 ep = title[2].strip()
                 title = title[0].strip()
+		title = titlecheck(title.strip())
+                title = mediachecker(title)
                 command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + title + "\" and Season LIKE \"" + ssn + "\" and Enum LIKE \"" + ep + "\""
                 cur.execute(command)
                 tcheck = cur.fetchone()
@@ -213,7 +213,6 @@ def removefromholiday(holiday, title):
         hcheck = cur.fetchone()
 	name = hcheck[0]
 	items = hcheck[1]
-	print title
 	if title in items:
 		items = items.replace(";;;",";")
 		items = items.replace(";;",";")
@@ -241,6 +240,8 @@ def addholiday(holiday, title):
 		ssn = title[1].strip()
 		ep = title[2].strip()
 		title = title[0].strip()
+		title = titlecheck(title.strip())
+                title = mediachecker(title)
 		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + title + "\" and Season LIKE \"" + ssn + "\" and Enum LIKE \"" + ep + "\""
 		cur.execute(command)
 		tcheck = cur.fetchone()
@@ -4910,6 +4911,8 @@ try:
                 try:
                         holiday = str(sys.argv[2])
                         title = str(sys.argv[3])
+			#title = titlecheck(title)
+			#title = mediachecker(title)
                         say = removefromholiday(holiday,title)
                 except IndexError:
                         say = "Error: You must supply both a holiday and a title to use this command"
@@ -5441,7 +5444,7 @@ try:
 		say = playblockpackage(play)
 	elif ("nextep" in show)and ("setnextep" not in show):
 		show = str(sys.argv[2])
-		show = titlecheck(show)
+		how = titlecheck(show)
 		show = mediachecker(show)
 
 		say = nextep(show)
