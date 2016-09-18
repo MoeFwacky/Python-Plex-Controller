@@ -59,7 +59,6 @@ def plexlogin():
 		PLEXSERVERPORT = PLEXSERVERPORT[0]
 
 		from plexapi.myplex import MyPlexAccount
-		user = MyPlexAccount.signin(PLEXUN,PLEXPW)
 		
 		try:
 			from plexapi.server import PlexServer
@@ -69,8 +68,8 @@ def plexlogin():
 			#print ("using local access.")
 		except Exception:
 			print ("Local Fail. Trying cloud access.")
-
-		plex = user.resource(PLEXSVR).connect()
+			user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+			plex = user.resource(PLEXSVR).connect()
 		client = plex.client(PLEXCLIENT)
 
 	except TypeError:
