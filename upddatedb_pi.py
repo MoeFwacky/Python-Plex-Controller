@@ -932,6 +932,7 @@ def getmovies():
 		name = name.replace('&apos;','\'')
 		name = name.replace('&amp;','&')
 		name = name.replace(',', ' ')
+		name = name.replace("'","''")
 		#print (tagline)
 		#tagline = tagline.replace('&apos;','\'')
 		tagline = tagline.replace('&apos;','')
@@ -996,7 +997,7 @@ def getcommercials():
 	else:
 		cur.execute(command)
 		COMPART = cur.fetchone()[0]
-	
+
 	cur.execute("DELETE FROM commercials")
 	sql.commit()
 	
@@ -1042,9 +1043,9 @@ def getprerolls():
         else:
                 cur.execute(command)
                 PREROLLPART = cur.fetchone()[0]
-                
-        cur.execute("DELETE FROM prerolls")
-        sql.commit()
+
+	cur.execute("DELETE FROM prerolls")
+	sql.commit()
 
         response = http.urlopen('GET', PREROLLPART, preload_content=False).read()
         response = str(response)

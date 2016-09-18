@@ -852,11 +852,8 @@ def explainblock(block):
 		if block == check:
 			command = "SELECT Items FROM Blocks WHERE Name LIKE \"" + block + "\""
 			cur.execute(command)
-			stuff = cur.fetchall()
-			stuff = str(stuff)
-			stuff = stuff.replace("[(u'","")
-			stuff = stuff.replace("',)]","")
-			stuff = stuff.replace("\\n","")
+			stuff = cur.fetchall()[0]
+			stuff = stuff[0]
 			stuff = stuff.split(';')
 
 			for things in stuff:
@@ -1006,7 +1003,7 @@ def addblock(name, title):
 			if "True" in mycheck:
 				blname = str(name).strip()
 				adtitle = str(xname).strip() + ";"
-				adtitle = adtitle.replace("'","''")
+				#adtitle = adtitle.replace("'","''")
 				blcount = 0
 				cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (blname, adtitle, int(blcount)))
 				sql.commit()
@@ -1175,6 +1172,7 @@ def addblock(name, title):
 
 def addtoblock(blockname, name):
 	blist = getblockpackagelist()
+	name = name.replace("''","'")
 	if (blockname == "none"):
 		print ("Blockname not present. Proceeding to querry mode.\n")
 		blockname = str(raw_input('Input Block Name: '))
@@ -1210,18 +1208,20 @@ def addtoblock(blockname, name):
 	name = name.replace("random_movie.","Random_movie.")
 	if (("Random_movie." not in name) and ("playcommercial" not in name) and ("preroll" not in name)):
 		name = titlecheck(name.strip())
+		#name = name.replace("'","''")
 		name = mediachecker(name)
 		if ("Quit." in name):
 			return ("User Quit. No action Taken.")
-	name = name.replace('movie.movie.','movie.')
+	#name = name.replace('movie.movie.','movie.')
 	if (('movie.' in name) and ('Random_movie.' not in name)):
 		chname = name.split("movie.")
 		chname = chname[1].strip()
-		chaname = chname.replace("'","''")
+		#chname = chname.replace("'","''")
 		command = "SELECT Movie FROM Movies WHERE Movie LIKE \"" + chname + "\""
 		cur.execute(command)
 		if not cur.fetchone():
 			name = didyoumeanmovie(chname)
+			name = name.replace("'","''")
 			if ("Error" in name):
 				return(name)
 			elif ("Quit" in name):
@@ -1288,12 +1288,14 @@ def addtoblock(blockname, name):
 			sql.commit()
 			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, blcount))
 			sql.commit()
-			blname = blname.replace("movie.", "The Movie ")
+			name = name.replace("movie.", "The Movie ")
 			say = (name.rstrip() + " has been added to the " + blname + " block.")
+			say = say.replace("''","'")
 			return (say)
 
 		else:
 			xname = name
+			print (xname)
 			blname = str(bname).strip()
 			adtitle = bitems + str(xname).strip() + ";"
 			blcount = 0
@@ -1302,8 +1304,9 @@ def addtoblock(blockname, name):
 			sql.commit()
 			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (blname, adtitle, int(blcount)))
 			sql.commit()
-			blname = blname.replace("movie.", "The Movie ")
+			xname = xname.replace("movie.", "The Movie ")
 			say = (xname.rstrip() + " has been added to the " + blname + " block.")
+			say = say.replace("''","'")
 			return (say)
 		return ("Done.")
 
@@ -1363,8 +1366,9 @@ def replaceinblock(block, nitem, oitem):
 	
 	if oitem not in bxitems:
 		return ("Error: " + oitem + " not in " + block + " to replace.")
-	nitem = titlecheck(nitem)
-	nitem = mediachecker(nitem)
+	if (("playcommercial" not in nitem) and ("preroll" not in nitem)):
+		nitem = titlecheck(nitem)
+		nitem = mediachecker(nitem)
 	if "Quit" in nitem:
 		return ("User Quit. No action taken.")
 	elif ("Error: " in nitem):
@@ -1439,6 +1443,7 @@ def reorderblock(block):
 
 def mediachecker(title):
 	title = title.strip().lower()
+	#title = title.replace("'","''")
         check1 = "start"
         check2 = "start"
         ctitle = title.replace("movie.","")
@@ -1463,7 +1468,6 @@ def mediachecker(title):
                 else:
                         title = addme
         elif ((check1 == "pass") and (check2 == "pass") and ("Fail" not in externalcheck())):
-		print (1)
                 addme = didyoumeanboth(title)
                 if "Quit." in addme:
                         return ("User Quit. No Action Taken.")
@@ -1471,7 +1475,7 @@ def mediachecker(title):
                         title = addme
         elif ((check1 == "pass") and (check2 == "fail")):
                 title = newt
-        title = title.replace("'","''")
+        #title = title.replace("'","''")
         return (title)
 
 def playblockpackage(play):
@@ -1495,13 +1499,14 @@ def playblockpackage(play):
 			bcount = bcount + 1
 			if int(bcount) == (int(max_count)-1):
 				bcount = 0
-				print ("Playmode has been set to normal.")
+				#print ("Playmode has been set to normal.")
 			command = 'DELETE FROM Blocks WHERE Name LIKE \'' + bname + '\''
 			cur.execute(command)
 			sql.commit()
 			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, bitems, int(bcount)))
 			sql.commit()
 			play = play.lower()
+			#print (play)
 			if "random_movie." in play:
 				play = idtonightsmovie()
 				play = play.rstrip()
@@ -1605,9 +1610,10 @@ def playblockpackage(play):
 				setplaymode("normal")
 				print ("Playmode has been set to normal.")
 			play = play.replace("Tonights movie has been set to ","")
-			play = titlecheck(play)
-			play = mediachecker(play).strip()
+			#play = titlecheck(play)
+			#play = mediachecker(play).strip()
 			playshow(play)	
+			return play
 
 def availableshows():
 	command = 'SELECT TShow FROM shows WHERE Tnum = 1'
@@ -2404,6 +2410,8 @@ def playshow(show):
 		thecount = str(thecount)
 	
 		shows = plex.library.section('TV Shows')
+		show = show.replace("''","'")
+		xshow = xshow.replace("''","'")
 		the_show = shows.get(show)
 		#showplay = the_show.rstrip()
 		ep = the_show.get(xshow)
@@ -2464,6 +2472,7 @@ def playshow(show):
 			if mvs[0].lower() == show.lower():
 				show = mvs[0]
 				show = show.rstrip()
+				show = show.replace("''","'")
 				movie = plex.library.section('Movies').get(show)
 				client = plex.client(PLEXCLIENT)
 				client.playMedia(movie)
@@ -2474,9 +2483,9 @@ def playshow(show):
 				return ("Playing the movie " + show + " now, Sir.") 
 		return ("Error. " + show + " Not found!")
 	elif ("block." in show):
-		playblockpackage(show)
+		say = playblockpackage(show)
 		show = show.replace("_", " ")
-		return ("Starting the " + show)
+		return ("Starting " + say)
 	elif ("holiday." in show):
 		say = playholiday(show)
 		return (say)
@@ -2761,9 +2770,9 @@ def playwhereleftoff(show):
 				return ("Playing the movie " + show + " now, Sir.") 
 		return ("Error. " + show + " Not found!")
 	elif ("block." in show):
-		playblockpackage(show)
+		say = playblockpackage(show)
 		show = show.replace("_", " ")
-		return ("Starting the " + show)
+		return ("Starting " + say)
 	else:
 		return ("Media not found to launch. Check the title and try again.")
 
@@ -3272,6 +3281,11 @@ def setupnext(title):
 	if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 		title = titlecheck(title).strip()
 	title = mediachecker(title)
+	if "''" in title:
+                pass
+        else:
+                title = title.replace("'","''")
+	print (title)
 	if "User Quit." in title:
 		return (title)
 	elif ("Error: " in title):
@@ -3279,12 +3293,12 @@ def setupnext(title):
 
 	if ("movie." in title):
 		ctitle = title.replace("movie.","")
-		command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'' + ctitle + '\''
+		command = "SELECT Movie FROM Movies WHERE Movie LIKE \"" + ctitle + "\""
 		cur.execute(command)
 		if not cur.fetchone():
 			return ("Error. Title not found to add to play queue.")
 	else:
-		command = 'SELECT TShow FROM shows WHERE TShow LIKE \'' + title + '\''
+		command = "SELECT TShow FROM shows WHERE TShow LIKE \"" + title + "\""
 		cur.execute(command)
 		if not cur.fetchone():
 			say = didyoumeanshow(title)
@@ -3453,6 +3467,7 @@ def externalcheck():
 
 def titlecheck(title):
 	title = title.replace("movie.","")
+	title = title.replace("'","''")
 	title = title.lower()
 	check = "fail"
 	cur.execute("SELECT Movie FROM Movies")
@@ -3499,12 +3514,12 @@ def titlecheck(title):
 def didyoumeanboth(title):
 	#title = titlecheck(title).strip()
 	movie = title
+	movie = movie.replace("'","''")
 	movie = movie.replace("movie.","")
 	passcheck = ['the', 'and', 'a', 'to', 'of', 'for', 'an', 'on', 'with', '&', 'from', ' ', '']
 	found = []
 	#darker
 	if "Fail" not in externalcheck():
-		print ("2")
 		tshow = movie
 		show = movie
 		checks = []
@@ -3512,7 +3527,6 @@ def didyoumeanboth(title):
 			show = show.split(' ')
 			for item in show:
 				if ((item.lower() not in passcheck) and (int(len(item)) > 3) and (item not in checks)):
-					print (item)
 					checks.append(item)
 		else:
 			try:
@@ -3687,6 +3701,25 @@ def whatsafterthat():
 		return("Sorry, whatsafterthat only currenly supports normal playback.")
 	return ("Done.")	
 
+def aftercommpreroll():
+	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
+        cur.execute(command)
+        playmode = cur.fetchone()
+        playmode = playmode[0].replace("block.","")
+	command = "SELECT Items, Count FROM Blocks WHERE Name LIKE \"" + playmode + "\""
+	cur.execute(command)
+	try:
+		stuff = cur.fetchone()
+		plays = stuff[0]
+		plays = plays.split(";")
+		count = int(stuff[1]) + 1
+		play = plays[count]
+		play = play.rstrip()
+	except Exception:
+		play = "Nothing."
+	return play
+	
+
 def whatupnext():
 	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
@@ -3777,6 +3810,7 @@ def whatupnext():
 				episode = episode[1].rstrip()
 				episode = "The Movie " + episode
 			else:
+				#marker
 				episode = nextep(block)
 				block = playmode.replace("block.","")
 			#upnext = upnext.replace("''","'")
@@ -4040,8 +4074,8 @@ def restartshow(show):
 	return say
 
 def nextep(show):
-	show = titlecheck(show)
-	show = mediachecker(show)
+	#show = titlecheck(show)
+	#show = mediachecker(show)
 	if ("Quit." in show):
 		return ("User quit. No action taken.")
 	try:
@@ -5150,7 +5184,15 @@ try:
 	elif ("whatupnext" in show):
 		say = whatupnext()
 		say = say.replace("movie.","The Movie ")
+		if (("The commercial" in say) or ("The preroll" in say)):
+			say2 = aftercommpreroll()
+			say2 = say2.replace("movie.","The movie ")
+			say = say + "\nFollowed by " + say2
+		say = say.replace("playcommercial.","The commercial ")
+		say = say.replace("preroll.","The preroll ")
 		#say = "Upnext we have " + say
+	elif ("aftercommpreroll" in show):
+		say = aftercommpreroll()
 	elif ("whatsafterthat" in show):
 		say = whatsafterthat()
 	elif ("startnextprogram" in show):
@@ -5399,6 +5441,9 @@ try:
 		say = playblockpackage(play)
 	elif ("nextep" in show)and ("setnextep" not in show):
 		show = str(sys.argv[2])
+		show = titlecheck(show)
+		show = mediachecker(show)
+
 		say = nextep(show)
 
 	elif ("getplaymode" in show):
@@ -5622,6 +5667,7 @@ try:
 		except Exception:
 			say = "Error. Invalid Syntax. Use 'updatemovies' or 'updateshows' or 'updateall' as a flag for this command. Please try again."
 	else:
+		#def playme
 		pcmd = "playme"
 		plexlogin()
 		show = titlecheck(show)
