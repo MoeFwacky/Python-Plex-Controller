@@ -37,3 +37,18 @@ WIP/Feature Requests:
 15- moviechoice - similar to the suggestmovie feature, only this option will present 3 movies of the requested genre., rating., or actor.. If an option is not found, or there are less than 3 available, an error is returned, else, you can select one of the returned items to add to the queue, or use any of the worklist shortcuts for the returned list. -- Added.
 
 16- Kidsmode - This mode restricts the playback options to movies/shows in the G/TV-G type ratings. Playback will error if you try to manually play something not kids approprate. resumeplayback is disabled. You can add approved and rejected exceptions for kids mode as well. -- Added.
+
+17- resume mode - when on, this mode sets playback to resume content from where you previously left off instead of from the beginning.
+checked with: resumestatus
+changed with: setresumestatus on/off
+-- Added, testing for closure.
+
+18- commercials and prerolls- 
+commercials and prerolls can be added as items in a block using playcommercial and playpreroll. Note: separate home video librarys are needed to use this options. Special characters in names may cause problems, so titles should be checked before adding. Any video of any length can be used, though shorter videos are recommended as there is no easy way to interupt a playing commercial or preroll. Keep that in mind. 
+specific commercials and prerolls can be specified by adding "playpreroll." or "playcommercial." before the item title. 
+you can also have commercials play inbetween content. This is enabled and disabled with:
+enablecommercials
+disablecommercials
+There is also a commercial break option. The default number of commercials is 2. In the future you will be able to change this defualt. To prevent extended commercial breaks, if a commercial runs longer than 1 minute the next commercial is skipped. 
+The command to trigger a commercial break is: commercialbreak
+-- Adding, pending close. 
