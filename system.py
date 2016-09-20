@@ -82,7 +82,7 @@ def plexlogin():
 			print ("Local Variables not set. Run setup to use local access.")
 
 		from plexapi.myplex import MyPlexAccount
-		user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+		#user = MyPlexAccount.signin(PLEXUN,PLEXPW)
 
 		try:
 			LOGGEDIN
@@ -95,8 +95,9 @@ def plexlogin():
 				plex = PlexServer(baseurl, token)
 			except Exception:
 				print ("Local Fail. Trying cloud access.")
+				user = MyPlexAccount.signin(PLEXUN,PLEXPW)
 	
-			plex = user.resource(PLEXSVR).connect()
+				plex = user.resource(PLEXSVR).connect()
 			client = plex.client(PLEXCLIENT)
 			LOGGEDIN = "YES"
 
@@ -702,6 +703,29 @@ def changeclient():
 def stopplay():
 	client = plex.client(PLEXCLIENT)
 	client.stop('video')
+
+def awaystop():
+	cur.execute("SELECT State FROM States WHERE Option LIKE \"Nowplaying\"")
+	check = cur.fetchone()[0]
+	if ("TV Show: " in check):
+		show = check.split("TV Show: ")
+		show = show[1]
+		show = show.split("Episode: ")
+		ep = show[1].strip()
+		show = show[0].strip()
+		command = "SELECT Season, Enum FROM shows WHERE TShow LIKE \"" + show + "\" and Episode LIKE \"" + ep + "\""
+		cur.execute(command)
+		xep = cur.fetchone()
+		ssn = str(xep[0])
+		ep = str(xep[1])
+		setnextep(show,ssn,ep)
+		setupnext(show)
+	else:
+		mve = check.split("Movie: ")
+		mve = mve.strip()
+		setupnext(mve)
+	playcheckstop()		
+	stopplay()
 
 def pauseplay():
 	client = plex.client(PLEXCLIENT)
@@ -1463,7 +1487,6 @@ def mediachecker(title):
 		#return (title)
         if ((check1 == "fail") and (check2 == "fail")):
                 addme = didyoumeanboth(title)
-                print (addme)
                 if "Quit." in addme.strip():
                         return ("User Quit. No Action Taken.")
                 else:
@@ -1613,7 +1636,13 @@ def playblockpackage(play):
 			play = play.replace("Tonights movie has been set to ","")
 			#play = titlecheck(play)
 			#play = mediachecker(play).strip()
-			playshow(play)	
+			rcheck = resumestatus()
+			print (play)
+			if ("on" in rcheck.lower()):
+				say = playwhereleftoff(play)
+			else:
+				say = playshow(play)
+			#playshow(play)	
 			return play
 
 def availableshows():
@@ -2700,12 +2729,25 @@ def whereleftoff(item):
 				items = items.split(';')
 				found = items[foundc]
 				return ("Up next is item " + str(foundc + 1) + ":\n" + found)
-		print ("Sorry. This feature only currently supports movies. Starting your request from the beginning.")
+		#print ("Sorry. This feature only currently supports movies. Starting your request from the beginning.")
 		return (0)
+
+def getshowleftoff(show, episode):
+	show = show.strip()
+	xshow = episode.strip()
+	global PLEXCLIENT
+	plexlogin()
+	shows = plex.library.section('TV Shows')
+	the_show = shows.get(show)
+	#showplay = the_show.rstrip()
+	ep = the_show.get(xshow)
+	return (ep.viewOffset)
+	
 
 def playwhereleftoff(show):
 	global PLEXCLIENT
 	plexlogin()
+	show = show.replace(";;","'")
 	show = titlecheck(show)
 	show = mediachecker(show)
 	leftoff = int(whereleftoff(show)) * 60000
@@ -2740,17 +2782,25 @@ def playwhereleftoff(show):
 		cur.execute(command)
 		xshow = cur.fetchone()
 		xshow = xshow[0].rstrip()
+		xshow = xshow.replace("''","'")
 		thecountx = (thecount + 1)
 		command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecountx) + "\""
 		cur.execute(command)
 		check = cur.fetchone()
+		if not check:
+			thecountx = 1
+		command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
+		cur.execute(command)
+		cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecountx))
+		sql.commit()
 		shows = plex.library.section('TV Shows')
 		the_show = shows.get(show)
 		#showplay = the_show.rstrip()
 		ep = the_show.get(xshow)
+		leftoff = ep.viewOffset
 		client = plex.client(PLEXCLIENT)
 		client.playMedia(ep, offset=leftoff)
-		#nowplaywrite("TV Show: " + show + " Episode: " + xshow)
+		nowplaywrite("TV Show: " + show + " Episode: " + xshow)
 		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, Sir' 
 		return showsay
 	elif ("movie." in show):
@@ -2855,6 +2905,7 @@ def nowplaying():
 	cur.execute("SELECT State FROM States WHERE Option LIKE \"Nowplaying\"")
 	title = cur.fetchone()
 	title = title[0]
+	#print title	
 	global plex
 	plexlogin()
 	psess = plex.sessions()
@@ -3286,7 +3337,6 @@ def setupnext(title):
                 pass
         else:
                 title = title.replace("'","''")
-	print (title)
 	if "User Quit." in title:
 		return (title)
 	elif ("Error: " in title):
@@ -4772,7 +4822,7 @@ def suggesttv(genre):
 	return "How does the TV Show " + play + " sound, Sir?"
 
 def listshows(genre):
-	command = 'SELECT TShow from TVshowlist WHERE Genre LIKE \'%' + genre + ';%\''
+	command = 'SELECT TShow from TVshowlist WHERE Genre LIKE \'%' + genre + ';%\' ORDER BY TShow ASC'
 	cur.execute(command)
 	if not cur.fetchall():
 		return("Error: " + " No shows were found in the " + genre + " genre.")
@@ -4787,9 +4837,9 @@ def listshows(genre):
 
 def listmovies(genre):
 	if genre == "none":
-		cur.execute("SELECT Movie FROM Movies")
+		cur.execute("SELECT Movie FROM Movies ORDER BY Movie ASC")
 	else:
-		cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\"")
+		cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\" ORDER BY Movie ASC")
 	thelist = cur.fetchall()
 	movies = []
 	for movie in thelist:
@@ -4854,6 +4904,67 @@ def playcheckstart():
 		file.write("On")
         file.close()
 
+def checkpstatus():
+	openme = homedir + 'playstatestatus.txt'
+        with open(openme, "r") as file:
+                checkme = file.read()
+        file.close()
+        if "On" in checkme:
+                playcheckstop()
+		return ("On")
+	else:
+		return ("Off")
+
+def resumestatus():
+	command = "SELECT State FROM States WHERE Option LIKE \"RESUMESTATUS\""
+	cur.execute(command)
+	if not cur.fetchone():
+		print ("No resume status. Setting to off.")
+		say = setresumestatus("Off")
+	else:
+		cur.execute(command)
+		say = cur.fetchone()[0]
+	return say
+
+def setresumestatus(option):
+	option = option.lower()
+	if (("on" not in option) and ("off" not in option)):
+		return ("Error: You must specify 'On' or 'Off' to use this command")
+	cur.execute("DELETE FROM States WHERE Option LIKE \"RESUMESTATUS\"")
+	sql.commit()
+	option = option.strip()
+	cur.execute("INSERT INTO States VALUES (?,?)",("RESUMESTATUS",option))
+	sql.commit()
+	say = option
+	return say
+
+def startnextprogram():
+	pstatus = checkpstatus()
+	plexlogin()
+	commcheck = commercialcheck()
+	if "On" in commcheck:
+		playcommercial("none")
+	show = upnext()
+	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
+	cur.execute(command)
+	pmode = cur.fetchone()[0]
+	if (("normal" in pmode) or ("binge." in pmode) or ("minithon." in pmode)):
+		rcheck = resumestatus()
+		if ("on" in rcheck.lower()):
+			say = playwhereleftoff(show)
+	try:
+		say
+	except NameError:
+		say = playshow(show)
+	if (("block." or "binge.") not in show):
+		skipthat()
+	say = say + "\n"
+	if "On" in pstatus:
+		time.sleep(SLEEPTIME)
+		playcheckstart()
+
+	
+
 def backuptvdb():
 	cur.execute("DELETE FROM backupshows")
 	sql.commit()
@@ -4891,6 +5002,14 @@ try:
         elif ("restoremoviedb" in show):
                 restoremoviedb()
                 say = "Done."
+	elif (("resumestatus" in show) and ("set" not in show)):
+		say = resumestatus()
+		say = "Resume Status is: " + say + "."
+	elif ("setresumestatus" in show):
+		option = str(sys.argv[2])
+		say = setresumestatus(option)
+		if "Error" not in say:
+			say = "Resume Status has been set to: " + say + "."
 	elif ("checkholidays" in show):
 		checkholidays()
 		say = "Done."
@@ -5136,6 +5255,10 @@ try:
 		plexlogin()
 		stopplay()
 		say = "Playback has been stopped. A new program will start unless you have already stopped playstatus.py"
+	elif ("awaystop" in show):
+		plexlogin()
+		awaystop()
+		say = "Playback has been stopped and the title that was playing has been saved so it can be easily resumed."
 	elif ("pauseplay" in show):
 		plexlogin()
 		pauseplay()
@@ -5199,6 +5322,9 @@ try:
 	elif ("whatsafterthat" in show):
 		say = whatsafterthat()
 	elif ("startnextprogram" in show):
+		startnextprogram()
+		say = "done."
+		'''
 		openme = homedir + 'playstatestatus.txt'
 		with open(openme, "r") as file:
 			checkme = file.read()
@@ -5217,6 +5343,7 @@ try:
 		if "On" in checkme:
 			time.sleep(SLEEPTIME)
 			playcheckstart()
+		'''
 	elif ("skipthat" in show):
 		say = skipthat()
 		try:
@@ -5675,21 +5802,20 @@ try:
 		plexlogin()
 		show = titlecheck(show)
 		show = mediachecker(show)
-		openme = homedir + 'playstatestatus.txt'
-                with open(openme, "r") as file:
-                        checkme = file.read()
-                file.close()
-                if "On" in checkme:
-                        playcheckstop()
+		pstatus = checkpstatus()
 		try:
 			season = str(sys.argv[2])
 			episode = str(sys.argv[3])
 			say = playspshow(show, season, episode)
 		
 		except IndexError:
+			rcheck = resumestatus()
+			if "on" in rcheck.lower():
+				say = playwhereleftoff(show)
+			else:
 				
-			say = playshow(show)
-                if "On" in checkme:
+				say = playshow(show)
+                if "On" in pstatus:
 			time.sleep(SLEEPTIME)
                         playcheckstart()
 	print (say)
