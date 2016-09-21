@@ -4978,6 +4978,10 @@ def backupmoviedb():
         cur.execute("INSERT INTO backupmovies SELECT * FROM Movies")
         sql.commit()
         print ("Movies table has been successfully backed up.")
+
+def versioncheck():
+	version = "2.0.86"
+	return version
 	
 
 #commandsgohere
@@ -5796,6 +5800,8 @@ try:
 			say = result
 		except Exception:
 			say = "Error. Invalid Syntax. Use 'updatemovies' or 'updateshows' or 'updateall' as a flag for this command. Please try again."
+	elif ("versioncheck" in show):
+		say = versioncheck()
 	else:
 		#def playme
 		pcmd = "playme"
