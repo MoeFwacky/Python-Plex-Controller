@@ -4982,7 +4982,7 @@ def backupmoviedb():
         print ("Movies table has been successfully backed up.")
 
 def versioncheck():
-	version = "2.0.87"
+	version = "2.0.91"
 	return version
 	
 
@@ -5322,6 +5322,7 @@ try:
 			say = say + "\nFollowed by " + say2
 		say = say.replace("playcommercial.","The commercial ")
 		say = say.replace("preroll.","The preroll ")
+		say = say.replace("''","'")
 		#say = "Upnext we have " + say
 	elif ("aftercommpreroll" in show):
 		say = aftercommpreroll()
@@ -5499,14 +5500,17 @@ try:
 					tve = ""
 				wve = whatupnext()
 				wve = wve.replace("movie.","")
+				wve = wve.replace("''","'")
 				item = item.lower()
+				item = item.replace("''","'")
 				if ("random_tv." in item):
 					item = item.replace("random_tv.", "A random ")
 					item = item + " show"
 				elif ("random_movie." in item):
 					item = item.replace("random_movie.", "A random ") 
 					item = item + " movie"
-				wve = "Item " + str(count+1) + ", " + item + " is next: " + wve
+				if "The Movie" not in wve:
+					wve = "Item " + str(count+1) + ", " + item + " is next.\n" + wve
 				say = say + mve + tve + "\n" + wve
 			else:
 				say = "Error: No block specified."
@@ -5826,6 +5830,7 @@ try:
                 if "On" in pstatus:
 			time.sleep(SLEEPTIME)
                         playcheckstart()
+	say = say.replace("''","'")
 	print (say)
 except IndexError:
 	show = "We're Sorry, but either that command wasn't recognized, or no input was received. Please try again."  
