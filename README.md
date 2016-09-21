@@ -4,6 +4,7 @@ TheBaconNation Plex Controller
 <br><a href = "https://youtu.be/HRJbNHRQO6I">A link to a demo of the controller in action.</a>
 <br><a href = "https://youtu.be/a5lOLjzunMQ">How To Create a Block Package.</a>
 <br><a href=  "http://thebaconnation.com">Our Homepage.</a>
+<br><a href= "https://youtu.be/u0ur4koeDFM">The Beginnings of a bad web ui.</a>
 
 <br><a href= "https://discordapp.com/channels/206249843209797632/206249843209797632">The TBN-Plex Discord Channel.</a>
 
@@ -124,3 +125,9 @@ TheBaconNation Plex Controller
 <br>showminithonmax / showminithonmax / Shows the current Mini-Marathon Maximum settings.
 <br>setminithonmax (number) / setminithonmax 4 / Sets the Mini-Marathon Maximum settings to the specified value. Defauls to 3.
 <br>updatedb (updatemovies/updateshows/updateall) / updatedb updateshows / updates your TBN-Plex db.
+<br>Commands exist that go here... I'm bad at updating this page.
+<br>
+<br>
+<br>
+Using the crappy UI:
+<br>There are 3 .php files and a jpg that can be used in the event you desire a UI and are worse than I at making such things. Drop them in your apache web directory and have at it. I've setup the TBN scripts and its DB such that others should be able to easily interact with them and make a custom UI, voice controller, mobile app,... whatever that makes use of them as one sees fit. 
