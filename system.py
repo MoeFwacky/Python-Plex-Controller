@@ -1081,6 +1081,7 @@ def addblock(name, title):
 				choice = 4
 			if choice == 1:
 				xname = str(input('Movie Name:'))
+				#xname = xname.replace("'","''")
 				xname = titlecheck(xname.strip())
 				xname = mediachecker(xname)
 				if ("Quit." in xname):
@@ -1096,6 +1097,7 @@ def addblock(name, title):
 				print (xname.rstrip() + " has been added to the block.")
 			elif choice == 2:
 				xname = str(input('TV Show Name:'))
+				xname = xname.replace("'","''")
 				for item in tvcheck:
 					if (xname.lower() == item.lower().rstrip()):
 						xname = item.strip()
@@ -1121,7 +1123,7 @@ def addblock(name, title):
 							return xname
 						
 					blname = str(name)
-					xname = xname.replace("'","''")
+					#xname = xname.replace("'","''")
 					adtitle = bitems+str(xname)+";"
 					blcount = 0
 					cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + bname + "\"")
@@ -4980,7 +4982,7 @@ def backupmoviedb():
         print ("Movies table has been successfully backed up.")
 
 def versioncheck():
-	version = "2.0.86"
+	version = "2.0.87"
 	return version
 	
 
