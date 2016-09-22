@@ -5,6 +5,7 @@ TheBaconNation Plex Controller
 <br><a href = "https://youtu.be/a5lOLjzunMQ">How To Create a Block Package.</a>
 <br><a href=  "http://thebaconnation.com">Our Homepage.</a>
 <br><a href= "https://youtu.be/u0ur4koeDFM">The Beginnings of a bad web ui.</a>
+<br><a href= "https://youtu.be/oMDl-6GRK30">How to use replaceshowinblock feature.</a>
 
 <br><a href= "https://discordapp.com/channels/206249843209797632/206249843209797632">The TBN-Plex Discord Channel.</a>
 
