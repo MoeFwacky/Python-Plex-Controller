@@ -1394,7 +1394,7 @@ def replaceinblock(block, nitem, oitem):
 	if oitem not in bxitems:
 		return ("Error: " + oitem + " not in " + block + " to replace.")
 	if (("playcommercial" not in nitem) and ("preroll" not in nitem)):
-		nitem = titlecheck(nitem)
+		#nitem = titlecheck(nitem)
 		nitem = mediachecker(nitem)
 	if "Quit" in nitem:
 		return ("User Quit. No action taken.")
@@ -1635,11 +1635,11 @@ def playblockpackage(play):
 			if int(bcount) == 0:
 				setplaymode("normal")
 				print ("Playmode has been set to normal.")
-			play = play.replace("Tonights movie has been set to ","")
+			#play = play.replace("Tonights movie has been set to ","")
 			#play = titlecheck(play)
 			#play = mediachecker(play).strip()
 			rcheck = resumestatus()
-			print (play)
+			#print (play)
 			if ("on" in rcheck.lower()):
 				say = playwhereleftoff(play)
 			else:
@@ -2352,6 +2352,99 @@ def movielink(movie):
 	mve = plex.library.section('Movies').get(movie)
 	print mve.getStreamURL()
 
+def replacestatus(show):
+	try:
+                command = "SELECT * FROM replaceinblock WHERE name LIKE \"" + show.strip() + "\""
+                cur.execute(command)
+        except sqlite3.OperationalError:
+                cur.execute("CREATE TABLE IF NOT EXISTS replaceinblock(name TEXT, item TEXT, block TEXT, played TEXT)")
+                sql.commit()
+                return ("replaceinblock table successfully created.")
+	cur.execute(command)
+	stuff = cur.fetchone()
+	if not stuff:
+		return ("Show " + show + " is not designated to be replaced in a block.")
+	name = stuff[0]
+	item = stuff[1]
+	item = item.replace(";",", ")
+	block = stuff[2]
+	played = stuff[3]
+	say = "Show to replace: " + name.strip() + "\nReplaced with : " + item.strip() + "\nBlock affected: " + block.strip() + "\nPlaystatus: " + played.strip()
+	return say
+	
+
+def replacecheck(show):
+	theshow = show
+	try:
+		command = "SELECT item, block, played FROM replaceinblock WHERE name LIKE \"" + show.strip() + "\""
+		cur.execute(command)
+	except sqlite3.OperationalError:
+		cur.execute("CREATE TABLE IF NOT EXISTS replaceinblock(name TEXT, item TEXT, block TEXT, played TEXT)")
+		sql.commit()
+		print ("replaceinblock table successfully created.")
+	cur.execute(command)	
+	show = cur.fetchone()
+	if not show:
+		return ("no")
+	block = show[1]
+	played = show[2]
+	show = show[0]
+	olist = show
+	cshow = show.split(";")
+	nshow = cshow[0]
+	if (int(len(cshow))-1 == 0):
+		cur.execute("DELETE FROM replaceinblock WHERE name LIKE \"" + theshow + "\"")
+		sql.commit()
+		newlist = olist.replace(nshow+";","")
+		replaceinblock(block,nshow,theshow)
+	else:
+		newlist = olist.replace(nshow+";","")
+		replaceinblock(block,nshow,theshow)
+		if ("yes" in played):
+			cur.execute("DELETE FROM replaceinblock WHERE name LIKE \"" + theshow + "\"")
+			sql.commit()
+			cur.execute("INSERT INTO replaceinblock VALUES (?,?,?,?)",(nshow,newlist,block,played))
+			sql.commit()
+		else:
+			cur.execute("DELETE FROM replaceinblock WHERE name LIKE \"" + theshow + "\"")
+                        sql.commit()
+			cur.execute("INSERT INTO replaceinblock VALUES (?,?,?,?)",(theshow,olist,block,"yes"))
+                        sql.commit()
+	say = "done"	
+	return say
+
+def replaceshowinblock(show, nshow, block, playflag):
+	tshow = show
+	rcheck = replacestatus(show)
+	command = "SELECT name FROM Blocks WHERE Name LIKE \"" + block + "\""
+	cur.execute(command)
+	if not cur.fetchone():
+		return ("Error: " + block + " not found. Check and try again.")
+	show = titlecheck(show)
+	show = mediachecker(show)
+	nshow = titlecheck(nshow)
+	nshow = mediachecker(nshow)
+	#rcheck = replacecheck(show)
+	if ("not designated to be replaced" in rcheck):
+		cur.execute("INSERT INTO replaceinblock VALUES (?,?,?,?)",(show.strip(),nshow.strip(),block.strip(),playflag.strip()))
+                sql.commit()
+		return (show + " will be replaced by " + nshow + " in the " + block + " block.")
+	else:
+		command = "SELECT * FROM replaceinblock WHERE name LIKE \"" + show.strip() + "\""
+		cur.execute(command)
+		stuff = cur.fetchall()[0]
+		name = stuff[0]
+		item = stuff[1]
+		item = item + ";" + nshow.strip()
+		block = stuff[2]
+		playstatus = stuff[3]
+		cur.execute("DELETE FROM replaceinblock WHERE name LIKE \"" + tshow + "\"")
+		sql.commit()
+		cur.execute("INSERT INTO replaceinblock VALUES (?,?,?,?)",(name,item,block,playstatus))
+		sql.commit()
+		return (nshow + " has been associated with " + block + " and " + name + " for replacement purposes.")
+		
+
 def playholiday(holiday):
 	print (holiday)
 	holiday = holiday.replace("holiday.","")
@@ -2434,6 +2527,7 @@ def playshow(show):
 		cur.execute(command)
 		check = cur.fetchone()
 		if not check:
+			rcheck = replacecheck(show)
 			thecountx = 1
 		command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
 		cur.execute(command)
@@ -2790,6 +2884,7 @@ def playwhereleftoff(show):
 		cur.execute(command)
 		check = cur.fetchone()
 		if not check:
+			rcheck = replacecheck(show)
 			thecountx = 1
 		command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
 		cur.execute(command)
@@ -4982,7 +5077,7 @@ def backupmoviedb():
         print ("Movies table has been successfully backed up.")
 
 def versioncheck():
-	version = "2.0.91"
+	version = "2.0.92"
 	return version
 	
 
@@ -5008,6 +5103,25 @@ try:
         elif ("restoremoviedb" in show):
                 restoremoviedb()
                 say = "Done."
+	elif ("replacecheck" in show):
+		item = sys.argv[2]
+		say = replacecheck(item)
+	elif ("replacestatus" in show):
+		try:
+			show = str(sys.argv[2])
+			say = replacestatus(show)
+		except IndexError:
+			say = "Error: You must specify a show to use this command."
+	elif ("replaceshowinblock" in show):
+		try:
+			show = str(sys.argv[2])
+			nshow = str(sys.argv[3])
+			block = str(sys.argv[4])
+			playflag = str(sys.argv[5])
+			say = replaceshowinblock(show, nshow, block, playflag)
+		except IndexError:
+			say = "You must provide a show, new show, block, and playflag(yes/no) to use this command."
+			
 	elif (("resumestatus" in show) and ("set" not in show)):
 		say = resumestatus()
 		say = "Resume Status is: " + say + "."
@@ -5016,6 +5130,14 @@ try:
 		say = setresumestatus(option)
 		if "Error" not in say:
 			say = "Resume Status has been set to: " + say + "."
+	elif ("titlecheck" in show):
+		show = str(sys.argv[2])
+		show = titlecheck(show)
+		print (show)
+		show = mediachecker(show)
+		print (show)
+		say = show
+
 	elif ("checkholidays" in show):
 		checkholidays()
 		say = "Done."
@@ -5548,7 +5670,7 @@ try:
 			nitem = str(sys.argv[3])
 			oitem = str(sys.argv[4])
 			say = replaceinblock(block, nitem, oitem)
-		except Exception:
+		except IndexError:
 			say = "Error. You must supply a block, new item, and old item to use this command."
 	elif ("reorderblock" in show):
 		try:
