@@ -39,7 +39,8 @@ TheBaconNation Plex Controller
 <br>Regarding Database Updates:
 <br>The upddatedb_pi.py script will update your TBN Plex DB. The TBN Plex Controller uses a separate database so you do not need to worry about corrupting your existing Plex Database. 
 
-<br>You can update your database independent of the system_setup.py script by running "python upddatedb_pi.py updatetv/updatemovies/all" The script accepts one of three options. You can update all, just your movies, or just your TV shows. This is to allow you to save time when you only need to update one side of your library. Larger libraries will take more time to scan versus smaller libraries. 
+<br><p>You can update your database independent of the system_setup.py script by running "python upddatedb_pi.py updatetv/updatemovies/all" The script accepts one of three options. You can update all, just your movies, or just your TV shows. This is to allow you to save time when you only need to update one side of your library. Larger libraries will take more time to scan versus smaller libraries.</p>
+<br><p>For the times when you only need to get entires for a single show a second update script has been added: getshows.py. Usage is as follows: python getshows.py "Name of show here." This script will check your plex server for the specified show, and any new entries are added to the TBN-Plex DB. Note: does not update existing entires. </p>
 <br>
 <br>After Install Notes:
 <br>Before you can use the block package commands, or block package playback, you first need to create a block package. You can use the "addblock" modifier to create a block package. 
