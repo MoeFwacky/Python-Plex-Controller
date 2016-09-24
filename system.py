@@ -598,6 +598,28 @@ def enablekidsmode():
 
         return ("Favories mode has been turned Kids.")
 
+def enableblockrandom(option):
+	check = ["on","off"]
+        option = option.lower()
+	if option not in check:
+                return ("Error: you must specify \"on\" or \"off\" to use this command.")
+	cur.execute("DELETE FROM States WHERE Option LIKE \"BLOCKRANDOM\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("BLOCKRANDOM",option.strip()))
+	sql.commit()
+	return ("BLOCKRANDOM has been set to " + option.strip() + ".")
+
+def checkblockrandom():
+	command = "SELECT State from States WHERE Option LIKE \"BLOCKRANDOM\""
+	cur.execute(command)
+	if not cur.fetchone():
+		cur.execute("INSERT INTO States VALUES (?,?)",("BLOCKRANDOM","off"))
+		sql.commit()
+	cur.execute(command)
+	option = cur.fetchone()[0]
+	return option
+	
+
 def disablekidsmode():
 	kcheck = checkmode("movie")
 	if "Kids" in kcheck:
@@ -783,7 +805,7 @@ def changewildcard(show):
 		return (newwild + " has been set as the new Wildcard show.")
 
 def getblockpackagelist():
-	command = 'SELECT Name FROM Blocks'
+	command = 'SELECT Name FROM Blocks ORDER BY Name ASC'
 	cur.execute(command)
 	list = cur.fetchall()
 	xlist = []
@@ -3054,10 +3076,17 @@ def queuefix():
 	return ("The Queue has been rebuilt.")
 
 def queuefill():
-	playme = randint(1,7)
+	playme = randint(1,8)
 	#random TV show
 	showmode = checkmode("show")
 	moviemode = checkmode("movie")
+	if playme == 8:
+		playme = randint(1,7)
+		block = getrandomblock()
+		if "Error:" not in block:
+			if ("on" in checkblockrandom()):
+				say = setplaymode(block)
+				print (say)
 	if ((playme == 1) or (playme ==5) or (playme == 7)):
 		if ((playme == 1) and (showmode == "Off")):
 			command = "SELECT TShow FROM TVshowlist"
@@ -3332,6 +3361,13 @@ ex2- setplaymode normal
 	"""
 	return (say)
 
+def getrandomblock():
+	list = getblockpackagelist()
+	max = int(len(list))-1
+	pblay = randint(0,max)
+	block = list[pblay]
+	return block
+
 def setplaymode(mode):
 	cmode = playmode()
 	if mode != cmode:
@@ -3354,6 +3390,11 @@ def setplaymode(mode):
 		#print (hxcheck)
 		if "Error" in hxcheck:
 			return hxcheck
+	if ("getrandomblock" in mode):
+		try:
+			mode = getrandomblock()
+		except Exception:
+			return ("Error: random block get failed.")
 	
 	if "pass" not in setcheck:
 		command = "SELECT Name FROM Blocks WHERE Name LIKE \"" + mode + "\""
@@ -5076,8 +5117,32 @@ def backupmoviedb():
         sql.commit()
         print ("Movies table has been successfully backed up.")
 
+def statuscheck():
+	pmode = playmode()
+	print ("Playmode: " +pmode)
+	if "block." in pmode:
+		pmode = pmode.replace("block.","")
+		block = explainblock(pmode)
+		print ("\n\n" + block + "\n")
+	else:
+		say = whatupnext()
+		say = say.replace("''","'")
+		print (say)
+	resstatus = resumestatus()
+	print ("Resume Feature Option is: " + resstatus)
+	
+	randstatus = checkblockrandom()
+	print ("Random Block Option is: " + randstatus)
+	favm = checkmode("movie")
+	favtv = checkmode("show")
+	print ("Favorites Mode Movies is: " + favm)
+	print ("Favorites Mode Shows is : " + favtv)
+	ccheck = commercialcheck()
+	print ("Commercial Injection is: " + ccheck)
+
+
 def versioncheck():
-	version = "2.0.92"
+	version = "2.0.97"
 	return version
 	
 
@@ -5103,6 +5168,9 @@ try:
         elif ("restoremoviedb" in show):
                 restoremoviedb()
                 say = "Done."
+	elif ("statuscheck" in show):
+		statuscheck()
+		say = "Done."
 	elif ("replacecheck" in show):
 		item = sys.argv[2]
 		say = replacecheck(item)
@@ -5226,6 +5294,15 @@ try:
 		say = enablekidsmode()
 	elif ("disablekidsmode" in show):
 		say = disablekidsmode()
+	elif ("checkblockrandom" in show):
+		say = checkblockrandom()
+		say = "BLOCKRANDOM is " + say + "."
+	elif ("setblockrandom" in show):
+		try:
+			option = str(sys.argv[2])
+			say = enableblockrandom(option)
+		except IndexError:
+			say = "Error: You must specify either \"on\" or \"off\" to use this command."
 	elif ("enablecommercials" in show):
 		say = enablecommercials()
 	elif ("disablecommercials" in show):
@@ -5547,6 +5624,14 @@ try:
 			genre = "none"
 		say = suggesttv(genre)
 		#saythat(say)
+	elif ("suggestblock" in show):
+		try:
+			say = getrandomblock()
+			say1 = explainblock(say)
+			say = "How does the " + say + " block sound, sir?"
+			print (say1)
+		except Exception:
+			say = "Error: Block get failed."
 	elif ("listshows" in show):
 		try:
 			genre = str(sys.argv[2])
@@ -5814,11 +5899,13 @@ try:
 		say = showdetails(show)
 	elif ("findmovie" in show):
 		movie = str(sys.argv[2])
-		say = findmovie(movie)
+		findmovie(movie)
+		say = "Done"
 	elif ("findshow" in show):
 		show = str(sys.argv[2])
 		show = show.replace("'","''")
 		say = findshow(show)
+		say = "Done"
 	elif ("setnextep" in show):
 		show = str(sys.argv[2])
 		season = str(sys.argv[3])
@@ -5952,7 +6039,10 @@ try:
                 if "On" in pstatus:
 			time.sleep(SLEEPTIME)
                         playcheckstart()
-	say = say.replace("''","'")
+	try:
+		say = say.replace("''","'")
+	except AttributeError:
+		say = "Done"
 	print (say)
 except IndexError:
 	show = "We're Sorry, but either that command wasn't recognized, or no input was received. Please try again."  
