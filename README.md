@@ -127,9 +127,32 @@ TheBaconNation Plex Controller
 <br>showminithonmax / showminithonmax / Shows the current Mini-Marathon Maximum settings.
 <br>setminithonmax (number) / setminithonmax 4 / Sets the Mini-Marathon Maximum settings to the specified value. Defauls to 3.
 <br>updatedb (updatemovies/updateshows/updateall) / updatedb updateshows / updates your TBN-Plex db.
-<br>Commands exist that go here... I'm bad at updating this page.
-<br>
-<br>
-<br>
+<br> changeplexpw password / changeplexpw passwordhere / changes the plexpw for your user in TBN Ples
+<br>enablecommercials / enablecommercials / enables random commercial between programs
+<br>disablecommercials / disablecommercials / disables commercials between programs
+<br>commercialcheck / commercialcheck / checks status of commercial mode
+<br>listcommercials / listcommercials /lists available commercials
+<br>listprerolls / listprerolls/ lists available prerolls
+<br>playcommercial [title]/ playcommercial "deadwood mr wu"/plays a commercial
+<br>showrejected / showrejected / shows movies/shows in the rejected queue(not kids approved.)
+<br>showapproved / showapproved / shows movies/shows in the approved queue(kids approved without regard for rating.)
+<br>addapproved title / addapproved "deadwood" / adds the specified show/movie to the approved list.
+<br>addrejected title / addrejected "deadwood" / adds the specified title to the rejected list.
+<br>approvedratings / approvedratings / shows the approved ratings for kids mode.
+<br>addapprovedrating / addapprovedrating R / adds the given rating to the appvoed ratings list.
+<br>removeapprovedrating / removeapprovedrating R / removes the specified rating from the approved list.
+<br>addholiday holiday title / addholiday xmas 'Psych 2 4' / adds the specified epispode or movie to be associated with the given holiday.
+<br>checkholidays / checkholidays / lists the available holidays and associated content.
+<br>removefromholiday holiday title / removefromholiday xmas tron / disaccociates the given title from the given holiday.
+<br>removeholiday holiday / removeholiday xmas / removes the given holiday from the available holiday list.
+<br>resumestatus / resumestatus / checks the status for resumeplayback option.
+<br>setresumestatus on/off / setresumestatus off / changes the state of the resumestatus setting.
+<br>versioncheck / versioncheck / gets the current version of the TBN system script. 
+<br>replacestatus title / replacestatus firefly / checks if the given title will be replaced in a block.
+<br>replaceshowinblock oldtitle newtitle block playstate / replaceshowinblock deadwood psych Test4 yes / sets the new show to replace the old show in the given block.
+<br>awaystop / awaystop / stops the current feature, sets it to upnext in the queue. Stops the play check scripts.
+<br>checkblockrandom / checkblockrandom / checks the state of the blockrandom setting.
+<br>setblockrandom on/off / setblockrandom on / changes the state of the blockrandom setting.
+<br>statuscheck / statuscheck / gets the state of the various TBN-Plex options.
 Using the crappy UI:
 <br>There are 3 .php files and a jpg that can be used in the event you desire a UI and are worse than I at making such things. Drop them in your apache web directory and have at it. I've setup the TBN scripts and its DB such that others should be able to easily interact with them and make a custom UI, voice controller, mobile app,... whatever that makes use of them as one sees fit. 
