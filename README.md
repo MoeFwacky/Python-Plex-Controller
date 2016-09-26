@@ -17,6 +17,12 @@ TheBaconNation Plex Controller
 <br>enchant. You can use "pip install pyenchant" to get it.
 <br>The python plex api. User "pip install plexapi"
 <br>
+<br>How To Install:
+<br>Get the most recent version of the system_setup.py file. Place it in your home directory and run it as your preferred user.
+<br>Example:
+<br>curl "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system_setup.py" -o "system_setup.py"
+<br>python system_setup.py
+<br>
 <br>Do to some recent changes, it is recommended you remove the following files, rerun the new system_setup script, and let it refresh your library. Files to remove: aliases, system.py. If you have not updated in a while, also replace the setup_system.py and upddated_db.py files.<br>
 <br>3 scripts are necessary to use the TBN Plex Controller:
 <br>system.py - this is the main script used by the controller.
