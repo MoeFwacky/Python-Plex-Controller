@@ -3,7 +3,7 @@ import sys
 user = str(sys.argv[1])
 
 workd = "/etc/crontab"
-writeme = "@reboot " + user + " python /home/" + user + "/pi/hasystem/piplaystate.py &"
+writeme = "@reboot " + user + " python /home/" + user + "/hasystem/piplaystate.py >/dev/null 2>&1"
 
 with open(workd, "r") as file:
 	checkme1 = file.read()
@@ -18,5 +18,5 @@ else:
 		file.close()
 		print ("A Cron entry has been added for piplaystate.py\n")
 	except Exception:
-		print ("\nError adding piplaystate entry to cron. You need to manually add the following to your cron tab: @reboot " + user + "python /home/" + user + "/hasystem/piplaystate.py &")
+		print ("\nError adding piplaystate entry to cron. You need to manually add the following to your cron tab: @reboot " + user + "python /home/" + user + "/hasystem/piplaystate.py >/dev/null 2>&1")
 

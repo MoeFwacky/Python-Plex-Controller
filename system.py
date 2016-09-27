@@ -1286,6 +1286,12 @@ def addtoblock(blockname, name):
 	elif ("playcommercial" in name):
 		#name = "playcommercial"
 		name = name.strip()
+		if "playcommercial." in name:
+			check = name.split("playcommercial.")
+			check = check[1].strip()
+			cur.execute("SELECT name FROM commercials WHERE name LIKE \"" + check + "\"")
+			if not cur.fetchone():
+				return ("Error: " + name + " not found as an available commercial.")
 	elif ("preroll" in name):
 		name = name.strip() 
 		if "preroll." in name:
@@ -1501,7 +1507,7 @@ def mediachecker(title):
                 check1 = "fail"
         else:
                 check1 = "pass"
-                newt = "movie." + title
+                newt = "movie." + ctitle
 		#return (newt)
         cur.execute("SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + title + "\"")
         if not cur.fetchone():
@@ -5212,7 +5218,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.100"
+	version = "2.0.101"
 	return version
 	
 
