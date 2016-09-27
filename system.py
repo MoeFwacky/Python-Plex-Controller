@@ -1689,6 +1689,149 @@ def availableshows():
 	#worklist(theshows)	
 	return (theshows)
 
+def wlistcolumns(thearray):
+	if int(len(thearray) ==0):
+		return ("Error: No Results Found.")
+	max = int(len(thearray))
+	print (max)
+	count = 0
+	maxc =30 
+	if maxc > (int(len(thearray))):
+		maxc = int(len(thearray))
+	startarray = thearray
+	if int(len(thearray)) > maxc:
+		thearray = thearray[0:maxc]	
+	exitc = ""
+	print (thearray)
+	while "quit" not in exitc:
+		say = ""
+		maxsp = 30 
+		for item in thearray:
+			if item == "":
+				pass
+			else:
+				item = item.strip()
+				if int(len(item))-1 > 27:
+					item = item[0:25] + "..."
+				if ((count >=9) and (count <=99)):
+					addme = (maxsp - int(len(item)))
+					tab = " "
+				elif ((count >=99) and (count <=999)):
+                                        addme = (maxsp - int(len(item)+1))
+                                        tab = ""
+				else:
+					addme = (maxsp - (int(len(item))-1))
+					tab = " "
+				item = str(count+1) + ": " + item + (addme*" ")
+				if count >= max:
+					pass
+				elif((count+1)%3 == 0):
+					say = say + item + "\n"
+				else:
+					say = say + item + tab
+				count = count + 1
+		starter = "The Following Items Were Found:\n\n"
+		ender = "\n\nEnter a number to return that item, type \"desc x,\" where x is a number above, \"letter x,\" where x is a letter to jump to that letter, or type \"quit\" to quit.\n"
+		say = starter + say + ender
+		cls()
+		print say
+		choice = (raw_input('Choice '))
+		if (isanint(choice) is True):
+			int (choice)
+			choice = int(choice) - 1
+			say = startarray[choice]
+			exitc = "quit"
+		else:
+			echeck = ['quit','exit','no']
+			if choice.lower() in echeck:
+				exitc = "quit"
+				return choice	
+			elif ("yes" in choice.lower()):
+				if maxc == int(len(startarray))-1:
+					return ("Done.")
+				maxc = maxc + 30
+				if maxc > int(len(startarray)):
+					maxc = int(len(startarray))
+				thearray = startarray[count:maxc]
+		
+			elif ("letter" in choice.lower()):
+				find = choice.lower().split("letter ")
+				find = find[1][:1].strip()
+				print ("Starting at the letter " + find + ".\n")
+				lcount = 0
+				lcheck = "go"
+				try:
+					while "stop" not in lcheck:
+						lmcheck = startarray[lcount][:1].lower()
+						if find.lower() in lmcheck:
+							lcheck = "stop"
+						lcount = lcount + 1
+					print lcount
+					count = lcount -1
+					maxc = count + 30
+					if maxc > int(len(startarray)):
+						maxc = int(len(startarray))
+					thearray = startarray[count:maxc]
+				except Exception:
+					Error = "No items found containing " + find + ".\n"
+
+			elif ("desc " in choice.lower()):
+				getme = choice.lower().split('desc ')
+				getme = getme[1].strip()
+				getme = int(getme)
+				titlecheck = startarray[getme-1]
+				media = mediachecker(titlecheck)
+				exitd = 'go'
+				if "movie." in media:
+					media = media.replace("movie.","")
+					sayme = moviedetails(media)
+				else:
+					sayme = showdetails(media)
+				print (sayme + "\nReturn to previous menu?")
+				while 'yes' not in exitd:
+					exitd = str(raw_input("yes?"))
+				if count > 29:
+					count = count - 30
+					maxc = count + 30
+				else:
+					count = 0
+                                if maxc > int(len(startarray)):
+                                        maxc = int(len(startarray))
+                                thearray = startarray[count:maxc]
+
+			elif ("setupnext" in choice.lower()):
+				media = choice.lower().split("setupnext ")
+				media = media[1].strip()
+				if (isanint(media) is True):
+					media = startarray[int(media)-1]
+				setupnext(media)
+				media = media.replace("movie.","The Movie ")
+				print (media + " will play next from the queue.")
+				exitc = "quit"
+				return ("Done.")
+
+			elif ("queueadd" in choice.lower()):
+				media = choice.lower().split("queueadd ")
+				media = media[1].strip()
+				if (isanint(media) is True):
+					media = startarray[int(media)-1]
+				queueadd(media)
+				print (media + " has been added to the queue.")
+				exitc = "quit"
+				return ("Done.")
+			else:
+				print ("Invalid Selection, please try again.")
+				if count > 29:
+                                        count = count - 30
+                                        maxc = count + 30
+                                else:
+                                        count = 0
+                                if maxc > int(len(startarray)):
+                                        maxc = int(len(startarray))
+                                thearray = startarray[count:maxc]
+ 
+	return say
+
 def worklist(thearray):
 	if int(len(thearray) == 0):
 		return ("Error: No results found.")
@@ -1854,6 +1997,7 @@ def moviegenrefixer():
 
 def findmovie(movie):
 	movie = movie.strip()
+	echeck = ['error','no','quit']
 	if ("genre." in movie.lower()):
 		genre = movie.split("genre.")
 		genre = genre[1]
@@ -1865,7 +2009,10 @@ def findmovie(movie):
 			for item in tlist:
 				if item not in mlist:
 					mlist.append(item[0])
-			worklist(mlist)
+			if (len(mlist)>10):
+				say = wlistcolumns(mlist)
+			else:
+				worklist(mlist)
 		except Exception:
 			return ("Error: No movies in the " + genre + " genre have been found.")
 		
@@ -1881,7 +2028,14 @@ def findmovie(movie):
 			mlist = []
 			for movie in tlist:
 				mlist.append(movie[0])
-			worklist(mlist)
+			if (len(mlist)>10):
+                                say = wlistcolumns(mlist)
+				for item in echeck:
+					if say == item:
+						return say
+				setupnext(say)
+                        else:
+				worklist(mlist)
 	elif ('actor.' in movie.lower()):
                 rating = movie.split('actor.')
                 rating = rating[1].strip()
@@ -1894,7 +2048,14 @@ def findmovie(movie):
                         mlist = []
                         for movie in tlist:
                                 mlist.append(movie[0])
-                        worklist(mlist)
+			if (len(mlist)>10):
+				say = wlistcolumns(mlist)
+                                for item in echeck:
+                                        if say == item:
+                                                return say
+                                setupnext(say)
+                        else:
+				worklist(mlist)
 	else:
 		command = 'SELECT Movie FROM Movies WHERE Movie LIKE \'%' + movie + '%\''
 		cur.execute(command)
@@ -1905,7 +2066,14 @@ def findmovie(movie):
 				item = item[0].strip()
 				if item not in mlist:
 					mlist.append(item)
-			worklist(mlist)
+			if (len(mlist)>10):
+				say = wlistcolumns(mlist)
+                                for item in echeck:
+                                        if say == item:
+                                                return say
+                                setupnext(say)
+                        else:
+				worklist(mlist)
 		else:
 			say = "No results found for " + movie + ". Did you mean:\n"
 
@@ -2000,6 +2168,7 @@ def listepisodes(show):
 
 
 def findshow(show):
+	echeck = ['quit','error','no']
 	if ("genre." in show.lower()):
 		genre = show.split("genre.")
 		genre = genre[1].strip().lower()
@@ -2021,7 +2190,14 @@ def findshow(show):
                 for item in xep:
                        foundme.append(item[0])
 		foundme = sorted(foundme)
-		worklist(foundme)
+		if (len(foundme) >10):
+			say = wlistcolumns(foundme)
+			for item in echeck:
+				if say.lower() == item:
+					return say
+			setupnext (say)	
+		else:
+			worklist(foundme)
 		say = ("Done.")
         except Exception:
                 say = "No results found. Please try again."
@@ -2682,6 +2858,7 @@ def commercialbreak():
 			ccnt = ccnt + 1
 			#print ("Adding " + playc + " to commercial queue.")
 	nowp = nowplaying()
+	print nowp
 	if "Content Type: movie" in nowp:
 		nowp = nowp.split("Title: ")
 		nowp = nowp[1]
@@ -2700,6 +2877,17 @@ def commercialbreak():
 		nowp = nowp.split("Movie: ")
 		nowp = nowp[1].strip()
 		type = "movie"
+	elif (("Now playing: " in nowp) and ("Episode: " not in nowp)):
+		nowp = nowp.split("Now playing: ")
+		nowp = nowp[1].strip()
+		type = "movie"
+	elif (("Now Playing: " in nowp) and ("Episode: " in nowp)):
+		nowp = nowp.split("Now Playing: ")
+		nowp = nowp[1].strip()
+                nowp = nowp.split("Episode: ")
+                show = nowp[0].strip()
+                nowp = nowp[1].strip()
+                type = "show"
 	else:
 		nowp = nowp.split("TV Show: ")
 		nowp = nowp[1].strip()
@@ -2802,6 +2990,7 @@ def playpreroll(preroll):
         time.sleep(durn)
 
 def listprerolls():
+	echeck = ['quit','error','no']
 	cur.execute("SELECT name FROM prerolls")
 	list = cur.fetchall()
 	prelist = []
@@ -2809,9 +2998,16 @@ def listprerolls():
 		item = item[0].strip()
 		if item not in prelist:
 			prelist.append(item)	
-	worklist(prelist)
+	if (len(prelist) >10):
+		say = wlistcolumns(prelist)
+		for item in echeck:
+			if say.lower() == item:
+				return say
+	else:
+		worklist(prelist)
 
 def listcommercials():
+	echeck = ['quit','error','no']
 	cur.execute("SELECT name FROM commercials")
 	list = cur.fetchall()
 	prelist = []
@@ -2819,7 +3015,13 @@ def listcommercials():
 		item = item[0].strip()
 		if item not in prelist:
 			prelist.append(item)
-	say = worklist(prelist)
+	if (len(prelist) >10):
+                say = wlistcolumns(prelist)
+                for item in echeck:
+                        if say.lower() == item:
+                                return say
+        else:
+		say = worklist(prelist)
 	if say == "done":
 		pass
 	else:
@@ -3037,7 +3239,7 @@ def nowplaying():
 	for sess in psess:
 		if (sess.player.title == PLEXCLIENT):
 			if "episode" in sess.type:
-				say = "Now Playing: " + sess.grandparentTitle.strip() + ".\nEpisode: " + sess.title.strip() + "."
+				say = "Now Playing: " + sess.grandparentTitle.strip() + "\nEpisode: " + sess.title.strip()
 			else:
 				say = "Now playing: " + sess.title
 	try:
@@ -4705,7 +4907,7 @@ def moviechoice(option):
 	elif ("Error:" in say):
 		return (say)
 	elif (say == "reroll"):
-		print (option)
+		#print (option)
 		say = moviechoice(option)
 		return (say)
 	say = setupnext(say)
@@ -5209,7 +5411,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.102"
+	version = "2.0.103"
 	return version
 	
 
@@ -5715,12 +5917,18 @@ try:
 		try:
 			genre = str(sys.argv[2])
 			say = listshows(genre)
-			worklist(say)
-			say = "Done"
+			if len(say)<30:
+				worklist(say)
+				say = "Done"
+			else:
+				say = wlistcolumns(say)
 		except IndexError:
 			show = availableshows()
-			worklist(show)
-			say = "Done"
+			if len(show)<30:
+				worklist(show)
+				say - "Done"
+			else:
+				say = wlistcolumns(show)
 	elif ("listepisodes" in show):
 		try:
 			show = str(sys.argv[2])
@@ -5734,8 +5942,11 @@ try:
 			genre = "none"
 			
 		say = listmovies(genre)
-		worklist(say)
-		say = "Done"
+		if len(say)<30:
+			worklist(say)
+			say = "Done"
+		else:
+			say = wlistcolumns(say)
 
 	elif ("addsuggestion" in show):
 		say = addsuggestion()
@@ -5746,7 +5957,8 @@ try:
 	elif ("availableblocks" in show):
 		try:
 			say = availableblocks()
-			say = "The Following Blocks are available:\n" + say
+			say = say.split("\n")
+			say = wlistcolumns(say)
 		except NameError:
 			say = "You must first create a block to use this command. Use 'addblock' for more information."
 
