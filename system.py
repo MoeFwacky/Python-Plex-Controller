@@ -3023,7 +3023,10 @@ def nowplaywrite(showplay):
 def nowplaying():
 	cur.execute("SELECT State FROM States WHERE Option LIKE \"Nowplaying\"")
 	title = cur.fetchone()
-	title = title[0]
+	try:
+		title = title[0]
+	except Exception:
+		title = "none"
 	#print title	
 	global plex
 	plexlogin()
@@ -3096,12 +3099,13 @@ def queuefill():
 			command = "SELECT TShow FROM TVshowlist WHERE Rating IN (\"TV-Y\",\"TV-Y7\", \"TV-G\")"
 			cur.execute(command)
 		else:
-			print ("Using Favorites TV")
 			command = "SELECT TShow FROM TVshowlist WHERE Genre LIKE \'%Favorite%\'"
 			cur.execute(command)
 			lcheck = cur.fetchall()
 			if (int(len(lcheck)) <25):
 				command = "SELECT TShow FROM TVshowlist"
+			else:
+				print ("Using a favorite TV Show.")
 			cur.execute(command)
 		tvlist = cur.fetchall()
 		tlist = []
@@ -3122,7 +3126,12 @@ def queuefill():
                         cur.execute(command)
 		else:
 			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\""
-			print ("Using Favorites.")
+			cur.execute(command)
+			lcheck = cur.fetchall()
+			if (int(len(lcheck))<25):
+				command = "SELECT Movie FROM Movies"
+			else:
+				print ("Using a favorite movie.")
                 cur.execute(command)
 		mvlist = cur.fetchall()
 		mlist = []
@@ -3583,6 +3592,34 @@ def addgenreshow(show, genre):
 	sql.commit()
 	return (genre + " has been associated with " + show)
 
+def removegenreshow(show,genre):
+	command = 'SELECT * FROM TVshowlist WHERE TShow LIKE \'' + show + '\''
+        cur.execute(command)
+        if not cur.fetchone():
+                return ("Error: " + show + " not found. Check title and try again.")
+        cur.execute(command)
+        stuff = cur.fetchone()
+        TShow = stuff[0]
+        summary = stuff[1]
+        try:
+                genres = stuff[2]
+        except Exception:
+                genres = ""
+        rating = stuff[3]
+        duration = stuff[4]
+        totalnum = stuff[5]
+        if genre.lower() in genres.lower():
+		genres = genres.replace(genre,"")
+		genres = genres.strip()
+	else:
+                return("Error: " + genre + " is already associated with the show " + show)
+        command = 'DELETE FROM TVshowlist WHERE TShow LIKE \'' + show + '\''
+        cur.execute(command)
+        sql.commit()
+        cur.execute('INSERT INTO TVshowlist VALUES(?,?,?,?,?,?)',(TShow, summary, genres, rating, int(duration), int(totalnum)))
+        sql.commit()
+        return (genre + " has been unassociated with " + show)
+
 def addgenremovie(movie, genre):
 	command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + movie + '\''
 	cur.execute(command)
@@ -3610,6 +3647,38 @@ def addgenremovie(movie, genre):
 	cur.execute('INSERT INTO Movies VALUES(?,?,?,?,?,?,?)',(title, summary, rating, tagline, genres, director, actor))
 	sql.commit()
 	return (genre + " successfully associated with the movie " + movie ) 	
+
+def removegenremovie(movie, genre):
+	command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + movie + '\''
+        cur.execute(command)
+        if not cur.fetchone():
+                say = didyoumeanmovie(movie)
+                if (("Error:" in say) or (say == "done") or (say == "Quit")):
+                        return (say)
+                say = say.replace("movie.","")
+                command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + say + '\''
+        cur.execute(command)
+        stuff = cur.fetchone()
+        title = stuff[0]
+        summary = stuff[1]
+        rating = stuff[2]
+        tagline = stuff[3]
+        genres = stuff[4]
+	print (genres)
+        director = stuff[5]
+        actor = stuff[6]
+        if genre.lower() in genres.lower():
+		genres = genres.replace(genre,"")
+	else:
+                return("Error: " + genre + " is not associated with the movie " + movie)
+	print (genres)
+        command = 'DELETE FROM Movies WHERE Movie LIKE \'' + movie + '\''
+        cur.execute(command)
+        sql.commit()
+        cur.execute('INSERT INTO Movies VALUES(?,?,?,?,?,?,?)',(title, summary, rating, tagline, genres, director, actor))
+        sql.commit()
+        return (genre + " successfully unassociated with the movie " + movie )
+
 
 def addfavoriteshow(show):
 	genre = "Favorite"
@@ -4639,6 +4708,7 @@ def moviechoice(option):
 	elif ("Error:" in say):
 		return (say)
 	elif (say == "reroll"):
+		print (option)
 		say = moviechoice(option)
 		return (say)
 	say = setupnext(say)
@@ -5142,7 +5212,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.97"
+	version = "2.0.100"
 	return version
 	
 
@@ -5400,8 +5470,16 @@ try:
 			movie = str(sys.argv[2])
 			genre = str(sys.argv[3])
 			say = addgenremovie(movie, genre)
-		except Exception:
+		except IndexError:
 			say = "Error: Both a Movie and a Show are required to use this command."
+	elif ("removegenremovie" in show):
+		try:
+			movie = str(sys.argv[2])
+			genre = str(sys.argv[3])
+			say = removegenremovie(movie, genre)
+		except IndexError:
+			say = "Error: Both a Movie and a Show are required to use this command."
+			
 	elif ("queueadd" in show):
 		addme = str(sys.argv[2])
 		say = queueadd(addme)
