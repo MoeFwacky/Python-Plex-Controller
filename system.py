@@ -1693,7 +1693,6 @@ def wlistcolumns(thearray):
 	if int(len(thearray) ==0):
 		return ("Error: No Results Found.")
 	max = int(len(thearray))
-	print (max)
 	count = 0
 	maxc =30 
 	if maxc > (int(len(thearray))):
@@ -1702,7 +1701,6 @@ def wlistcolumns(thearray):
 	if int(len(thearray)) > maxc:
 		thearray = thearray[0:maxc]	
 	exitc = ""
-	print (thearray)
 	while "quit" not in exitc:
 		say = ""
 		maxsp = 30 
@@ -2009,7 +2007,7 @@ def findmovie(movie):
 			for item in tlist:
 				if item not in mlist:
 					mlist.append(item[0])
-			if (len(mlist)>10):
+			if ((len(mlist)>10) and ("-l" not in sys.argv)):
 				say = wlistcolumns(mlist)
 			else:
 				worklist(mlist)
@@ -2028,7 +2026,7 @@ def findmovie(movie):
 			mlist = []
 			for movie in tlist:
 				mlist.append(movie[0])
-			if (len(mlist)>10):
+			if ((len(mlist)>10) and ("-l" not in sys.argv)):
                                 say = wlistcolumns(mlist)
 				for item in echeck:
 					if say == item:
@@ -2048,7 +2046,7 @@ def findmovie(movie):
                         mlist = []
                         for movie in tlist:
                                 mlist.append(movie[0])
-			if (len(mlist)>10):
+			if ((len(mlist)>10) and ("-l" not in sys.argv)):
 				say = wlistcolumns(mlist)
                                 for item in echeck:
                                         if say == item:
@@ -2066,7 +2064,7 @@ def findmovie(movie):
 				item = item[0].strip()
 				if item not in mlist:
 					mlist.append(item)
-			if (len(mlist)>10):
+			if ((len(mlist)>10) and ("-l" not in sys.argv)):
 				say = wlistcolumns(mlist)
                                 for item in echeck:
                                         if say == item:
@@ -2190,7 +2188,7 @@ def findshow(show):
                 for item in xep:
                        foundme.append(item[0])
 		foundme = sorted(foundme)
-		if (len(foundme) >10):
+		if ((len(foundme) >10) and ("-l" not in sys.argv)):
 			say = wlistcolumns(foundme)
 			for item in echeck:
 				if say.lower() == item:
@@ -2702,7 +2700,6 @@ def playshow(show):
 			kcheck = kidscheck("show",show)
 			if "fail" in kcheck.lower():
 				print ("Kids mode fail:" + show)
-				#print (sys.argv)
 				try:
 					if ("playme" not in pcmd):
 						skipthat()
@@ -2998,7 +2995,7 @@ def listprerolls():
 		item = item[0].strip()
 		if item not in prelist:
 			prelist.append(item)	
-	if (len(prelist) >10):
+	if ((len(prelist) >10) and ("-l" not in sys.argv)):
 		say = wlistcolumns(prelist)
 		for item in echeck:
 			if say.lower() == item:
@@ -3015,7 +3012,7 @@ def listcommercials():
 		item = item[0].strip()
 		if item not in prelist:
 			prelist.append(item)
-	if (len(prelist) >10):
+	if ((len(prelist) >10) and ("-l" not in str(sys.argv))):
                 say = wlistcolumns(prelist)
                 for item in echeck:
                         if say.lower() == item:
@@ -5411,7 +5408,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.103"
+	version = "2.0.104"
 	return version
 	
 
@@ -5917,14 +5914,14 @@ try:
 		try:
 			genre = str(sys.argv[2])
 			say = listshows(genre)
-			if len(say)<30:
+			if ((len(say)<30) or ("-l" in sys.argv)):
 				worklist(say)
 				say = "Done"
 			else:
 				say = wlistcolumns(say)
 		except IndexError:
 			show = availableshows()
-			if len(show)<30:
+			if ((len(show)<30) or ("-l" in sys.argv)):
 				worklist(show)
 				say - "Done"
 			else:
@@ -5942,7 +5939,7 @@ try:
 			genre = "none"
 			
 		say = listmovies(genre)
-		if len(say)<30:
+		if ((len(say)<30) or ("-l" in str(sys.argv))):
 			worklist(say)
 			say = "Done"
 		else:
