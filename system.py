@@ -726,6 +726,10 @@ def stopplay():
 	client = plex.client(PLEXCLIENT)
 	client.stop('video')
 
+def hitok():
+	client = plex.client(PLEXCLIENT)
+	client.select()
+
 def awaystop():
 	cur.execute("SELECT State FROM States WHERE Option LIKE \"Nowplaying\"")
 	check = cur.fetchone()[0]
@@ -3027,28 +3031,15 @@ def nowplaywrite(showplay):
 	sql.commit()
 
 def nowplaying():
-	cur.execute("SELECT State FROM States WHERE Option LIKE \"Nowplaying\"")
-	title = cur.fetchone()
-	try:
-		title = title[0]
-	except Exception:
-		title = "none"
-	#print title	
 	global plex
 	plexlogin()
 	psess = plex.sessions()
 	for sess in psess:
 		if (sess.player.title == PLEXCLIENT):
-			if "Episode:" in title:
-				ctitle = title.split("Episode: ")
-				ctitle = ctitle[1].strip()
-			elif ("Movie: " in title):
-				ctitle = title.split("Movie: ")
-				ctitle = ctitle[1].strip()
-			if ctitle in sess.title:
-				say = "Now Playing: " + title
+			if "episode" in sess.type:
+				say = "Now Playing: " + sess.grandparentTitle.strip() + ".\nEpisode: " + sess.title.strip() + "."
 			else:
-				say = "Content Type: " + sess.type + ".\n Title: " + sess.title + "."
+				say = "Now playing: " + sess.title
 	try:
 		say
 	except NameError:
@@ -5218,7 +5209,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.101"
+	version = "2.0.102"
 	return version
 	
 
@@ -5552,6 +5543,10 @@ try:
 		plexlogin()
 		pauseplay()
 		say = "Playback has been paused."
+	elif ("hitok" in show):
+		plexlogin()
+		hitok()
+		say = "done"
 	elif (("skipahead" in show) and ("series" not in show)):
 		plexlogin()
 		say = skipahead()
