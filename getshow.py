@@ -1,4 +1,4 @@
-homedir = 'full path to location of myplex.db goes here.'
+#homedir = 'full path to location of myplex.db goes here.'
 import urllib3
 import subprocess
 import requests
