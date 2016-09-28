@@ -11,6 +11,8 @@ TheBaconNation Plex Controller
 
 <br>TheBaconNation Plex Controller Help Document
 <br>
+<br><h2>Important Note:</h2>
+<br>Since server version 1.1.4xxx you will need to add the ip or subnect for your TBN-Plex controller device to the autorized IP list in your Plex Server Settings. Look for "allowed without authorization." If not added you may run into issues updating your TBN-Plex DB.
 <br>Before You Begin-
 <br>
 <br>The following librarys are needed:
