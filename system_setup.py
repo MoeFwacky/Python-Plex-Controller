@@ -145,26 +145,7 @@ if not os.path.exists(homedir):
 	print (homedir + " has been successfully created.\n")
 else:
 	print (homedir + " already exists. Moving on.")
-if "Linux" in ostype:
-	studio = homedir + "Studio/"
-else:
-	studio = homedir +"Studio\\"
-if not os.path.exists(studio):
-	os.makedirs(studio)
 
-if "Linux" in ostype:
-	genre = homedir + "Genre/"
-else:
-	genre = homedir + "Genre\\"
-if not os.path.exists(genre):
-	os.makedirs(genre)
-
-if "Linux" in ostype:
-	genre = genre + "TV/"
-else:
-	genre = genre + "TV\\"
-if not os.path.exists(genre):
-	os.makedirs(genre)
 	
 file1 = homedir + "playstate.txt"
 try:
@@ -254,13 +235,37 @@ except IOError:
 		with open (file6, 'r') as file:
 			rewrite = file.read()
 		file.close()
-		rewrite = writeme + rewrite
+		rewrite = writemehome + "\n" + rewrite
 		with open(file6, "w") as file:
 			file.write(rewrite)
 		file.close()
 		print ("File successfully moved to the necessary directory.")
 	except Exception:
 		print ("warning piplaystate.py does not exist. The play check status script will not work.")
+file6a = homedir + "getshows.py"
+try:
+	with open (file6a, "r") as file:
+		readme = file.read()
+	file.close()
+	print ("check pass. getshows.py exists.")
+except IOError:
+	try:
+		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/getshows.py"
+		newfile = http.request('GET', url, preload_content=False)
+		newfile = newfile.data
+		with open(file6a, 'wb') as file:
+			file.write(newfile)
+		file.close()
+		with open (file6a, 'r') as file:
+			rewrite = file.read()
+		file.close()
+		rewrite = writemehome + "\n" + rewrite
+		with open(file6a, "w") as file:
+			file.write(rewrite)
+		file.close()
+		print ("File successfully moved to the necessary directory.")
+	except Exception:
+		print ("warning getshows.py does not exist. The getshows script will not work.")
 file7 = homedir + "playstatus.py"
 try:
 	with open (file7, "r") as file:
