@@ -1,12 +1,12 @@
 import os
 import time
-place = "/home/pi/hasystem/playstatus.txt"
-place2 = "/home/pi/hasystem/playstatestatus.txt"
+place = homedir + "playstatus.txt"
+place2 = homedir + "playstatestatus.txt"
 with open(place, "w") as file:
 	file.write("")
 file.close()
 
-command = "ps aux | grep piplaystate.py | grep -v grep >> /home/pi/hasystem/playstatus.txt"
+command = "ps aux | grep piplaystate.py | grep -v grep >> " + homedir + "playstatus.txt"
 os.system(command)
 
 time.sleep(1)
