@@ -316,6 +316,38 @@ except IOError:
 	except FileNotFoundError:
 		print ("warning updateddb_pi.py does not exist. The system will be unable to build the shows and movie tables in your database.")
 		updatecheck = "fail"
+		
+file8a = homedir + "getshow.py"
+try:
+	with open (file8a, "r") as file:
+		readme = file.read()
+	file.close()
+	print ("check pass. getshow.py exists.")
+	updatecheck = "pass"
+except IOError:
+	try:
+		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/getshow.py"
+		newfile = http.request('GET', url, preload_content=False)
+		newfile = newfile.data
+		#print (newfile)
+		
+		#print (writeme)
+		with open(file8a, "wb") as file:
+			file.write(newfile)
+		file.close()
+		with open (file8a, 'r') as file:
+			rewrite = file.read()
+		file.close()
+		rewrite = writeme + rewrite
+		with open(file8a, "w") as file:
+			file.write(rewrite)
+		file.close()
+		
+		print ("File successfully moved to the necessary directory.")
+		updatecheck = "pass"
+	except FileNotFoundError:
+		print ("warning getshow.py does not exist.")
+		updatecheck = "fail"
 
 print ("Checking Database now.\n")
 
