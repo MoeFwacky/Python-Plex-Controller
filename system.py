@@ -1258,15 +1258,15 @@ def addtoblock(blockname, name):
 		acheck
 	except Exception:
 		acheck = "False"
-	name = name.replace("random_movie.","Random_movie.")
-	if (("Random_movie." not in name) and ("playcommercial" not in name) and ("preroll" not in name)):
+	name = name.lower()
+	if (("random_movie." not in name) and ("random_tv." not in name) and ("playcommercial" not in name) and ("preroll" not in name)):
 		name = titlecheck(name.strip())
 		#name = name.replace("'","''")
 		name = mediachecker(name)
 		if ("Quit." in name):
 			return ("User Quit. No action Taken.")
 	#name = name.replace('movie.movie.','movie.')
-	if (('movie.' in name) and ('Random_movie.' not in name)):
+	if (('movie.' in name) and ('random_movie.' not in name)):
 		chname = name.split("movie.")
 		chname = chname[1].strip()
 		#chname = chname.replace("'","''")
@@ -1280,12 +1280,19 @@ def addtoblock(blockname, name):
 			elif ("Quit" in name):
 				return ("User Quit. No action Taken.")
 		#name = "movie." + name
-	elif ("Random_movie." in name):
+	elif ("random_movie." in name):
 		gcheck = name.split("_movie.")
 		gcheck = gcheck[1].strip()
 		gcheck = moviegenrechecker(gcheck)
 		if ("Error" in gcheck):
 			print (gcheck)
+			return ("Error. No action taken.")
+	elif ("random_tv." in name):
+		gcheck = name.split("_tv.")
+		gcheck = gcheck[1].strip()
+		gcheck = tvgenrechecker(gcheck)
+		if ("Error" in gcheck):
+			print gcheck
 			return ("Error. No action taken.")
 	elif ("playcommercial" in name):
 		#name = "playcommercial"
@@ -1338,7 +1345,7 @@ def addtoblock(blockname, name):
 		bitems = binfo[1].rstrip()
 		aditem = bitems + name + ";"
 		bcount = binfo[2]
-		if (("movie." in name) and ("Random_movie." not in name)):
+		if (("movie." in name) and ("random_movie." not in name)):
 			blname = str(bname)
 			adtitle = bitems + str(name) + ";"
 			blcount = 0
@@ -1564,7 +1571,6 @@ def playblockpackage(play):
 			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, bitems, int(bcount)))
 			sql.commit()
 			play = play.lower()
-			#print (play)
 			if "random_movie." in play:
 				play = idtonightsmovie()
 				play = play.rstrip()
@@ -1667,11 +1673,10 @@ def playblockpackage(play):
 			if int(bcount) == 0:
 				setplaymode("normal")
 				print ("Playmode has been set to normal.")
-			#play = play.replace("Tonights movie has been set to ","")
+			play = play.replace("Tonights movie has been set to ","")
 			#play = titlecheck(play)
-			#play = mediachecker(play).strip()
+			play = mediachecker(play).strip()
 			rcheck = resumestatus()
-			#print (play)
 			if ("on" in rcheck.lower()):
 				say = playwhereleftoff(play)
 			else:
@@ -4501,7 +4506,7 @@ def settonightsmovie(movie):
 	cur.execute("INSERT INTO States VALUES(?,?)",('TONIGHTSMOVIE',movie))
 	sql.commit()
 	movie = movie.replace('movie.','')
-	return ("Tonights movie has been set to " + movie)
+	return (movie)
 
 def settonightsshow(show):
 	show = titlecheck(show)
@@ -5408,7 +5413,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.104"
+	version = "2.0.113"
 	return version
 	
 
@@ -6004,8 +6009,9 @@ try:
 				elif ("random_movie." in item):
 					item = item.replace("random_movie.", "A random ") 
 					item = item + " movie"
-				if "The Movie" not in wve:
-					wve = "Item " + str(count+1) + ", " + item + " is next.\n" + wve
+				if "The movie" not in wve:
+					wve = "Item " + str(count+1) + ", " + item + " is next.\n"
+				# + wve
 				say = say + mve + tve + "\n" + wve
 			else:
 				say = "Error: No block specified."
