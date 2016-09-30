@@ -115,6 +115,50 @@ def changeplexpw(password):
 def cls():
 	os.system('cls' if os.name=='nt' else 'clear')
 
+def checkcustomtables(show):
+	command = "SELECT name FROM sqlite_master WHERE type='table'"
+	cur.execute(command)
+	list = cur.fetchall()
+	for item in list:
+		if ("CUSTOM_" in item[0]):
+			command = "SELECT name, type FROM " + item[0] + " WHERE name LIKE \"" + show + "\""
+			cur.execute(command)
+			if not cur.fetchone():
+				pass
+			else:
+				cur.execute(command)
+				found = cur.fetchone()
+				type = found[1]
+				found = found[0]
+				return ("CUSTOM."+found, type)
+	return show
+
+def getcustomtable(table):
+	item = "CUSTOM_" + table.strip()
+	command = "SELECT name FROM "+ item
+	cur.execute(command)
+	stuff = []
+	if not cur.fetchall():
+		return ("Error: " + table + " not found.")
+	else:
+		cur.execute(command)
+		found = cur.fetchall()
+		for item in found:
+			stuff.append(item[0])
+		return stuff
+
+def listcustomtables():
+	command = "SELECT name FROM sqlite_master WHERE type='table'"
+        cur.execute(command)
+        list = cur.fetchall()
+	stuff = []
+        for item in list:
+                if ("CUSTOM_" in item[0]):
+			stuff.append(item[0])
+	for item in stuff:
+		print item
+			
+
 def muteaudio():
 	global client
 	plexlogin()
@@ -2619,6 +2663,7 @@ def replacecheck(show):
 		else:
 			cur.execute("DELETE FROM replaceinblock WHERE name LIKE \"" + theshow + "\"")
                         sql.commit()
+			show = show.replace("CUSTOM.","")
 			cur.execute("INSERT INTO replaceinblock VALUES (?,?,?,?)",(theshow,olist,block,"yes"))
                         sql.commit()
 	say = "done"	
@@ -2684,6 +2729,15 @@ def playholiday(holiday):
 		return "Playing " + title + " for the holiday " + holiday + " now."
 
 def playshow(show):
+	if "CUSTOM." in show:
+		show = show.replace("CUSTOM.","")
+		show = checkcustomtables(show)
+		table = show[1].strip()
+		show = show[0]
+		show = show.replace("CUSTOM.","")
+		plexlogin()
+		say = playcustom(show, table)
+		return say
 	global PLEXCLIENT
 	global pcmd
 	kcheckshow = checkmode("show")
@@ -2968,6 +3022,15 @@ def playcommercial(commercial):
 	client.playMedia(commercial)
 	#print ("Now Playing: " + show + ".")
 	time.sleep(duration)
+
+def playcustom(show, table):
+	plexlogin()
+	if ("''" in show):
+		show = show.replace("''","'")
+	commercial = plex.library.section(table).get(show)
+        client = plex.client(PLEXCLIENT)
+        client.playMedia(commercial)
+	return ("Now Playing : " + show)
 
 def playpreroll(preroll):
 	global plex
@@ -3677,10 +3740,13 @@ def setupnext(title):
 	elif ("marathin." in title):
 		say = setplaymode(title)
 		return say
-	
-	if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
-		title = titlecheck(title).strip()
-	title = mediachecker(title)
+	title = checkcustomtables(title)
+	title = title[0]
+	#print (title)
+	if ("CUSTOM." not in title):
+		if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
+			title = titlecheck(title).strip()
+		title = mediachecker(title)
 	if "''" in title:
                 pass
         else:
@@ -3696,6 +3762,8 @@ def setupnext(title):
 		cur.execute(command)
 		if not cur.fetchone():
 			return ("Error. Title not found to add to play queue.")
+	elif ("CUSTOM." in title):
+		pass
 	else:
 		command = "SELECT TShow FROM shows WHERE TShow LIKE \"" + title + "\""
 		cur.execute(command)
@@ -4208,6 +4276,9 @@ def whatupnext():
 			skipthat()
 			setplaymode(playme)
 			say = whatupnext()
+			return (say)
+		elif ("CUSTOM." in playme):
+			say = playme.replace("CUSTOM.","")
 			return (say)
 		else:
 
@@ -5413,7 +5484,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.113"
+	version = "2.0.115"
 	return version
 	
 
@@ -5439,6 +5510,16 @@ try:
         elif ("restoremoviedb" in show):
                 restoremoviedb()
                 say = "Done."
+	elif ("checkcustomtable" in show):
+		item = str(sys.argv[2])
+		say = checkcustomtables(item)
+	elif ("getcustomtable" in show):
+		table = str(sys.argv[2])
+		say = getcustomtable(table)
+		say = worklist(say)
+	elif ("listcustomtables" in show):
+		listcustomtables()
+		say = "Done."
 	elif ("statuscheck" in show):
 		statuscheck()
 		say = "Done."
@@ -6315,24 +6396,33 @@ try:
 		#def playme
 		pcmd = "playme"
 		plexlogin()
-		show = titlecheck(show)
-		show = mediachecker(show)
-		pstatus = checkpstatus()
-		try:
-			season = str(sys.argv[2])
-			episode = str(sys.argv[3])
-			say = playspshow(show, season, episode)
-		
-		except IndexError:
-			rcheck = resumestatus()
-			if "on" in rcheck.lower():
-				say = playwhereleftoff(show)
-			else:
-				
-				say = playshow(show)
-                if "On" in pstatus:
-			time.sleep(SLEEPTIME)
-                        playcheckstart()
+		show = checkcustomtables(show)
+		print (show)
+		#if ("CUSTOM." in show):
+		if type(show) is tuple:
+			table = show[1].strip()
+			show = show[0]
+			show = show.replace("CUSTOM.","")
+			say = playcustom(show, table)
+		else:
+			show = titlecheck(show)
+			show = mediachecker(show)
+			pstatus = checkpstatus()
+			try:
+				season = str(sys.argv[2])
+				episode = str(sys.argv[3])
+				say = playspshow(show, season, episode)
+			
+			except IndexError:
+				rcheck = resumestatus()
+				if "on" in rcheck.lower():
+					say = playwhereleftoff(show)
+				else:
+					
+					say = playshow(show)
+			if "On" in pstatus:
+				time.sleep(SLEEPTIME)
+				playcheckstart()
 	try:
 		say = say.replace("''","'")
 	except AttributeError:

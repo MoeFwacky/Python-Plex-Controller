@@ -56,6 +56,7 @@ else:
 command = 'SELECT setting FROM settings WHERE item LIKE \'TVGET\''
 cur.execute(command)
 if not cur.fetchone():
+	getsections()
 	print ("Enter the link to your TV show tree.\nExample: http://192.168.1.134:32400/library/sections/1/all/ \n")
 	TVGET = str(input('Link:'))
 	cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVGET",TVGET.strip()))
@@ -69,6 +70,7 @@ else:
 command = 'SELECT setting FROM settings WHERE item LIKE \'MOVIEGET\''
 cur.execute(command)
 if not cur.fetchone():
+	getsections()
 	print ("Enter the link to your Movie tree.\nExample: http://192.168.1.134:32400/library/sections/2/all/ \n")
 	MOVIEGET = str(input('Link:'))
 	cur.execute('INSERT INTO settings VALUES(?, ?)', ("MOVIEGET",MOVIEGET.strip()))
@@ -87,6 +89,36 @@ cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating 
 sql.commit()
 cur.execute('CREATE TABLE IF NOT EXISTS TVshowlist(TShow TEXT, Summary TEXT, Genre TEXT, Rating TEXT, Duration INT, Totalnum INT)')
 sql.commit()
+
+def getsections():
+	cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERIP\"")
+	wlink = cur.fetchone()[0]
+	cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERPORT\"")
+	wip = cur.fetchone()[0]
+	slink = "http://" + wlink + ":" + wip + "/library/sections/"
+	response = http.urlopen('GET', slink, preload_content=False).read()
+        response = str(response)
+	response = response.split("Directory allowSync=")
+	print ("The Following Sections are available off your server.")
+	for item in response:
+		#print (item)
+		name = item
+		section = item
+		try:
+			name = name.split("title=\"")
+			name = name[1]
+			name = name.split("\"")
+			name = name[0]
+
+			section = section.split("key=\"")
+			section = section[1]
+			section = section.split("\"")
+			section = section[0]
+
+			link = "http://" + wlink + ":" + wip + "/library/" + section + "/all/"
+			print ("Name: " + name + "\nSection: " + section + "\nLink: " + link)
+		except IndexError:
+			pass
 def getshows():	
 	response = http.urlopen('GET', TVGET, preload_content=False).read()
 	response = str(response)
@@ -989,6 +1021,7 @@ def getcommercials():
 	command = "SELECT setting FROM settings WHERE item LIKE \"COMPART\""
 	cur.execute(command)
 	if not cur.fetchone():
+		getsection()
 		print ("You need to supply the link to find your commercials.\nExample: http://192.168.1.134:32400/library/metadata/\n")
 		COMPART = str(input('Link:'))
 		cur.execute("INSERT INTO settings VALUES(?,?)", ("COMPART",COMPART.strip()))
@@ -1035,6 +1068,7 @@ def getprerolls():
         command = "SELECT setting FROM settings WHERE item LIKE \"PREROLLPART\""
         cur.execute(command)
         if not cur.fetchone():
+		getsections()
                 print ("You need to supply the link to find your prerolls.\nExample: http://192.168.1.134:32400/library/metadata/\n")
                 PREROLLPART = str(input('Link:'))
                 cur.execute("INSERT INTO settings VALUES(?,?)", ("PREROLLPART",PREROLLPART.strip()))
@@ -1072,6 +1106,64 @@ def getprerolls():
                         cur.execute("INSERT INTO prerolls VALUES (?,?)", (comc, duration))
                         sql.commit()
                         print ("New preroll Found: " + comc)
+                counter = counter + 1
+
+        print ("Done")
+
+def getcustomsection(name):
+	sname = "CUSTOM_" + name.lower().strip()
+	command = "CREATE TABLE IF NOT EXISTS "+ sname + "(name TEXT, duration INT, type TEXT)"
+	cur.execute(command)
+        sql.commit()
+        command = "SELECT setting FROM settings WHERE item LIKE \"" + sname + "\""
+        cur.execute(command)
+        if not cur.fetchone():
+		getsections()
+                print ("You need to supply the link to find your " + name.strip() + " section.\nExample: http://192.168.1.134:32400/library/sections/9/all/\n")
+                PREROLLPART = str(input('Link:'))
+                cur.execute("INSERT INTO settings VALUES(?,?)", (sname,PREROLLPART.strip()))
+                sql.commit()
+                print (PREROLLPART + " has been added to the settings table. Moving on.")
+        else:
+                cur.execute(command)
+                PREROLLPART = cur.fetchone()[0]
+
+        cur.execute("DELETE FROM " + sname)
+        sql.commit()
+
+        response = http.urlopen('GET', PREROLLPART, preload_content=False).read()
+        response = str(response)
+	type = response
+	type = type.split("librarySectionTitle=\"")
+	type = type[1]
+	type = type.split("\"")
+	type = type[0].strip()
+	
+        commercials = response.split("<Video ratingKey=")
+        counter = 1
+
+        while counter <= int(len(commercials)-1):
+                comc = commercials[counter]
+                duration = comc
+
+                comc = comc.split("title=\"")
+                comc = comc[1]
+                comc = comc.split("\"")
+                comc = comc[0].strip().strip()
+		comc = comc.replace("&#39;","''")
+		comc = comc.replace("&amp;","&")
+
+                duration = duration.split("duration=\"")
+                duration = duration[1]
+                duration = duration.split("\"")
+                duration = duration[0].strip()
+                duration = int(duration)/1000
+		
+                cur.execute("SELECT * FROM " + sname + " WHERE name LIKE \"" + comc + "\"")
+                if not cur.fetchone():
+                        cur.execute("INSERT INTO " + sname + " VALUES (?,?,?)", (comc, duration, type))
+                        sql.commit()
+                        print ("New " + sname + " Found: " + comc)
                 counter = counter + 1
 
         print ("Done")
@@ -1268,6 +1360,7 @@ try:
 	else:
 		print ("Notice: For Windows, the update db script may default to 'all' when there is an argument failure.\n")
 		option = "all"
+	#getsections()
 	if ("updatetv" in option):
 		getgenrestv()
 		startupactiontv()
@@ -1295,6 +1388,15 @@ try:
 	elif ("getprerolls" in option):
 		getprerolls()
 		print ("Preroll Get Finished.")
+	elif ("getcustomsection" in option):
+		try:
+			option = str(sys.argv[2])
+			getcustomsection(option)
+			print ("Get Custom Done.")
+		except IndexError:
+			print ("Error: You must supply a section name to use this command.")
+	elif ("getsections" in option):
+		getsections()
 
 except TypeError:
 	print ("No option specified. Use 'updatetv' or 'updatemovies' or 'all' to update your db.")		
