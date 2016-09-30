@@ -62,7 +62,7 @@ def getsections():
 			section = section.split("\"")
 			section = section[0]
 
-			link = "http://" + wlink + ":" + wip + "/library/" + section + "/all/"
+			link = "http://" + wlink + ":" + wip + "/library/sections/" + section + "/all/"
 			print ("Name: " + name + "\nSection: " + section + "\nLink: " + link)
 		except IndexError:
 			pass
