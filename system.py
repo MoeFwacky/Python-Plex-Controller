@@ -3741,7 +3741,8 @@ def setupnext(title):
 		say = setplaymode(title)
 		return say
 	title = checkcustomtables(title)
-	title = title[0]
+	if type(title) is tuple:
+		title = title[0]
 	#print (title)
 	if ("CUSTOM." not in title):
 		if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
@@ -5484,7 +5485,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.115"
+	version = "2.0.121"
 	return version
 	
 
@@ -6397,7 +6398,9 @@ try:
 		pcmd = "playme"
 		plexlogin()
 		show = checkcustomtables(show)
-		print (show)
+		if type(show) is tuple:
+			show = show[0]
+		#print (show)
 		#if ("CUSTOM." in show):
 		if type(show) is tuple:
 			table = show[1].strip()
