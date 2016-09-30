@@ -40,6 +40,36 @@ ostype = platform.system()
 cur.execute('CREATE TABLE IF NOT EXISTS settings(item TEXT, setting TEXT)')
 sql.commit()
 
+def getsections():
+	cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERIP\"")
+	wlink = cur.fetchone()[0]
+	cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERPORT\"")
+	wip = cur.fetchone()[0]
+	slink = "http://" + wlink + ":" + wip + "/library/sections/"
+	response = http.urlopen('GET', slink, preload_content=False).read()
+        response = str(response)
+	response = response.split("Directory allowSync=")
+	print ("The Following Sections are available off your server.")
+	for item in response:
+		#print (item)
+		name = item
+		section = item
+		try:
+			name = name.split("title=\"")
+			name = name[1]
+			name = name.split("\"")
+			name = name[0]
+
+			section = section.split("key=\"")
+			section = section[1]
+			section = section.split("\"")
+			section = section[0]
+
+			link = "http://" + wlink + ":" + wip + "/library/" + section + "/all/"
+			print ("Name: " + name + "\nSection: " + section + "\nLink: " + link)
+		except IndexError:
+			pass
+
 command = 'SELECT setting FROM settings WHERE item LIKE \'TVPART\''
 cur.execute(command)
 if not cur.fetchone():
@@ -90,35 +120,7 @@ sql.commit()
 cur.execute('CREATE TABLE IF NOT EXISTS TVshowlist(TShow TEXT, Summary TEXT, Genre TEXT, Rating TEXT, Duration INT, Totalnum INT)')
 sql.commit()
 
-def getsections():
-	cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERIP\"")
-	wlink = cur.fetchone()[0]
-	cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERPORT\"")
-	wip = cur.fetchone()[0]
-	slink = "http://" + wlink + ":" + wip + "/library/sections/"
-	response = http.urlopen('GET', slink, preload_content=False).read()
-        response = str(response)
-	response = response.split("Directory allowSync=")
-	print ("The Following Sections are available off your server.")
-	for item in response:
-		#print (item)
-		name = item
-		section = item
-		try:
-			name = name.split("title=\"")
-			name = name[1]
-			name = name.split("\"")
-			name = name[0]
 
-			section = section.split("key=\"")
-			section = section[1]
-			section = section.split("\"")
-			section = section[0]
-
-			link = "http://" + wlink + ":" + wip + "/library/" + section + "/all/"
-			print ("Name: " + name + "\nSection: " + section + "\nLink: " + link)
-		except IndexError:
-			pass
 def getshows():	
 	response = http.urlopen('GET', TVGET, preload_content=False).read()
 	response = str(response)
