@@ -143,6 +143,7 @@ def getshows():
 		title = title[0]
 		
 		title = title.replace('&apos;','\'')
+		title = title.replace('&#39;','\'')
 		title = title.replace('&amp;','&')
 		title = title.replace('?','')
 		title = title.replace('/',' ')
@@ -303,6 +304,7 @@ def getshow(show):
 		title = title[0]
 
 		title = title.replace('&apos;','\'')
+		title = title.replace('&#39;','\'')
 		title = title.replace('&amp;','&')
 		title = title.replace('?','')
 		title = title.replace('/',' ')
@@ -444,6 +446,7 @@ def getshow(show):
 		episode = episode + "\n"
 		episode = episode.replace('&apos;','\'')
 		episode = episode.replace('&amp;','&')
+		episode = episode.replace("&#39;", "'no")
 		Episode = episode.strip()
 		if ("<?xml version=" in episode.strip()):
 			#print ("Pass")
@@ -689,6 +692,7 @@ def gettvshows():
 			episode = episode + "\n"
 			episode = episode.replace('&apos;','\'')
 			episode = episode.replace('&amp;','&')
+			episode = episode.replace('&#39;','\'')
 			Episode = episode.strip()
 			if ("<?xml version=" in episode.strip()):
 				#print ("Pass")
@@ -829,6 +833,7 @@ def getmovies():
 		
 		title = title.replace('&apos;','\'')
 		title = title.replace('&amp;','&')
+		title = title.replace('&#39;','\'')
 		#title = title.replace('?','')
 		#title = title.replace('/',' ')
 		
@@ -957,6 +962,7 @@ def getmovies():
 			
 		summary = summary.replace('&apos;','\'')
 		summary = summary.replace('&amp;','&')
+		summary = summary.replace('&#39;','\'')
 		summary = summary.replace(',', ' ')	
 		summary = summary.replace('\'','')
 		try:
@@ -965,12 +971,14 @@ def getmovies():
 			pass
 		name = name.replace('&apos;','\'')
 		name = name.replace('&amp;','&')
+		name = name.replace('&#39;','\'')
 		name = name.replace(',', ' ')
 		name = name.replace("'","''")
 		#print (tagline)
 		#tagline = tagline.replace('&apos;','\'')
 		tagline = tagline.replace('&apos;','')
 		tagline = tagline.replace('&amp;','&')
+		tagline = tagline.replace('&#39;','\'')
 		tagline = tagline.replace(',', ' ')
 		tagline = tagline.replace('\'','')
 		try:
@@ -980,6 +988,7 @@ def getmovies():
 		#directors = directors.replace('&apos;','\'')
 		directors = directors.replace('&apos;','')
 		directors = directors.replace('&amp;','&')
+		directors = directors.replace('&#39;','\'')
 		directors = directors.replace(',', ' ')
 		directors = directors.replace('\'','')
 		try:
@@ -989,10 +998,12 @@ def getmovies():
 		#bgenre = bgenre.replace('&apos;','\'')
 		bgenre = bgenre.replace('&apos;','')
 		bgenre = bgenre.replace('&amp;','&')
+		bgenre = bgenre.replace('&#39;','\'')
 		bgenre = bgenre.replace(',', ' ')
 		bgenre = bgenre.replace("none", "")
 		#bactors = bactors.replace('&apos;','\'')
 		bactors = bactors.replace('&apos;','')
+		bactlrs = bactors.replace('&#39;','\'')
 		bactors = bactors.replace('\'','')
 		bactors = bactors.replace('&amp;','&')
 		bactors = bactors.replace(',', ' ')
