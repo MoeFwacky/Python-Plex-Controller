@@ -1,3 +1,4 @@
+homedir = 'c:\\users\\rob\\documents\\hasystem\\'
 import time
 import os
 import sqlite3
@@ -20,60 +21,41 @@ def dblogin():
 	cur = sql.cursor()
 
 def plexlogin():
-	global PLEXUN
-	global PLEXSVR
-	global PLEXCLIENT
 	global plex
+	global cur
+	global sql
 	global client
+	from plexapi.myplex import MyPlexAccount
+	
+	dblogin()
+	
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+	PLEXUN = cur.fetchone()
+	PLEXUN = PLEXUN[0]
+
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+	PLEXPW = cur.fetchone()
+	PLEXPW = PLEXPW[0]
+
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
+	PLEXSVR = cur.fetchone()
+	PLEXSVR = PLEXSVR[0]
+
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
+	PLEXCLIENT = cur.fetchone()
+	PLEXCLIENT = PLEXCLIENT[0]
+	
+	user = MyPlexAccount.signin(PLEXUN, PLEXPW)
 	try:
-
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
-		PLEXUN = cur.fetchone()
-		PLEXUN = PLEXUN[0]
-
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-		PLEXPW = cur.fetchone()
-		PLEXPW = PLEXPW[0]
-
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
-		PLEXSVR = cur.fetchone()
-		PLEXSVR = PLEXSVR[0]
-
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
-		PLEXCLIENT = cur.fetchone()
-		PLEXCLIENT = PLEXCLIENT[0]
-		
-		try:
-			cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERTOKEN\'')
-			PLEXTOKEN = cur.fetchone()
-			PLEXTOKEN = PLEXTOKEN[0]
-		except TypeError:
-			print ("Error getting server Token. Local Access will fail. Try running system_setup.py to correct.")
-		
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
-		PLEXSERVERIP = cur.fetchone()
-		PLEXSERVERIP = PLEXSERVERIP[0]
-		
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
-		PLEXSERVERPORT = cur.fetchone()
-		PLEXSERVERPORT = PLEXSERVERPORT[0]
-
-		from plexapi.myplex import MyPlexAccount
-		
-		try:
-			from plexapi.server import PlexServer
-			baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
-			token = PLEXTOKEN
-			plex = PlexServer(baseurl, token)
-			#print ("using local access.")
-		except Exception:
-			print ("Local Fail. Trying cloud access.")
-			user = MyPlexAccount.signin(PLEXUN,PLEXPW)
-			plex = user.resource(PLEXSVR).connect()
-		client = plex.client(PLEXCLIENT)
-
-	except TypeError:
-		print ("Error getting necessary plex api variables. Run system_setup.py.")
+		from plexapi.server import PlexServer
+		baseurl = 'http://192.168.1.134:32400'
+		token = 'WJBTq6E9WeYAss6wUtNk'
+		plex = PlexServer(baseurl, token)
+		#print ("using local access.")
+	except Exception:
+		print ("Local Fail. Trying cloud access.")
+		plex = user.resource(PLEXSVR).connect()
+	client = plex.client(PLEXCLIENT)
 	
 
 def sessionstatus():
