@@ -254,7 +254,7 @@ except IOError:
 		with open (file6, 'r') as file:
 			rewrite = file.read()
 		file.close()
-		rewrite = writeme + rewrite
+		rewrite = writemehome + "\n" + rewrite
 		with open(file6, "w") as file:
 			file.write(rewrite)
 		file.close()
