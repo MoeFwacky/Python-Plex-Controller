@@ -105,9 +105,9 @@ def plexlogin():
 		print ("Error getting necessary plex api variables. Run system_setup.py.")
 
 def changeplexip():
-	plexip = str(get_input('Plex Server IP: '))
+	plexip = str(raw_input('Plex Server IP: '))
 	plexip = plexip.strip()
-	plexport = str(get_input('Plex Port: '))
+	plexport = str(raw_input('Plex Port: '))
 	plexport = plexport.strip()
 	cur.execute("DELETE FROM settings WHERE item LIKE \'PLEXSERVERIP\'")
 	sql.commit()
@@ -5576,7 +5576,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.103"
+	version = "2.0.127"
 	return version
 	
 
