@@ -105,7 +105,7 @@ def getartists():
 				sql.commit()
 				META1 = METADATA + key
 				resp1 = http.urlopen('GET', META1, preload_content=False).read()
-				albums = str(resp1)
+				albumsrm  = str(resp1)
 				albums = albums.split("Directory ratingKey=")
 				for album in albums:
 					akey = album
