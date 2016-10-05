@@ -104,6 +104,21 @@ def plexlogin():
 	except IndexError:
 		print ("Error getting necessary plex api variables. Run system_setup.py.")
 
+def changeplexip():
+	plexip = str(get_input('Plex Server IP: '))
+	plexip = plexip.strip()
+	plexport = str(get_input('Plex Port: '))
+	plexport = plexport.strip()
+	cur.execute("DELETE FROM settings WHERE item LIKE \'PLEXSERVERIP\'")
+	sql.commit()
+	cur.execute("DELETE FROM settings WHERE item LIKE \'PLEXSERVERPORT\'")
+        sql.commit()
+	cur.execute("INSERT INTO settings VALUES (?,?)",("PLEXSERVERIP",plexip))
+	sql.commit()
+	cur.execute("INSERT INTO settings VALUES (?,?)",("PLEXSERVERPORT",plexport))
+        sql.commit()
+	
+
 def changeplexpw(password):
 	password = password.strip()
 	cur.execute("DELETE FROM settings WHERE item LIKE \'PLEXPW\'")
@@ -155,9 +170,7 @@ def listcustomtables():
         for item in list:
                 if ("CUSTOM_" in item[0]):
 			stuff.append(item[0])
-	for item in stuff:
-		print item
-			
+	return stuff
 
 def muteaudio():
 	global client
@@ -1004,8 +1017,13 @@ def addblock(name, title):
 		tvcheck.append(tsh[0])
 	if (("none" not in name) and ("none" not in title)):
 		blist = getblockpackagelist()
-		title = titlecheck(title)
-		title = mediachecker(title)
+		title = title.lower()
+		title = checkcustomtables(title)
+		if type(title) is tuple:
+			title = title[0]
+		if "CUSTOM." not in title:
+			title = titlecheck(title)
+			title = mediachecker(title)
 		if ("Quit." in title):
 			return ("User Quit. No action taken.")
 		if ("movie." in title) and ("random" not in title.lower()):
@@ -1038,8 +1056,21 @@ def addblock(name, title):
 			sql.commit()
 			blname = blname.replace("movie.", "The Movie ")
 			say = (adtitle.rstrip() + " has been added to the " + blname + " .")
-
 			return (say)
+		elif ("CUSTOM." in title):
+			title = title.replace("CUSTOM.","")
+			for item in blist:
+                                #check = item.replace(".txt","").rstrip()
+                                check = str(item)
+                                if name == check:
+                                        return ("Error. That block already exists. Pick a new name or use 'addtoblock' to update an existing block.")
+			blname = str(name)
+			adtitle = str(title) + ";"
+			blcount = 0
+			cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (blname, adtitle, blcount))
+                        sql.commit()
+			say = (title.rstrip() + " has been added to the " + blname + " block.")
+                        return (say)
 		elif ("random_movie." in title.lower()):
 			rgenre = title.split("movie.")
 			try:
@@ -1303,7 +1334,10 @@ def addtoblock(blockname, name):
 	except Exception:
 		acheck = "False"
 	name = name.lower()
-	if (("random_movie." not in name) and ("random_tv." not in name) and ("playcommercial" not in name) and ("preroll" not in name)):
+	name = checkcustomtables(name)
+	if type(name) is tuple:
+		name = name[0]
+	if (("random_movie." not in name) and ("random_tv." not in name) and ("CUSTOM." not in name) and ("playcommercial" not in name) and ("preroll" not in name)):
 		name = titlecheck(name.strip())
 		#name = name.replace("'","''")
 		name = mediachecker(name)
@@ -1318,12 +1352,14 @@ def addtoblock(blockname, name):
 		cur.execute(command)
 		if not cur.fetchone():
 			name = didyoumeanmovie(chname)
-			name = name.replace("'","''")
-			if ("Error" in name):
-				return(name)
-			elif ("Quit" in name):
-				return ("User Quit. No action Taken.")
+		name = name.replace("'","''")
+		if ("Error" in name):
+			return(name)
+		elif ("Quit" in name):
+			return ("User Quit. No action Taken.")
 		#name = "movie." + name
+	elif ("CUSTOM." in name):
+		name = name.replace("CUSTOM.","")
 	elif ("random_movie." in name):
 		gcheck = name.split("_movie.")
 		gcheck = gcheck[1].strip()
@@ -1365,9 +1401,7 @@ def addtoblock(blockname, name):
 		command = 'SELECT TShow FROM TVshowlist WHERE TShow LIKE \'' + name + '\''
 		cur.execute(command)
 		if not cur.fetchone():
-			print (name + "1")
 			name = didyoumeanshow(name)
-			print (name + "2")
 			if ("Error" in name):
 				return(name)
 			elif ("Quit" in name):
@@ -1389,7 +1423,7 @@ def addtoblock(blockname, name):
 		bitems = binfo[1].rstrip()
 		aditem = bitems + name + ";"
 		bcount = binfo[2]
-		if (("movie." in name) and ("random_movie." not in name)):
+		if ((("movie." in name) or ("CUSTOM." in name)) and ("random_movie." not in name)):
 			blname = str(bname)
 			adtitle = bitems + str(name) + ";"
 			blcount = 0
@@ -1405,7 +1439,6 @@ def addtoblock(blockname, name):
 
 		else:
 			xname = name
-			print (xname)
 			blname = str(bname).strip()
 			adtitle = bitems + str(xname).strip() + ";"
 			blcount = 0
@@ -1486,8 +1519,6 @@ def replaceinblock(block, nitem, oitem):
 	nitem = nitem + ";"
 	bitems = bitems.replace(oitem, nitem)
 	bitems = bitems.replace(";;",";")
-	#print ("Adding the following: ")
-	#print (bitems)
 	cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + block + "\"")
 	sql.commit()
 	cur.execute("INSERT INTO Blocks VALUES(?,?,?)",(block, bitems, bcount))
@@ -1615,21 +1646,32 @@ def playblockpackage(play):
 			cur.execute('INSERT INTO Blocks VALUES(?,?,?)', (bname, bitems, int(bcount)))
 			sql.commit()
 			play = play.lower()
+			print (play)
+			play = checkcustomtables(play)
+			if type(play) is tuple:
+				show = play
+				table = show[1].strip()
+				show = show[0]
+				show = show.replace("CUSTOM.","")
+				say = playcustom(show, table)
+				skipthat()
+				return (say)
+				
 			if "random_movie." in play:
 				play = idtonightsmovie()
 				play = play.rstrip()
 				cur.execute('DELETE FROM States WHERE Option LIKE \'TONIGHTSMOVIE\'')
 				sql.commit()
 			elif "random_tv." in play:
-				type = play
-                                type = type.replace(";","")
+				xtype = play
+                                xtype = xtype.replace(";","")
                                 command = 'SELECT State FROM States WHERE Option LIKE \'TONIGHTSSHOW\''
                                 cur.execute(command)
                                 if not cur.fetchone():
-                                        type = type.split("random_tv.")
-                                        type = type[1]
-                                        type = type.replace(";","")
-                                        play = suggesttv(type)
+                                        xtype = xtype.split("random_tv.")
+                                        xtype = xtype[1]
+                                        xtype = xtype.replace(";","")
+                                        play = suggesttv(xtype)
                                         play = play.split("does the TV Show ")
                                         play = play[1]
                                         play = play.split(" sound, Sir")
@@ -2729,8 +2771,11 @@ def playholiday(holiday):
 		return "Playing " + title + " for the holiday " + holiday + " now."
 
 def playshow(show):
-	if "CUSTOM." in show:
-		show = show.replace("CUSTOM.","")
+	show = checkcustomtables(show)
+	if type(show) is tuple:
+		show = show[0].lower()
+	if "custom." in show:
+		show = show.replace("custom.","")
 		show = checkcustomtables(show)
 		table = show[1].strip()
 		show = show[0]
@@ -3508,6 +3553,9 @@ def upnext():
 		show = playmode.split("marathon.")
 		show = show[1]
 		playme = show
+	elif ("custom." in playmode):
+		show = getcustomtitle(playmode)
+		playme = show
 	elif ("minithon." in playmode):
 		playme = playmode
 
@@ -3641,6 +3689,18 @@ def getrandomblock():
 	block = list[pblay]
 	return block
 
+def getcustomtitle(mode):
+	mode = mode.lower().strip()
+	mode = mode.replace("custom.","CUSTOM_")
+	command = "SELECT name FROM " + mode 
+	cur.execute(command)
+	xlist = cur.fetchall()
+	min = 0
+	max = int(len(xlist))-1
+	playme = randint(min,max)
+	playme = xlist[playme][0]
+	return playme
+
 def setplaymode(mode):
 	cmode = playmode()
 	if mode != cmode:
@@ -3650,7 +3710,7 @@ def setplaymode(mode):
                 sql.commit()
 		cur.execute("DELETE FROM States WHERE Option LIKE \"MINITHONCNT\"")
                 sql.commit()
-	checks = ['normal','block.','marathon.','binge.', 'minithon.', 'holiday.']
+	checks = ['normal','block.','marathon.','binge.', 'minithon.', 'holiday.', 'custom.']
 	setcheck = "fail"
 	for item in checks:
 		if item in mode:
@@ -3668,7 +3728,23 @@ def setplaymode(mode):
 			mode = getrandomblock()
 		except Exception:
 			return ("Error: random block get failed.")
-	
+
+	if ("custom." in mode.lower()):
+		mode = mode.lower()
+		command = "SELECT name FROM sqlite_master WHERE type='table'"
+		cur.execute(command)
+		list = cur.fetchall()
+		mode = mode.replace("custom.","CUSTOM_")
+		testme = ""
+		for item in list:
+			item = item[0]
+			if mode.lower() in item.lower():
+				mode = mode.replace("CUSTOM_","custom.")
+				#return (mode.strip())
+				testme = "found"
+		if "found" not in testme:
+			mode = mode.replace("CUSTOM_","")
+			return ("Error: " + mode + " not found as an available custom mode.")
 	if "pass" not in setcheck:
 		command = "SELECT Name FROM Blocks WHERE Name LIKE \"" + mode + "\""
 		cur.execute(command)
@@ -3743,7 +3819,7 @@ def setupnext(title):
 	title = checkcustomtables(title)
 	if type(title) is tuple:
 		title = title[0]
-	#print (title)
+	print (title)
 	if ("CUSTOM." not in title):
 		if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 			title = titlecheck(title).strip()
@@ -4312,9 +4388,16 @@ def whatupnext():
 		say = playmode.replace("holiday.","")
 		say = "Up next a random " + say + " holiday program will play."
 		return (say)
+	elif ("custom." in playmode):
+		say = playmode.replace("custom.","")
+		say = "Up next is a random " + say + " program."
+		return (say)
 	elif ("block." in playmode):
 		block = getblockpackage(playmode)
 		block = block.lower()
+		block = checkcustomtables(block)
+		if type(block) is tuple:
+			block = block[0]
 		if ("random_movie." in block):
 			upnext = idtonightsmovie()
 			if upnext == " ":
@@ -4325,6 +4408,13 @@ def whatupnext():
 			if upnext == " ":
 				findnewshow()
 				upnext = idtonightsshow()
+		elif ("CUSTOM." in block):
+			block = block.replace("CUSTOM.","")
+			block = checkcustomtables(block)
+			table = block[1].strip()
+			show = block[0]
+			show = show.replace("CUSTOM.","")
+			upnext = show
 		elif ("playcommercial" in block):
 			upnext = block
 			upnext = upnext.replace("playcommercial.","The commercial: ")
@@ -5426,16 +5516,17 @@ def startnextprogram():
 	if "On" in commcheck:
 		playcommercial("none")
 	show = upnext()
+	print (show)
 	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
 	pmode = cur.fetchone()[0]
-	if (("normal" in pmode) or ("binge." in pmode) or ("minithon." in pmode)):
+	if (("normal" in pmode) or ("binge." in pmode) or ("minithon." in pmode) or ("custom." in pmode)):
 		rcheck = resumestatus()
 		if ("on" in rcheck.lower()):
 			say = playwhereleftoff(show)
-	try:
-		say
-	except NameError:
+		else:
+			say = playshow(show)
+	if ("block." in show):
 		say = playshow(show)
 	if (("block." or "binge.") not in show):
 		skipthat()
@@ -5485,7 +5576,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.121"
+	version = "2.0.103"
 	return version
 	
 
@@ -5511,16 +5602,25 @@ try:
         elif ("restoremoviedb" in show):
                 restoremoviedb()
                 say = "Done."
+	elif ("getcustomtitle" in show):
+		title = str(sys.argv[2])
+		say = getcustomtitle(title)
 	elif ("checkcustomtable" in show):
 		item = str(sys.argv[2])
 		say = checkcustomtables(item)
 	elif ("getcustomtable" in show):
 		table = str(sys.argv[2])
 		say = getcustomtable(table)
-		say = worklist(say)
+		if ((int(len(say)) <= 10) and ("-l" not in sys.argv)):
+			say = worklist(say)
+		else:
+			say = wlistcolumns(say)
 	elif ("listcustomtables" in show):
-		listcustomtables()
-		say = "Done."
+		stuff = listcustomtables()
+		if ((int(len(stuff)) <=10) and ("-l" not in sys.argv)):
+			say = worklist(stuff)
+		else:
+			say = wlistcolumns(stuff)
 	elif ("statuscheck" in show):
 		statuscheck()
 		say = "Done."
@@ -5600,6 +5700,9 @@ try:
 			say = changeplexpw(password)
 		except IndexError:
 			say = "Error: No Password supplied. No action taken."
+	elif ("changeplexip" in show):
+		changeplexip()
+		say = "Done."
 	elif ("moviegenrefixer" in show):
 		moviegenrefixer()
 		say = "Done."
@@ -6398,9 +6501,7 @@ try:
 		pcmd = "playme"
 		plexlogin()
 		show = checkcustomtables(show)
-		if type(show) is tuple:
-			show = show[0]
-		#print (show)
+		print (show)
 		#if ("CUSTOM." in show):
 		if type(show) is tuple:
 			table = show[1].strip()
