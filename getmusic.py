@@ -34,7 +34,7 @@ METADATA = "http://" + PLEXSERVERIP + ":" + PLEXSERVERPORT
 command = 'SELECT setting FROM settings WHERE item LIKE \'MUSICGET\''
 cur.execute(command)
 if not cur.fetchone():
-	getsections()
+
 	print ("\nEnter the link to your TV show tree.\nExample: http://" + PLEXSERVERIP + ":" + PLEXSERVERPORT + "/library/sections/1/all/ \n")
 	MUSICGET = str(input('Link:'))
 	cur.execute('INSERT INTO settings VALUES(?, ?)', ("MUSICGET",MUSICGET.strip()))
@@ -57,8 +57,8 @@ def getartists():
 	#print (response)
 	artists = response.split('<Track ratingKey=')
 	counter = 0
-
-	while counter <= int(len(shows)-1):
+	print (len(artists))
+	while counter <= int(len(artists)-1):
 		artist = artists[counter]
 		summary = artist
 		genre = artist
@@ -90,7 +90,7 @@ def getartists():
 			genre = genre.split("tag=\"")
 			genres = []
 			for item in genre:
-				item = item.replace("\"/>").strip()
+				item = item.replace("\"/>","").strip()
 				genres.append(item)
 			gres = ""
 			for thing in genres:
@@ -105,7 +105,7 @@ def getartists():
 				sql.commit()
 				META1 = METADATA + key
 				resp1 = http.urlopen('GET', META1, preload_content=False).read()
-				resp1 = str(resp1)
+				albums = str(resp1)
 				albums = albums.split("Directory ratingKey=")
 				for album in albums:
 					akey = album
