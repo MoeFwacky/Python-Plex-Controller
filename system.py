@@ -177,6 +177,18 @@ def muteaudio():
 	plexlogin()
 	client.setVolume(0, 'Video')
 
+def mutemusic():
+	plexlogin()
+	PLEXMUSICCLIENT = musiccheck()
+        client = plex.client(PLEXMUSICCLIENT)
+	client.setVolume(0, 'music')
+
+def unmutemusic():
+        plexlogin()
+        PLEXMUSICCLIENT = musiccheck()
+        client = plex.client(PLEXMUSICCLIENT)
+        client.setVolume(100, 'music')
+
 def unmuteaudio():
         global client
         plexlogin()
@@ -775,13 +787,40 @@ def changeclient():
 		return ("Client successfully set to: " + client.strip())
 	except Exception:
 		return ("Error. Unable to update client. Please try again.")
-		
-	
 
+def setmusicclient():
+	plexlogin()
+	daclients = []
+        for client in plex.clients():
+                daclients.append(client.title)
+        print ("The Following Clients are available.")
+        counter = 1
+        for client in daclients:
+                print (str(counter) + "- " + client.strip() + "\n")
+                counter = counter + 1
+        choice = int(input('New Client: '))
+        try:
+                client = daclients[choice-1].strip()
+                cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXMUSICCLIENT\'')
+                sql.commit()
+                cur.execute('INSERT INTO settings VALUES(?,?)',('PLEXMUSICCLIENT',client))
+                sql.commit()
+                cur.execute("SELECT * FROM settings WHERE item LIKE \'PLEXMUSICCLIENT\'")
+                test = cur.fetchone()
+                return ("Music Client successfully set to: " + client.strip())
+        except Exception:
+                return ("Error. Unable to update client. Please try again.")
 
 def stopplay():
 	client = plex.client(PLEXCLIENT)
 	client.stop('video')
+
+def stopmusic():
+	plexlogin()
+        PLEXMUSICCLIENT = musiccheck()
+        client = plex.client(PLEXMUSICCLIENT)
+	client.stop('music')
+
 
 def hitok():
 	client = plex.client(PLEXCLIENT)
@@ -813,6 +852,12 @@ def awaystop():
 def pauseplay():
 	client = plex.client(PLEXCLIENT)
 	client.pause('video')
+
+def pausemusic():
+	plexlogin()
+        PLEXMUSICCLIENT = musiccheck()
+        client = plex.client(PLEXMUSICCLIENT)
+	client.pause('music')
 
 def whereat():
 	client = plex.client(PLEXCLIENT)
@@ -1930,9 +1975,11 @@ def worklist(thearray):
 	mmin = 0
 	mmax = 9
 	mpmin = 1
-	if mmax > len(movies):
-		mmax = int(len(movies)-1)
+	if mmax >= len(movies):
+		mmax = int(len(movies))-1
 	exitc = ""
+	print (len(movies))
+	print mmax
 	while "quit" not in exitc:
 		cls()
 		try:
@@ -2928,6 +2975,75 @@ def playshow(show):
 		
 		return ("Media not found to launch. Check the title and try again.")
 
+def musicstartnext():
+	plexlogin()
+        PLEXMUSICCLIENT = musiccheck()
+        client = plex.client(PLEXMUSICCLIENT)
+	client.skipNext('music')
+
+def musiccheck():
+	command = "SELECT setting FROM settings WHERE item LIKE \"PLEXMUSICCLIENT\""
+        cur.execute(command)
+        if not cur.fetchone():
+                print ("No Music Client is specified. Client for music playback: ")
+                setmusicclient()
+        cur.execute(command)
+        PLEXMUSICCLIENT = cur.fetchone()[0]
+	return (PLEXMUSICCLIENT)
+
+def playmusic(artist, show):
+	plexlogin()
+	PLEXMUSICCLIENT = musiccheck()
+	client = plex.client(PLEXMUSICCLIENT)
+	songs = plex.library.section("Music").get(artist)
+	if ("none" not in show):
+		title = songs.get(show)
+	else:
+		title = plex.library.section("Music").get(artist)
+	client.playMedia(title)
+
+def playplaylist(playlist):
+	plexlogin()
+	PLEXMUSICCLIENT = musiccheck()
+	client = plex.client(PLEXMUSICCLIENT)
+	for plist in plex.playlists():
+		if playlist == str(plist.title):
+			title = plex.playlist(playlist)
+			client.playMedia(title)
+			return ("Now playing: " + playlist)
+	return ("Error: " + playlist + " not found to play.")
+
+def getartists():
+	cur.execute("SELECT artist FROM MusicArtists")
+	list = cur.fetchall()
+	artists = []
+	for item in list:
+		item = item[0]
+		if item not in artists:
+			artists.append(item)
+	return artists
+
+def getalbums(artist):
+	cur.execute("SELECT album FROM MusicAlbums WHERE artist LIKE \"" + artist + "\"")
+	found = cur.fetchall()
+	if not found:
+		return ("Error: No albums found associated with " + artist + ".")
+	albums = []
+	for item in found:
+		item = item[0]
+		if item not in albums:
+			albums.append(item)
+	return albums	
+
+
+def getplexplaylists():
+	plexlogin()
+	playlsts = []
+	for plist in plex.playlists():
+		print plist.title
+		playlsts.append(plist.title)
+	return playlsts
+
 def commercialcheck():
 	command = "SELECT * FROM States WHERE Option LIKE \"COMMERCIALMODE\""
 	cur.execute(command)
@@ -3478,7 +3594,16 @@ def queueremove(item):
 	if (item == "None"):
 		removeme = queue[0]
 	else:
-		removeme = mediachecker(item)
+		if "custom" in item:
+			item = item.replace("custom.","")
+			removeme = checkcustomtables(item)
+			if type(removeme) is tuple:
+				removeme = removeme[0]
+			else:
+				return ("Error: " + item + " not found to remove.")
+			
+		else:
+			removeme = mediachecker(item)
 	removeme = removeme + ";"
 	removeme = removeme.lower()
 	if (removeme in oqueue):
@@ -4354,8 +4479,8 @@ def whatupnext():
 			setplaymode(playme)
 			say = whatupnext()
 			return (say)
-		elif ("CUSTOM." in playme):
-			say = playme.replace("CUSTOM.","")
+		elif ("custom." in playme):
+			say = playme.replace("custom.","")
 			return (say)
 		else:
 
@@ -5576,7 +5701,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.127"
+	version = "2.0.103"
 	return version
 	
 
@@ -5602,6 +5727,43 @@ try:
         elif ("restoremoviedb" in show):
                 restoremoviedb()
                 say = "Done."
+	elif ("playmusic" in show):
+		try:
+			artist = str(sys.argv[2])
+			try:
+				song = sys.argv[3]
+			except IndexError:
+				song = "none"
+			playmusic(artist,song)
+			say = "done"
+		except Exception:
+			say = "Error: You must supply a artist and optionally a song to proceed."
+	elif ("musicstartnext" in show):
+		musicstartnext()
+		say = "Done"
+	elif ("setmusicclient" in show):
+		setmusicclient()
+		say = "done"
+	elif ("playplaylist" in show):
+		try:
+			playlist = str(sys.argv[2])
+			say = playplaylist(playlist)
+		except TypeError:
+			say = "Error: You must specify a playlist to use this command."
+	elif ("getartists" in show):
+		say = getartists()
+		say = wlistcolumns(say)
+	elif ("getalbums" in show):
+		try:
+			artist = str(sys.argv[2])
+			say = getalbums(artist)
+			if "Error" not in say:
+				print (say)
+				worklist(say)
+				say = "Done"
+
+		except IndexError:
+			say = "Error: You must specify an artist to use this command."
 	elif ("getcustomtitle" in show):
 		title = str(sys.argv[2])
 		say = getcustomtitle(title)
@@ -5790,6 +5952,10 @@ try:
 	elif ("commercialcheck" in show):
 		say = commercialcheck()
 		say = "Commercials are currently: " + say + "."
+	elif ("listplexplaylists" in show):
+		say = getplexplaylists()
+		print (say)
+		say = worklist(say)
 	elif ("addapproved" in show):
 		try:
 			title = str(sys.argv[2])
@@ -5932,6 +6098,12 @@ try:
 		plexlogin()
 		pauseplay()
 		say = "Playback has been paused."
+	elif ("stopmusic" in show):
+		stopmusic()
+		say = "Music has been stopped."
+	elif ("pausemusic" in show):
+		pausemusic()
+		say = "Music has been paused/resumed."
 	elif ("hitok" in show):
 		plexlogin()
 		hitok()
@@ -6466,6 +6638,12 @@ try:
 	elif "unmuteaudio" in show:
 		unmuteaudio()
 		say = "Audio has been restored."
+	elif (("mutemusic" in show) and ("unmute" not in show)):
+                mutemusic()
+                say = "Audio has been muted."
+        elif "unmutemusic" in show:
+                unmutemusic()
+                say = "Audio has been restored."
 	elif ("lowaudio" in show):
 		lowaudio()
 		say = "Audio has been set to 25%"
