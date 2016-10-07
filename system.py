@@ -3047,25 +3047,24 @@ def listplaylistitems(plist):
 	wlistcolumns(songs)
 
 def getartists():
-	cur.execute("SELECT artist FROM MusicArtists")
-	list = cur.fetchall()
+	plexlogin()
+	items = plex.library.section("Music")
+	atists = items.searchArtists()
 	artists = []
-	for item in list:
-		item = item[0]
+	for item in atists:
+		item = item.title
 		if item not in artists:
 			artists.append(item)
 	return artists
 
 def getalbums(artist):
-	cur.execute("SELECT album FROM MusicAlbums WHERE artist LIKE \"" + artist + "\"")
-	found = cur.fetchall()
-	if not found:
-		return ("Error: No albums found associated with " + artist + ".")
+	plexlogin()
+	item = plex.library.section("Music").get(artist)
 	albums = []
-	for item in found:
-		item = item[0]
-		if item not in albums:
-			albums.append(item)
+	albms = item.albums()
+	for thing in albms:
+		thing = thing.title
+		albums.append(thing)
 	return albums	
 
 
@@ -5733,7 +5732,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.132"
+	version = "2.0.133"
 	return version
 	
 
