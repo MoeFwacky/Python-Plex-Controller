@@ -3003,15 +3003,48 @@ def playmusic(artist, show):
 	client.playMedia(title)
 
 def playplaylist(playlist):
+	playlist = playlist.lower()
 	plexlogin()
 	PLEXMUSICCLIENT = musiccheck()
 	client = plex.client(PLEXMUSICCLIENT)
 	for plist in plex.playlists():
-		if playlist == str(plist.title):
+		if playlist == str(plist.title).lower():
+			playlist = plist.title
 			title = plex.playlist(playlist)
 			client.playMedia(title)
 			return ("Now playing: " + playlist)
 	return ("Error: " + playlist + " not found to play.")
+
+def addplaylist(title, artist, song):
+	plexlogin()
+        songs = plex.library.section("Music").get(artist)
+        if ("none" not in show):
+                item = songs.get(song)
+        else:
+                item = plex.library.section("Music").get(artist)
+	plex.createPlaylist(title,item)
+	return ("Done")
+	return (item + " not found to add to playlist.")
+
+def addtoplaylist(title, artist, song):
+	plexlogin()
+        songs = plex.library.section("Music").get(artist)
+        if ("none" not in show):
+                item = songs.get(song)
+        else:
+                item = plex.library.section("Music").get(artist)
+	title = plex.playlist(title)
+	title.addItems(item)
+        return ("Done")
+
+def listplaylistitems(plist):
+	plexlogin()
+	thelist = plex.playlist(plist)
+	stuff = thelist.items()
+	songs = []
+	for things in stuff:
+		songs.append(things.title)
+	wlistcolumns(songs)
 
 def getartists():
 	cur.execute("SELECT artist FROM MusicArtists")
@@ -3075,7 +3108,6 @@ def commercialbreak():
 			ccnt = ccnt + 1
 			#print ("Adding " + playc + " to commercial queue.")
 	nowp = nowplaying()
-	print nowp
 	if "Content Type: movie" in nowp:
 		nowp = nowp.split("Title: ")
 		nowp = nowp[1]
@@ -5701,7 +5733,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.103"
+	version = "2.0.132"
 	return version
 	
 
@@ -5744,6 +5776,13 @@ try:
 	elif ("setmusicclient" in show):
 		setmusicclient()
 		say = "done"
+	elif ("listplaylistitems" in show):
+		try:
+			plist = str(sys.argv[2])
+			listplaylistitems(plist)
+			say = "done"
+		except IndexError:
+			say = "Error: You must specify a playlist to use this command."
 	elif ("playplaylist" in show):
 		try:
 			playlist = str(sys.argv[2])
@@ -5956,6 +5995,22 @@ try:
 		say = getplexplaylists()
 		print (say)
 		say = worklist(say)
+	elif ("addplaylist" in show):
+		try:
+			title = str(sys.argv[2])
+			artist = str(sys.argv[3])
+			item = str(sys.argv[4])
+			say = addplaylist(title, artist, item)
+		except IndexError:
+			say = "Error: you must specify a title, artist, and an item to use this command."
+	elif ("addtoplaylist" in show):
+                try:
+                        title = str(sys.argv[2])
+                        artist = str(sys.argv[3])
+                        item = str(sys.argv[4])
+                        say = addtoplaylist(title, artist, item)
+                except IndexError:
+                        say = "Error: you must specify a title, artist, and an item to use this command."
 	elif ("addapproved" in show):
 		try:
 			title = str(sys.argv[2])
