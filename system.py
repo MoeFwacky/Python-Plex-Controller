@@ -3015,6 +3015,54 @@ def playplaylist(playlist):
 			return ("Now playing: " + playlist)
 	return ("Error: " + playlist + " not found to play.")
 
+def blocktoplist(block):
+	command = "SELECT Items FROM Blocks WHERE Name LIKE \"" + block + "\""
+	cur.execute(command)
+	if not cur.fetchone():
+		return ("Error: Block not found.")
+	cur.execute(command)
+	list = cur.fetchone()[0]
+	cur.execute("SELECT Count FROM Blocks WHERE Name LIKE \"" + block + "\"")
+	count = cur.fetchone()[0]
+	count = int(count)
+	list = list.split(";")
+	queue = []
+	ccnt = 0
+	rset = "no"
+	for item in list:
+		if ((item == "") or (ccnt < count)):
+			pass
+		elif (("random_" in item) and (rset == "yes")):
+			pass
+		else:
+			if ('random_movie.' in item):
+				item = idtonightsmovie()
+				if ("movie." not in item):
+					item = "movie." + item
+				rset = "yes"
+			elif ("random_tv." in item):
+				item = idtonightsshow()
+				rset = "yes"
+			queue.append(item)
+		ccnt = ccnt + 1
+	if len(queue) > 0:
+                try:
+                        removeplaylist("TBNqueue")
+                except Exception:
+                        pass
+	print queue
+        addme = queue[0]
+        addvideoplaylist("TBNqueue",addme)
+        if len(queue) > 1:
+                cnt = 0
+                for item in queue:
+                        if cnt == 0:
+                                pass
+                        else:
+                                addtovideoplaylist("TBNqueue",item)
+                        cnt = cnt + 1
+        return ("Done")
+
 def addplaylist(title, artist, song):
 	plexlogin()
         songs = plex.library.section("Music").get(artist)
@@ -3026,6 +3074,162 @@ def addplaylist(title, artist, song):
 	return ("Done")
 	return (item + " not found to add to playlist.")
 
+def addvideoplaylist(title, item):
+	plexlogin()
+	item = item.lower()
+	print (item)
+	if "movie." in item:
+		item = item.replace("movie.","")
+		movie = plex.library.section("Movies").get(item)
+		plex.createPlaylist(title,movie)
+	elif ("custom." in item):
+                item = item.replace("custom.","")
+                stuff = checkcustomtables(item)
+                table = stuff[1].strip()
+                item = stuff[0]
+                item = item.replace("CUSTOM.","")
+                if ("''" in item):
+                        item = item.replace("''","'")
+                item = plex.library.section(table).get(item)
+		plex.createPlaylist(title,item)
+	elif ("preroll" in item):
+                if item == "preroll":
+                        cur.execute("SELECT * FROM commercials WHERE name LIKE \"" + commercial + "\"")
+                        found = cur.fetchall()
+                        max = int(len(found)) - 1
+                        min = 0
+                        pcnt = randint(min,max)
+                        playme = found[pcnt]
+                        item = playme[0]
+                else:
+                        item = item.replace("preroll.","")
+                table = "Prerolls"
+                item = plex.library.section(table).get(item)
+		plex.createPlaylist(title,item)
+        elif ("playcommercial" in item):
+                if tem == "playcommercial":
+                        cur.execute("SELECT * FROM commercials WHERE name LIKE \"" + commercial + "\"")
+                        found = cur.fetchall()
+                        max = int(len(found)) - 1
+                        min = 0
+                        pcnt = randint(min,max)
+                        playme = found[pcnt]
+                        item = playme[0]
+                else:
+                        item = item.replace("playcommercial.","")
+                table = "Commercialss"
+                item = plex.library.section(table).get(item)
+		plex.createPlaylist(title,item)
+	else:
+		show = item
+		try:
+                        command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + show + "\""
+                        cur.execute(command)
+                        thecount = cur.fetchone()
+                        thecount = thecount[0]
+                except Exception:
+                        print ("Item not found in DB. Adding")
+                        thecount = 1
+                        cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecount))
+                        sql.commit()
+
+                if thecount == 0:
+                        thecount = 1
+
+                command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecount) + "\""
+                cur.execute(command)
+                sql.commit()
+                xshow = cur.fetchone()
+                xshow = xshow[0].rstrip()
+                xshow = xshow.replace("''","'")
+                shows = plex.library.section('TV Shows')
+                show = show.replace("''","'")
+                xshow = xshow.replace("''","'")
+                the_show = shows.get(show)
+                #showplay = the_show.rstrip()
+                ep = the_show.get(xshow)
+		plex.createPlaylist(title,ep)
+
+def addtovideoplaylist(playlist, item):
+	playlist = plex.playlist(playlist)
+	item = item.lower()
+	if "movie." in item:
+                item = item.replace("movie.","")
+                movie = plex.library.section("Movies").get(item)
+		playlist.addItems(movie)
+	elif ("custom." in item):
+		item = item.replace("custom.","")
+		stuff = checkcustomtables(item)
+		table = stuff[1].strip()
+		item = stuff[0]
+		item = item.replace("CUSTOM.","")
+		if ("''" in item):
+			item = item.replace("''","'")
+		item = plex.library.section(table).get(item)
+		playlist.addItems(item)
+	elif ("preroll" in item):
+		if item == "preroll":
+			cur.execute("SELECT name FROM prerolls")
+			found = cur.fetchall()
+			max = int(len(found)) - 1
+			min = 0
+			pcnt = randint(min,max)
+			playme = found[pcnt]
+			item = playme[0]
+		else:
+			item = item.replace("preroll.","")
+		table = "Prerolls"
+		item = plex.library.section(table).get(item)
+                playlist.addItems(item)
+	elif ("playcommercial" in item):
+		if item == "playcommercial":
+			cur.execute("SELECT name FROM commercials")
+			found = cur.fetchall()
+			max = int(len(found)) - 1
+			min = 0
+			pcnt = randint(min,max)
+			playme = found[pcnt]
+			item = playme[0]
+		else:
+			item = item.replace("playcommercial.","")
+                table = "Commercials"
+                item = plex.library.section(table).get(item)
+                playlist.addItems(item)
+        else:
+                show = item
+                try:
+                        command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + show + "\""
+                        cur.execute(command)
+                        thecount = cur.fetchone()
+                        thecount = thecount[0]
+                except Exception:
+                        print ("Item not found in DB. Adding")
+                        thecount = 1
+                        cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecount))
+                        sql.commit()
+
+                if thecount == 0:
+                        thecount = 1
+
+                command = "SELECT Episode FROM shows WHERE TShow LIKE \"" + show + "\" and Tnum LIKE \"" + str(thecount) + "\""
+                cur.execute(command)
+                sql.commit()
+                xshow = cur.fetchone()
+                xshow = xshow[0].rstrip()
+                xshow = xshow.replace("''","'")
+                shows = plex.library.section('TV Shows')
+                show = show.replace("''","'")
+                xshow = xshow.replace("''","'")
+                the_show = shows.get(show)
+                #showplay = the_show.rstrip()
+                ep = the_show.get(xshow)
+		playlist.addItems(ep)
+
+def removeplaylist(plist):
+	plexlogin()
+	title = plex.playlist(plist)
+	title.delete()
+
 def addtoplaylist(title, artist, song):
 	plexlogin()
         songs = plex.library.section("Music").get(artist)
@@ -3036,6 +3240,36 @@ def addtoplaylist(title, artist, song):
 	title = plex.playlist(title)
 	title.addItems(item)
         return ("Done")
+
+def queuetoplaylist():
+	plexlogin()
+	command = "SELECT State FROM States WHERE Option LIKE \"queue\""
+	cur.execute(command)
+	xqueue = cur.fetchone()[0]
+	xqueue = xqueue.split(";")
+	queue = []
+	for item in xqueue:
+		if item != "":
+			queue.append(item)
+	if len(queue) > 0:
+		try:
+			removeplaylist("TBNqueue")
+		except Exception:
+			pass
+	addme = queue[0]
+	addvideoplaylist("TBNqueue",addme)
+	
+	if len(queue) > 1:
+		cnt = 0
+		for item in queue:
+			if cnt == 0:
+				pass
+			else:
+				addtovideoplaylist("TBNqueue",item)
+			cnt = cnt + 1
+		
+	return ("Done")
+	
 
 def listplaylistitems(plist):
 	plexlogin()
@@ -3067,6 +3301,18 @@ def getalbums(artist):
 		albums.append(thing)
 	return albums	
 
+def getsongs(artist, album):
+	plexlogin()
+	item = plex.library.section("Music").get(artist)
+	albm = item.albums()
+	for thing in albm:
+		if thing.title.lower() == album.lower():
+			songs = thing.tracks()
+	sngs = []
+	for itm in songs:
+		itm = itm.title
+		sngs.append(itm)
+	return sngs
 
 def getplexplaylists():
 	plexlogin()
@@ -3940,6 +4186,19 @@ def setplaymode(mode):
 		sql.commit()
 		say = movie1 + ", and then " + movie2 + ", and finally " + movie3
 		mode = "Random " + xmode + " movie block. This one will play: " + say
+	if "block." in mode:
+		command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
+		cur.execute(command)
+		if not cur.fetchone():
+			cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST","Off"))
+			sql.commit()
+		cur.execute(command)
+		queuetpl = cur.fetchone()[0]
+		if ("on" in queuetpl.lower()):
+			show = mode 
+                        show = show.replace("block.","")
+                        blocktoplist(show)
+
 		
 	return "Playmode has been set to "+ mode
 
@@ -4810,7 +5069,6 @@ def idtonightsmovie():
 					ccnt = ccnt + 1
 	else:
 		found = "Not in block playback mode. No movie is scheduled tonight."
-	#print (found)
 	return (found)
 		
 		
@@ -5665,6 +5923,29 @@ def setresumestatus(option):
 	say = option
 	return say
 
+def setqueuetoplex(option):
+	option = option.lower()
+	if (("on" not in option) and ("off" not in option)):
+		return ("Error: You must specify 'On' or 'Off' to use this command")
+	cur.execute("DELETE FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\"")
+        sql.commit()
+        option = option.strip()
+        cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST",option))
+        sql.commit()
+        say = option
+        return say
+
+def getqueuetoplaylist():
+	command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
+        cur.execute(command)
+        if not cur.fetchone():
+                print ("No queuetoplaylist status. Setting to off.")
+                say = setqueuetoplex("Off")
+        else:
+                cur.execute(command)
+                say = cur.fetchone()[0]
+        return say
+
 def startnextprogram():
 	pstatus = checkpstatus()
 	plexlogin()
@@ -5672,7 +5953,7 @@ def startnextprogram():
 	if "On" in commcheck:
 		playcommercial("none")
 	show = upnext()
-	print (show)
+	#print (show)
 	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
 	pmode = cur.fetchone()[0]
@@ -5690,9 +5971,20 @@ def startnextprogram():
 	if "On" in pstatus:
 		time.sleep(SLEEPTIME)
 		playcheckstart()
-
+	command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
+	cur.execute(command)
+	if not cur.fetchone():
+		cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST","Off"))
+		sql.commit()
+	cur.execute(command)
+	queuetpl = cur.fetchone()[0]
+	if ("on" in queuetpl.lower()):
+		if "normal" in pmode:
+			queuetoplaylist()
+		elif ("block." in show):
+			show = show.replace("block.","")
+			blocktoplist(show)
 	
-
 def backuptvdb():
 	cur.execute("DELETE FROM backupshows")
 	sql.commit()
@@ -5732,7 +6024,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.133"
+	version = "2.0.103"
 	return version
 	
 
@@ -5802,6 +6094,14 @@ try:
 
 		except IndexError:
 			say = "Error: You must specify an artist to use this command."
+	elif ("getsongs" in show):
+		try:
+			artist = str(sys.argv[2])
+			album = str(sys.argv[3])
+			say = getsongs(artist, album)
+			say = wlistcolumns(say)
+		except IndexError:
+			say = "Error: you must supply an album to use this command."
 	elif ("getcustomtitle" in show):
 		title = str(sys.argv[2])
 		say = getcustomtitle(title)
@@ -5809,9 +6109,10 @@ try:
 		item = str(sys.argv[2])
 		say = checkcustomtables(item)
 	elif ("getcustomtable" in show):
+		print sys.argv
 		table = str(sys.argv[2])
 		say = getcustomtable(table)
-		if ((int(len(say)) <= 10) and ("-l" not in sys.argv)):
+		if ((int(len(say)) <= 10) or ("-l" in sys.argv)):
 			say = worklist(say)
 		else:
 			say = wlistcolumns(say)
@@ -5851,6 +6152,14 @@ try:
 		say = setresumestatus(option)
 		if "Error" not in say:
 			say = "Resume Status has been set to: " + say + "."
+	elif (("queuetoplexstatus" in show) and ("set" not in show)):
+                say = getqueuetoplaylist()
+                say = "Queuetoplaylist Status is: " + say + "."
+        elif ("setqueuetoplex" in show):
+                option = str(sys.argv[2])
+                say = setqueuetoplex(option)
+                if "Error" not in say:
+                        say = "Queuetoplaylist Status has been set to: " + say + "."
 	elif ("titlecheck" in show):
 		show = str(sys.argv[2])
 		show = titlecheck(show)
@@ -6010,6 +6319,11 @@ try:
                         say = addtoplaylist(title, artist, item)
                 except IndexError:
                         say = "Error: you must specify a title, artist, and an item to use this command."
+	elif ("blocktoplist" in show):
+		block = str(sys.argv[2])
+		say = blocktoplist(block)
+	elif ("queuetoplaylist" in show):
+			say = queuetoplaylist()
 	elif ("addapproved" in show):
 		try:
 			title = str(sys.argv[2])
