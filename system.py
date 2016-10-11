@@ -3050,7 +3050,7 @@ def blocktoplist(block):
                         removeplaylist("TBNqueue")
                 except Exception:
                         pass
-	print queue
+	#print queue
         addme = queue[0]
         addvideoplaylist("TBNqueue",addme)
         if len(queue) > 1:
@@ -3077,7 +3077,6 @@ def addplaylist(title, artist, song):
 def addvideoplaylist(title, item):
 	plexlogin()
 	item = item.lower()
-	print (item)
 	if "movie." in item:
 		item = item.replace("movie.","")
 		movie = plex.library.section("Movies").get(item)
@@ -3107,7 +3106,7 @@ def addvideoplaylist(title, item):
                 item = plex.library.section(table).get(item)
 		plex.createPlaylist(title,item)
         elif ("playcommercial" in item):
-                if tem == "playcommercial":
+                if item == "playcommercial":
                         cur.execute("SELECT * FROM commercials WHERE name LIKE \"" + commercial + "\"")
                         found = cur.fetchall()
                         max = int(len(found)) - 1
@@ -3117,7 +3116,7 @@ def addvideoplaylist(title, item):
                         item = playme[0]
                 else:
                         item = item.replace("playcommercial.","")
-                table = "Commercialss"
+                table = "Commercials"
                 item = plex.library.section(table).get(item)
 		plex.createPlaylist(title,item)
 	else:
@@ -4198,8 +4197,16 @@ def setplaymode(mode):
 			show = mode 
                         show = show.replace("block.","")
                         blocktoplist(show)
-
-		
+	elif ("normal" in mode):
+		command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
+                cur.execute(command)
+                if not cur.fetchone():
+                        cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST","Off"))
+                        sql.commit()
+                cur.execute(command)
+                queuetpl = cur.fetchone()[0]
+                if ("on" in queuetpl.lower()):
+			queuetoplaylist()
 	return "Playmode has been set to "+ mode
 
 def getblockpackage(play):
@@ -6021,10 +6028,18 @@ def statuscheck():
 	print ("Favorites Mode Shows is : " + favtv)
 	ccheck = commercialcheck()
 	print ("Commercial Injection is: " + ccheck)
+	command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
+	cur.execute(command)
+	if not cur.fetchone():
+		cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST","Off"))
+		sql.commit()
+	cur.execute(command)
+	queuetpl = cur.fetchone()[0]
+	print ("Queue To Playlist is: " + queuetpl)
 
 
 def versioncheck():
-	version = "2.0.103"
+	version = "2.0.136"
 	return version
 	
 
