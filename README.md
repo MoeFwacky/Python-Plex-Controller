@@ -162,5 +162,20 @@ TheBaconNation Plex Controller
 <br>checkblockrandom / checkblockrandom / checks the state of the blockrandom setting.
 <br>setblockrandom on/off / setblockrandom on / changes the state of the blockrandom setting.
 <br>statuscheck / statuscheck / gets the state of the various TBN-Plex options.
-Using the crappy UI:
+<br>getcustomtable (table) / getcustomtable fights / lists contents of specified custom table.
+<br>listcustomtables / listcustomtables / lists available custom tables.
+<br>enablekidsmode / enablekidsmode / enables kids mode.
+<br>disablekidsmode / disablekidsmode / disables kids mode. Note: password required. Default: supersneaky
+<br>pausemusic / pausemusic / pauses music on the music client
+<br>stopmusic / stopmusic / stops music on the music client
+<br>setmusicclient / setmusicclient (client) / sets the music client to the specified client. Can be different than your video client.
+<br>playmusic (artist) [title] / playmusic "willie nelson" "georgia on my mind" / plays the specific artist or song
+<br>musicstartnext / musicstartnext / start the next song on the music client
+<br>playplaylist / playplaylist 123 / starts the specified plex playlist on your music client.
+<br>getartists / getartists / lists the music artists off your server.
+<br>listplexplaylists / listplexplaylists / lists playlists saved on your server for your user. 
+<br>blocktoplist / blocktoplist cop_drama_block / converts the specified block into a plex playlist named TBNqueue.
+<br>queuetoplaylist / queuetoplaylist / converts your TBN-Plex queue to a plex playlist named TBNqueue.
+<br>setqueuetoplex (on/off) / setqueuetoplex on / enables or disables the automatic queue to plex function. Note: impacts performance when enabled.
+<h3>Using the crappy UI:</h3>
 <br>There are 3 .php files and a jpg that can be used in the event you desire a UI and are worse than I at making such things. Drop them in your apache web directory and have at it. I've setup the TBN scripts and its DB such that others should be able to easily interact with them and make a custom UI, voice controller, mobile app,... whatever that makes use of them as one sees fit. 
