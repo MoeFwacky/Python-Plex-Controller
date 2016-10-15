@@ -38,11 +38,12 @@ file.close()
 
 ostype = platform.system()
 
+cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERIP\"")
+wlink = cur.fetchone()[0]
+cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERPORT\"")
+wip = cur.fetchone()[0]
+
 def getsections():
-        cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERIP\"")
-        wlink = cur.fetchone()[0]
-        cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERPORT\"")
-        wip = cur.fetchone()[0]
         slink = "http://" + wlink + ":" + wip + "/library/sections/"
         response = http.urlopen('GET', slink, preload_content=False).read()
         response = str(response)
