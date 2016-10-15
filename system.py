@@ -1399,7 +1399,7 @@ def addtoblock(blockname, name):
 	name = checkcustomtables(name)
 	if type(name) is tuple:
 		name = name[0]
-	if (("random_movie." not in name) and ("random_tv." not in name) and ("CUSTOM." not in name) and ("playcommercial" not in name) and ("preroll" not in name)):
+	if (("random_movie." not in name) and ("random_tv." not in name) and ("custom." not in name) and ("playcommercial" not in name) and ("preroll" not in name)):
 		name = titlecheck(name.strip())
 		#name = name.replace("'","''")
 		name = mediachecker(name)
@@ -1420,8 +1420,8 @@ def addtoblock(blockname, name):
 		elif ("Quit" in name):
 			return ("User Quit. No action Taken.")
 		#name = "movie." + name
-	elif ("CUSTOM." in name):
-		name = name.replace("CUSTOM.","")
+	elif ("custom." in name):
+		name = name.replace("custom.","")
 	elif ("random_movie." in name):
 		gcheck = name.split("_movie.")
 		gcheck = gcheck[1].strip()
@@ -6136,7 +6136,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "2.0.150"
+	version = "2.0.152"
 	return version
 	
 

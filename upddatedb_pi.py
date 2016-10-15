@@ -591,7 +591,7 @@ def getcommercials():
 	command = "SELECT setting FROM settings WHERE item LIKE \"COMPART\""
 	cur.execute(command)
 	if not cur.fetchone():
-		getsection()
+		getsections()
 		print ("You need to supply the link to find your commercials.\nExample: http://192.168.1.134:32400/library/metadata/\n")
 		COMPART = str(input('Link:'))
 		cur.execute("INSERT INTO settings VALUES(?,?)", ("COMPART",COMPART.strip()))
