@@ -75,9 +75,6 @@ def plexlogin():
 			PLEXSERVERPORT = cur.fetchone()
 			PLEXSERVERPORT = PLEXSERVERPORT[0]
 
-			cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERTOKEN\'')
-			PLEXSERVERTOKEN = cur.fetchone()
-			PLEXSERVERTOKEN = PLEXSERVERTOKEN[0]
 		except Exception:
 			print ("Local Variables not set. Run setup to use local access.")
 
@@ -91,8 +88,7 @@ def plexlogin():
 			try:
 				from plexapi.server import PlexServer
 				baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
-				token = PLEXSERVERTOKEN
-				plex = PlexServer(baseurl, token)
+				plex = PlexServer(baseurl)
 			except Exception:
 				print ("Local Fail. Trying cloud access.")
 				user = MyPlexAccount.signin(PLEXUN,PLEXPW)
@@ -678,15 +674,36 @@ def enableblockrandom(option):
 	sql.commit()
 	return ("BLOCKRANDOM has been set to " + option.strip() + ".")
 
+def enablecustomrandom(option):
+        check = ["on","off"]
+        option = option.lower()
+        if option not in check:
+                return ("Error: you must specify \"on\" or \"off\" to use this command.")
+        cur.execute("DELETE FROM States WHERE Option LIKE \"CUSTOMRANDOM\"")
+        sql.commit()
+        cur.execute("INSERT INTO States VALUES (?,?)",("CUSTOMRANDOM",option.strip()))
+        sql.commit()
+        return ("CUSTOMRANDOM has been set to " + option.strip() + ".")
+
 def checkblockrandom():
-	command = "SELECT State from States WHERE Option LIKE \"BLOCKRANDOM\""
+	command = "SELECT State from States WHERE Option LIKE \"CUSTOMRANDOM\""
 	cur.execute(command)
 	if not cur.fetchone():
-		cur.execute("INSERT INTO States VALUES (?,?)",("BLOCKRANDOM","off"))
+		cur.execute("INSERT INTO States VALUES (?,?)",("CUSTOMRANDOM","off"))
 		sql.commit()
 	cur.execute(command)
 	option = cur.fetchone()[0]
 	return option
+
+def checkcustomrandom():
+	command = "SELECT State from States WHERE Option LIKE \"CUSTOMRANDOM\""
+        cur.execute(command)
+        if not cur.fetchone():
+                cur.execute("INSERT INTO States VALUES (?,?)",("CUSTOMRANDOM","off"))
+                sql.commit()
+        cur.execute(command)
+        option = cur.fetchone()[0]
+        return option
 	
 
 def disablekidsmode():
@@ -1632,7 +1649,8 @@ def mediachecker(title):
 	#title = title.replace("'","''")
         check1 = "start"
         check2 = "start"
-        ctitle = title.replace("movie.","")
+	ctitle = title
+        ctitle = ctitle.replace("movie.","")
         cur.execute("SELECT Movie FROM Movies WHERE Movie LIKE \"" + ctitle + "\"")
         if not cur.fetchone():
                 check1 = "fail"
@@ -1653,7 +1671,9 @@ def mediachecker(title):
                 else:
                         title = addme
         elif ((check1 == "pass") and (check2 == "pass") and ("Fail" not in externalcheck())):
-                addme = didyoumeanboth(title)
+		print ("Title found in multiple librarys. Defaulting to TV show. If you want to use the movie put \"movie.\" in front of the title")
+		addme = title
+                #addme = didyoumeanboth(title)
                 if "Quit." in addme:
                         return ("User Quit. No Action Taken.")
                 else:
@@ -3059,7 +3079,7 @@ def blocktoplist(block):
                         if cnt == 0:
                                 pass
                         else:
-                                addtovideoplaylist("TBNqueue",item)
+                                modifyvideoplaylist("TBNqueue",item, "add")
                         cnt = cnt + 1
         return ("Done")
 
@@ -3149,13 +3169,17 @@ def addvideoplaylist(title, item):
                 ep = the_show.get(xshow)
 		plex.createPlaylist(title,ep)
 
-def addtovideoplaylist(playlist, item):
+#def addtovideoplaylist(playlist, item):
+def modifyvideoplaylist(playlist, item, action):
 	playlist = plex.playlist(playlist)
 	item = item.lower()
 	if "movie." in item:
                 item = item.replace("movie.","")
                 movie = plex.library.section("Movies").get(item)
-		playlist.addItems(movie)
+		if action == "add":
+			playlist.addItems(movie)
+		else:
+			playlist.removeItem(movie)
 	elif ("custom." in item):
 		item = item.replace("custom.","")
 		stuff = checkcustomtables(item)
@@ -3165,7 +3189,10 @@ def addtovideoplaylist(playlist, item):
 		if ("''" in item):
 			item = item.replace("''","'")
 		item = plex.library.section(table).get(item)
-		playlist.addItems(item)
+		if (action == "add"):
+			playlist.addItems(item)
+		else:
+			playlist.removeItem(item)
 	elif ("preroll" in item):
 		if item == "preroll":
 			cur.execute("SELECT name FROM prerolls")
@@ -3179,7 +3206,10 @@ def addtovideoplaylist(playlist, item):
 			item = item.replace("preroll.","")
 		table = "Prerolls"
 		item = plex.library.section(table).get(item)
-                playlist.addItems(item)
+		if action == "add":
+			playlist.addItems(item)
+		else:
+			playlist.removeItem(item)
 	elif ("playcommercial" in item):
 		if item == "playcommercial":
 			cur.execute("SELECT name FROM commercials")
@@ -3193,7 +3223,10 @@ def addtovideoplaylist(playlist, item):
 			item = item.replace("playcommercial.","")
                 table = "Commercials"
                 item = plex.library.section(table).get(item)
-                playlist.addItems(item)
+		if action == "add":
+			playlist.addItems(item)
+		else:
+			playlist.removeitem(item)
         else:
                 show = item
                 try:
@@ -3222,7 +3255,10 @@ def addtovideoplaylist(playlist, item):
                 the_show = shows.get(show)
                 #showplay = the_show.rstrip()
                 ep = the_show.get(xshow)
-		playlist.addItems(ep)
+		if action == "add":
+			playlist.addItems(ep)
+		else:
+			playlist.removeItem(ep)
 
 def removeplaylist(plist):
 	plexlogin()
@@ -3264,7 +3300,7 @@ def queuetoplaylist():
 			if cnt == 0:
 				pass
 			else:
-				addtovideoplaylist("TBNqueue",item)
+				modifyvideoplaylist("TBNqueue",item, "add")
 			cnt = cnt + 1
 		
 	return ("Done")
@@ -3663,26 +3699,32 @@ def playwhereleftoff(show):
 
 def queueadd(addme):
         title = addme.strip()
-	type = "queue"
+	title = title.replace("custom.","")
+	title = checkcustomtables(title)
+        if type(title) is tuple:
+                title = title[0]
+	xtype = "queue"
 	if ("block." in title):
 		title = title.replace("block.","")
 		name = verifyblock(title)
 		name = "block." + name
 		
-		
-        elif (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
-                title = titlecheck(title).strip()
-		title = title.replace("'","")
-		xname = title
-		xname = xname.replace('movie.','')
-		if ("addrand" in addme):
-			say = queuefill()
-		elif ("Quit." in addme):
-			say = "User quit. No action taken."
-			return (say)
-		name = mediachecker(xname)
+	if ("CUSTOM." not in title):
+		if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
+			title = titlecheck(title).strip()
+			title = title.replace("'","")
+			xname = title
+			xname = xname.replace('movie.','')
+			if ("addrand" in addme):
+				say = queuefill()
+			elif ("Quit." in addme):
+				say = "User quit. No action taken."
+				return (say)
+			name = mediachecker(xname)
+		else:
+			name = mediachecker(title)
 	else:
-		name = mediachecker(title)
+		name = title
 
 	if ("User Quit" in name):
 		return (name)
@@ -3691,7 +3733,7 @@ def queueadd(addme):
 
 	if ("movie." in name):
 		xname = name + ";"
-		command = "SELECT State FROM States WHERE Option LIKE \"" + type + "\""
+		command = "SELECT State FROM States WHERE Option LIKE \"" + xtype + "\""
 		cur.execute(command)
 		queue = cur.fetchone()
 		queue = queue[0]
@@ -3699,19 +3741,20 @@ def queueadd(addme):
 			queue = xname
 		else:
 			queue = queue + xname
-		command = "DELETE FROM States WHERE Option LIKE \"" + type + "\""
+		command = "DELETE FROM States WHERE Option LIKE \"" + xtype + "\""
 		cur.execute(command)
 		sql.commit()
-		cur.execute("INSERT INTO States VALUES(?,?)", (type, queue))
+		cur.execute("INSERT INTO States VALUES(?,?)", (xtype, queue))
 		sql.commit()	
 		xname = xname.replace("movie.","")
 		xname = xname.replace(";","")
 		say = ("The Movie " + xname.rstrip() + " has been added to the queue.")
 		return say	
+		
 	else:
 		xname = name
 		xname = xname + ";"
-		command = "SELECT State FROM States WHERE Option LIKE \"" + type + "\""
+		command = "SELECT State FROM States WHERE Option LIKE \"" + xtype + "\""
 		cur.execute(command)
 		queue = cur.fetchone()
 		queue = queue[0]
@@ -3719,13 +3762,17 @@ def queueadd(addme):
 			queue = xname
 		else:
 			queue = queue + xname
-		command = "DELETE FROM States WHERE Option LIKE \"" + type + "\""
+		command = "DELETE FROM States WHERE Option LIKE \"" + xtype + "\""
 		cur.execute(command)
-		cur.execute("INSERT INTO States VALUES(?,?)", (type, queue))
+		cur.execute("INSERT INTO States VALUES(?,?)", (xtype, queue))
 		sql.commit()
 		xname = xname.replace(";","")
 
-		say = ("The TV Show " + xname.rstrip() + " has been added to the queue.")
+		if ("CUSTOM." in xname):
+			say = ("The TV Show " + xname.rstrip() + " has been added to the queue.")
+		else:
+			xname = xname.replace("CUSTOM.","")
+			say = (xname)
 		return say
 
 def nowplaywrite(showplay):
@@ -3780,17 +3827,48 @@ def queuefix():
 	return ("The Queue has been rebuilt.")
 
 def queuefill():
-	playme = randint(1,8)
+	playme = randint(1,9)
 	#random TV show
 	showmode = checkmode("show")
 	moviemode = checkmode("movie")
 	if playme == 8:
-		playme = randint(1,7)
 		block = getrandomblock()
 		if "Error:" not in block:
 			if ("on" in checkblockrandom()):
-				say = setplaymode(block)
-				print (say)
+				#say = setplaymode(block)
+				addme = block
+			else:
+				playme = randint(1,7)
+		else:
+                                playme = randint(1,7)
+	if playme == 9:
+		if ("on" not in checkcustomrandom()):
+			playme = randint(1,7)
+		else:
+			command = "SELECT name FROM sqlite_master WHERE type='table'"
+			cur.execute(command)
+			if not cur.fetchone():
+				playme = randint(1,7)
+			else:
+				cur.execute(command)
+				clist = cur.fetchall()
+				cxlist = []
+				for item in clist:
+					item = item[0]
+					if "CUSTOM_" in item:
+						cxlist.append(item)
+				min = 0
+				max = int(len(cxlist))-1
+				pme = randint(min,max)
+				ctable = cxlist[pme]
+				ctable = ctable.replace("CUSTOM_","")
+				tlist = getcustomtable(ctable)
+				min = 0
+				max = int(len(tlist))-1
+				pme = randint(min,max)
+				addme = tlist[pme]
+				addme = "custom." + addme
+			
 	if ((playme == 1) or (playme ==5) or (playme == 7)):
 		if ((playme == 1) and (showmode == "Off")):
 			command = "SELECT TShow FROM TVshowlist"
@@ -3853,8 +3931,10 @@ def queuefill():
 			found = randint(0,int(len(addme)))
 			addme = addme[found][0]
 		else:
+			print ("Using Wild Card Show.")
 			cur.execute("SELECT setting FROM settings WHERE item LIKE \"WILDCARD\"")
 			addme = cur.fetchone()
+			#print addme
 			addme = addme[0]
 	return queueadd(addme)
 
@@ -4186,25 +4266,13 @@ def setplaymode(mode):
 		say = movie1 + ", and then " + movie2 + ", and finally " + movie3
 		mode = "Random " + xmode + " movie block. This one will play: " + say
 	if "block." in mode:
-		command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
-		cur.execute(command)
-		if not cur.fetchone():
-			cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST","Off"))
-			sql.commit()
-		cur.execute(command)
-		queuetpl = cur.fetchone()[0]
+		queuetpl = qtpl()
 		if ("on" in queuetpl.lower()):
 			show = mode 
                         show = show.replace("block.","")
                         blocktoplist(show)
 	elif ("normal" in mode):
-		command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
-                cur.execute(command)
-                if not cur.fetchone():
-                        cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST","Off"))
-                        sql.commit()
-                cur.execute(command)
-                queuetpl = cur.fetchone()[0]
+                queuetpl = qtpl()
                 if ("on" in queuetpl.lower()):
 			queuetoplaylist()
 	return "Playmode has been set to "+ mode
@@ -4241,10 +4309,10 @@ def setupnext(title):
 	title = checkcustomtables(title)
 	if type(title) is tuple:
 		title = title[0]
-	print (title)
 	if ("CUSTOM." not in title):
 		if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 			title = titlecheck(title).strip()
+		#print title
 		title = mediachecker(title)
 	if "''" in title:
                 pass
@@ -4268,6 +4336,7 @@ def setupnext(title):
 		cur.execute(command)
 		if not cur.fetchone():
 			say = didyoumeanshow(title)
+			print say
 			if ("Quit" in say):
 				return ("Done")
 			elif ("Error" in say):
@@ -4492,6 +4561,7 @@ def externalcheck():
 		return ("Fail")
 
 def titlecheck(title):
+	otitle = title
 	title = title.replace("movie.","")
 	title = title.replace("'","''")
 	title = title.lower()
@@ -4511,7 +4581,7 @@ def titlecheck(title):
 	tvxlist = []
 	for item in tvlist:
 		tvxlist.append(str(item[0].lower()))
-	if title in tvxlist:
+	if title.lower() in tvxlist:
 		check = "pass"
 	if "fail" in check:	
 		try:
@@ -4533,7 +4603,10 @@ def titlecheck(title):
 		except Exception:
 			pass
 	else:
-		newt = title
+		if "movie." in otitle:
+			newt = "movie." + title
+		else:
+			newt = title
 	newt = newt.strip()
 	return (newt)
 
@@ -4556,8 +4629,7 @@ def didyoumeanboth(title):
 					checks.append(item)
 		else:
 			try:
-				if (item not in checks):
-					checks.append(show)
+				checks.append(show)
 			except Exception:
 				pass
 		for item in checks:
@@ -4776,7 +4848,8 @@ def whatupnext():
 			setplaymode(playme)
 			say = whatupnext()
 			return (say)
-		elif ("custom." in playme):
+		elif (("custom." in playme) or ("CUSTOM." in playme)):
+			playme = playme.lower()
 			say = playme.replace("custom.","")
 			return (say)
 		else:
@@ -4810,7 +4883,7 @@ def whatupnext():
 		say = playmode.replace("holiday.","")
 		say = "Up next a random " + say + " holiday program will play."
 		return (say)
-	elif ("custom." in playmode):
+	elif (("custom." in playmode) or ("CUSTOM." in playmode)):
 		say = playmode.replace("custom.","")
 		say = "Up next is a random " + say + " program."
 		return (say)
@@ -5495,7 +5568,10 @@ def moviechoice(option):
 		#print (option)
 		say = moviechoice(option)
 		return (say)
-	say = setupnext(say)
+	if ("setupnext" not in say):
+		if ("movie." not in say):
+			say = "movie." + say
+		say = setupnext(say)
 	return say
 
 def tvchoice(option):
@@ -5529,9 +5605,29 @@ def tvchoice(option):
         say = setupnext(say)
         return say
 
-	
-		
-	
+def suggestcustom(table):
+	table = "CUSTOM_" + table
+	command = "SELECT name FROM "+ table
+	cur.execute(command)
+	stuff = []
+	if not cur.fetchall():
+		return ("Error: " + table + " not found.")
+	else:
+		cur.execute(command)
+		found = cur.fetchall()
+		for item in found:
+			stuff.append(item[0])
+	min = 0
+	max = int(len(stuff))-1
+	plc = randint(min,max)
+	playme = stuff[plc]
+	addme = "custom." + playme
+	command = "DELETE from States WHERE Option LIKE \"Pending\""
+	cur.execute(command)
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES(?,?)", ('Pending',addme))
+	sql.commit()
+	return playme
 
 def suggestmovieblockuse(genre):
 	check = checkmode("movie")
@@ -5847,7 +5943,8 @@ def whatispending():
 	else:
 		cur.execute(command)
 		pending = cur.fetchone()
-		pending = pending[0].replace("movie.","The Movie ")
+		pending = pending.replace("movie.","The Movie ")
+		pending = pending.replace("custom.","")
 		return (pending + " is currently in the pending queue.")
 	
 
@@ -5978,19 +6075,23 @@ def startnextprogram():
 	if "On" in pstatus:
 		time.sleep(SLEEPTIME)
 		playcheckstart()
-	command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
-	cur.execute(command)
-	if not cur.fetchone():
-		cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST","Off"))
-		sql.commit()
-	cur.execute(command)
-	queuetpl = cur.fetchone()[0]
+	queuetpl = qtpl()
 	if ("on" in queuetpl.lower()):
 		if "normal" in pmode:
 			queuetoplaylist()
 		elif ("block." in show):
 			show = show.replace("block.","")
 			blocktoplist(show)
+
+def qtpl():
+	command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
+        cur.execute(command)
+        if not cur.fetchone():
+                cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST","Off"))
+                sql.commit()
+        cur.execute(command)
+        queuetpl = cur.fetchone()[0]
+	return queuetpl
 	
 def backuptvdb():
 	cur.execute("DELETE FROM backupshows")
@@ -6022,24 +6123,20 @@ def statuscheck():
 	
 	randstatus = checkblockrandom()
 	print ("Random Block Option is: " + randstatus)
+	custstatus = checkcustomrandom()
+	print ("Custom Table Queue Option is: " + custstatus)
 	favm = checkmode("movie")
 	favtv = checkmode("show")
 	print ("Favorites Mode Movies is: " + favm)
 	print ("Favorites Mode Shows is : " + favtv)
 	ccheck = commercialcheck()
 	print ("Commercial Injection is: " + ccheck)
-	command = "SELECT State FROM States WHERE Option LIKE \"QUEUETOPLAYLIST\""
-	cur.execute(command)
-	if not cur.fetchone():
-		cur.execute("INSERT INTO States VALUES (?,?)",("QUEUETOPLAYLIST","Off"))
-		sql.commit()
-	cur.execute(command)
-	queuetpl = cur.fetchone()[0]
+	queuetpl = qtpl()
 	print ("Queue To Playlist is: " + queuetpl)
 
 
 def versioncheck():
-	version = "2.0.136"
+	version = "2.0.150"
 	return version
 	
 
@@ -6283,6 +6380,12 @@ try:
 			say = enableblockrandom(option)
 		except IndexError:
 			say = "Error: You must specify either \"on\" or \"off\" to use this command."
+	elif ("setcustomrandom" in show):
+                try:
+                        option = str(sys.argv[2])
+                        say = enablecustomrandom(option)
+                except IndexError:
+                        say = "Error: You must specify either \"on\" or \"off\" to use this command."
 	elif ("enablecommercials" in show):
 		say = enablecommercials()
 	elif ("disablecommercials" in show):
@@ -6640,6 +6743,12 @@ try:
 			genre = "none"
 		say = suggestmovie(genre)
 		#saythat(say)
+	elif ("suggestcustom" in show):
+                try:
+                        genre = str(sys.argv[2])
+			say = suggestcustom(genre)
+                except IndexError:
+			say = "Error: You must enter a custom table name to use this command."
 	elif ("suggesttv" in show):
 		try:
 			genre = str(sys.argv[2])
@@ -6680,6 +6789,8 @@ try:
 	elif ("listmovies" in show):
 		try:
 			genre = str(sys.argv[2])
+			if genre == "-l":
+				genre = "none"
 		except IndexError:
 			genre = "none"
 			
@@ -6700,7 +6811,10 @@ try:
 		try:
 			say = availableblocks()
 			say = say.split("\n")
-			say = wlistcolumns(say)
+			if ("-l" not in sys.argv):
+				say = wlistcolumns(say)
+			else:
+				say = worklist(say)
 		except NameError:
 			say = "You must first create a block to use this command. Use 'addblock' for more information."
 
