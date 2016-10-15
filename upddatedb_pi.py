@@ -17,6 +17,7 @@ global favtv
 global favmve
 global tvgenres
 global moviegenres
+global pcount
 
 favtv = []
 favmve = []
@@ -36,36 +37,6 @@ with open (PROBLEMS, "w") as file:
 file.close()
 
 ostype = platform.system()
-
-def getsections():
-	cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERIP\"")
-	wlink = cur.fetchone()[0]
-	cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERPORT\"")
-	wip = cur.fetchone()[0]
-	slink = "http://" + wlink + ":" + wip + "/library/sections/"
-	response = http.urlopen('GET', slink, preload_content=False).read()
-        response = str(response)
-	response = response.split("Directory allowSync=")
-	print ("The Following Sections are available off your server.")
-	for item in response:
-		#print (item)
-		name = item
-		section = item
-		try:
-			name = name.split("title=\"")
-			name = name[1]
-			name = name.split("\"")
-			name = name[0]
-
-			section = section.split("key=\"")
-			section = section[1]
-			section = section.split("\"")
-			section = section[0]
-
-			link = "http://" + wlink + ":" + wip + "/library/sections/" + section + "/all/"
-			print ("Name: " + name + "\nSection: " + section + "\nLink: " + link)
-		except IndexError:
-			pass
 
 cur.execute('CREATE TABLE IF NOT EXISTS settings(item TEXT, setting TEXT)')
 sql.commit()
@@ -87,7 +58,7 @@ command = 'SELECT setting FROM settings WHERE item LIKE \'TVGET\''
 cur.execute(command)
 if not cur.fetchone():
 	getsections()
-	print ("\nEnter the link to your TV show tree.\nExample: http://192.168.1.134:32400/library/sections/1/all/ \n")
+	print ("Enter the link to your TV show tree.\nExample: http://192.168.1.134:32400/library/sections/1/all/ \n")
 	TVGET = str(input('Link:'))
 	cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVGET",TVGET.strip()))
 	sql.commit()
@@ -120,13 +91,57 @@ sql.commit()
 cur.execute('CREATE TABLE IF NOT EXISTS TVshowlist(TShow TEXT, Summary TEXT, Genre TEXT, Rating TEXT, Duration INT, Totalnum INT)')
 sql.commit()
 
+def progress(num):
+	num = int(num)
+	global pcount
+	try:
+		pcount
+	except NameError:
+		pcount = 0
+	pcount = pcount + 1
+	perc = round((float(pcount) / float(num)) * 100, 1)
+	sys.stdout.write("\r" + str(perc) + "%")
+	sys.stdout.flush()
 
+def clearprogress():
+	global pcount
+	pcount = 0
+
+def getsections():
+	cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERIP\"")
+	wlink = cur.fetchone()[0]
+	cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERPORT\"")
+	wip = cur.fetchone()[0]
+	slink = "http://" + wlink + ":" + wip + "/library/sections/"
+	response = http.urlopen('GET', slink, preload_content=False).read()
+        response = str(response)
+	response = response.split("Directory allowSync=")
+	print ("The Following Sections are available off your server.")
+	for item in response:
+		name = item
+		section = item
+		try:
+			name = name.split("title=\"")
+			name = name[1]
+			name = name.split("\"")
+			name = name[0]
+
+			section = section.split("key=\"")
+			section = section[1]
+			section = section.split("\"")
+			section = section[0]
+
+			link = "http://" + wlink + ":" + wip + "/library/" + section + "/all/"
+			print ("Name: " + name + "\nSection: " + section + "\nLink: " + link)
+		except IndexError:
+			pass
 def getshows():	
+	print ("Getting TVshowlist now.")
 	response = http.urlopen('GET', TVGET, preload_content=False).read()
 	response = str(response)
-	#print (response)
 	shows = response.split('<Directory ratingKey=')
 	counter = 1
+	xnum = int(len(shows))-1
 
 	while counter <= int(len(shows)-1):
 
@@ -143,10 +158,10 @@ def getshows():
 		title = title[0]
 		
 		title = title.replace('&apos;','\'')
-		title = title.replace('&#39;','\'')
 		title = title.replace('&amp;','&')
 		title = title.replace('?','')
 		title = title.replace('/',' ')
+		title = title.replace("&#39;","'")
 		
 		summary = show
 		rating = show
@@ -193,21 +208,18 @@ def getshows():
 			genre2 = genres[2]
 			genre2 = genre2.split('" />')
 			genre2 = genre2[0]
-			#print (genre2)
 		except IndexError:
 			genre2 = "none"
 		try:
 			genre3 = genres[3]
 			genre3 = genre3.split('" />')
 			genre3 = genre3[0]
-			#print (genre2)
 		except IndexError:
 			genre3 = "none"
 		genre = genre.split('" />')
 		
 		genre = genre[0] + ";" + genre2 + ";" + genre3 + ";"
 		genre = genre.replace('none;','')
-		#print (genre)
 		
 			
 			
@@ -219,6 +231,7 @@ def getshows():
 		except IndexError:
 			studio = "None"
 		TShow = TShow.replace("'","''")
+		summary = summary.replace("&#39;","'")
 		summary = summary.replace("'","''")
 		summary = str(summary.decode('ascii','ignore')).strip()
 		cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE \"" + TShow + "\"")
@@ -226,8 +239,10 @@ def getshows():
 			if not cur.fetchone():
 				cur.execute("INSERT INTO TVshowlist VALUES(?, ?, ?, ?, ?, ?)", (TShow, summary, genre, rating, int(duration), int(totalnum)))
 				sql.commit()
-		except Exception: 
-			print ("Error adding " + TShow)
+				#marker
+				progress(xnum)
+		except IndexError: 
+			print ("\nError adding " + TShow)
 			with open(PROBLEMS, 'a') as file:
 				file.write(TShow + "\n")
 			file.close()
@@ -235,8 +250,8 @@ def getshows():
 		
 		counter = counter + 1
 
-	
-	print ("TV entries checked.")
+	clearprogress()	
+	print ("\n\nTV Show List Generated.")
 
 
 def fixTVfiles():
@@ -278,12 +293,11 @@ def fixTVfiles():
 		with open(WorkingDir, 'w') as file:
 			file.write(startfile)
 		file.close()
-	print ("TV Files Cleaned")
+	print ("\nTV Files Cleaned")
 
 def getshow(show):
 	response = http.urlopen('GET', TVGET, preload_content=False).read()
 	response = str(response)
-	#print (response)
 	shows = response.split('<Directory ratingKey=')
 	counter = 1
 
@@ -304,7 +318,6 @@ def getshow(show):
 		title = title[0]
 
 		title = title.replace('&apos;','\'')
-		title = title.replace('&#39;','\'')
 		title = title.replace('&amp;','&')
 		title = title.replace('?','')
 		title = title.replace('/',' ')
@@ -325,7 +338,6 @@ def getshow(show):
 		TShow = name
 		if (("'" in TShow) and ("''" not in TShow)):
 			TShow = TShow.replace("'","''")
-			print (TShow)
 		title = title + '.txt.'
 		title = homedir + title
 
@@ -338,20 +350,17 @@ def getshow(show):
 			genre2 = genres[2]
 			genre2 = genre2.split('" />')
 			genre2 = genre2[0]
-			#print (genre2)
 	except IndexError:
 			genre2 = "none"
 	try:
 			genre3 = genres[3]
 			genre3 = genre3.split('" />')
 			genre3 = genre3[0]
-			#print (genre2)
 	except IndexError:
 			genre3 = "none"
 	genre = genre.split('" />')
 
 	genre = genre[0]
-	#print (genre)
 
 
 	if (genre != "none"):
@@ -421,7 +430,7 @@ def getshow(show):
 				file.write("\n")
 			file.close()
 	except IndexError:
-		print ("No Studio Available. Skipping " + TShow)
+		print (\n"No Studio Available. Skipping " + TShow)
 
 	show = show.split('" key')
 	show = show[0]
@@ -435,7 +444,6 @@ def getshow(show):
 	xresponse = str(xresponse)
 
 	episodes = xresponse.split('type="episode" title="')
-	#print (episodes)
 	for episode in episodes:
 		Season = episode
 		Enum = episode
@@ -446,10 +454,9 @@ def getshow(show):
 		episode = episode + "\n"
 		episode = episode.replace('&apos;','\'')
 		episode = episode.replace('&amp;','&')
-		episode = episode.replace("&#39;", "'no")
+		episode = episode.replace("&#39;","'")
 		Episode = episode.strip()
 		if ("<?xml version=" in episode.strip()):
-			#print ("Pass")
 			Tnum = 0
 		else:
 
@@ -458,16 +465,12 @@ def getshow(show):
 				with open(FIXME, 'a') as file:
 					file.write(xepisode)
 				file.close()
-			#episode = episode.rstrip()
-			#print (episode)
 			if episode != "Original":
 				try:
 					Tnum = Tnum + 1
 				except Exception:
 					Tnum = 0
-				#print (Season)
 				Season = Season.split('parentIndex="')
-				#print (Season)
 
 				Season = Season[1]
 				Season = Season.split('"')
@@ -485,6 +488,7 @@ def getshow(show):
 				Summary = Summary.replace(",", "")
 				Summary = Summary.replace('\xe2',"")
 				Summary = Summary.replace("&quot","")
+				Summary = Summary.replace("&#39;","'")
 				try:
 					Summary = Summary.decode("ascii", "ignore")
 				except Exception:
@@ -500,19 +504,14 @@ def getshow(show):
 				Link = Link[0]
 
 				TShow = str(TShow)
-				#print (TShow)
+				TShow = TShow.replace("&#39;","''")
 				Episode = str(Episode)
-				#print (Episode)
+				Episode = Episode.replace("&#39;","''")
 				Season = int(Season)
-				#print (str(Season))
 				Enum = int(Enum)
-				#print (str(Enum))
 				Tnum = int(Tnum)
-				#print (str(Tnum))
 				Summary = str(Summary.encode('ascii','ignore').strip())
-				#print (Summary)
 				Link = str(Link.strip().encode('ascii','replace'))
-				#print (Link)
 				try:
 					cur.execute('SELECT * FROM shows WHERE TShow LIKE \'' + TShow + '\' AND Tnum LIKE \'' + str(Tnum) + '\'')
 					if not cur.fetchone():
@@ -537,10 +536,11 @@ def getshow(show):
 	
 
 def gettvshows():	
+	print ("Getting TV Show Episodes Now.")
 	response = http.urlopen('GET', TVGET, preload_content=False).read()
 	response = str(response)
-	#print (response)
 	shows = response.split('<Directory ratingKey=')
+	xnum = int(len(shows))-1
 	counter = 1
 
 	workingdir = homedir + "tvshowlist.txt"
@@ -580,7 +580,6 @@ def gettvshows():
 		TShow = name
 		if (("'" in TShow) and ("''" not in TShow)):
 			TShow = TShow.replace("'","''")
-			print (TShow)
 		title = title + '.txt.'
 		title = homedir + title
 		
@@ -593,21 +592,17 @@ def gettvshows():
 			genre2 = genres[2]
 			genre2 = genre2.split('" />')
 			genre2 = genre2[0]
-			#print (genre2)
 		except IndexError:
 			genre2 = "none"
 		try:
 			genre3 = genres[3]
 			genre3 = genre3.split('" />')
 			genre3 = genre3[0]
-			#print (genre2)
 		except IndexError:
 			genre3 = "none"
 		genre = genre.split('" />')
 		
 		genre = genre[0]
-		#print (genre)
-		
 			
 		if (genre != "none"):
 		
@@ -667,7 +662,7 @@ def gettvshows():
 					file.write("\n")
 				file.close()
 		except IndexError:
-			print ("No Studio Available. Skipping " + TShow)
+			print ("\nNo Studio Available. Skipping " + TShow)
 			
 		show = show.split('" key')
 		show = show[0]
@@ -676,12 +671,10 @@ def gettvshows():
 		episode = show
 		
 		link = TVPART + show + "/allLeaves"
-		print (link)
 		xresponse = http.urlopen('GET', link, preload_content=False).read()
 		xresponse = str(xresponse)
 		
 		episodes = xresponse.split('type="episode" title="')
-		#print (episodes)
 		for episode in episodes:
 			Season = episode
 			Enum = episode
@@ -692,10 +685,8 @@ def gettvshows():
 			episode = episode + "\n"
 			episode = episode.replace('&apos;','\'')
 			episode = episode.replace('&amp;','&')
-			episode = episode.replace('&#39;','\'')
 			Episode = episode.strip()
 			if ("<?xml version=" in episode.strip()):
-				#print ("Pass")
 				Tnum = 0
 			else:
 			
@@ -704,10 +695,7 @@ def gettvshows():
 					with open(FIXME, 'a') as file:
 						file.write(xepisode)
 					file.close()
-				#episode = episode.rstrip()
-				#print (episode)
 				if episode != "Original":
-					#print ("Skipping")
 				#else:
 				
 					#with open(title, "a") as file:
@@ -754,28 +742,24 @@ def gettvshows():
 					
 					TShow = str(TShow)
 					#TShow = TShow.replace("'","''")
-					#print (TShow)
+					TShow = TShow.replace("&#39;","''")
 					Episode = str(Episode)
 					Episode = Episode.replace("'","''")
-					#print (Episode)
+					Episode = Episode.replace("&#39;","''")
 					Season = int(Season)
-					#print (str(Season))
 					Enum = int(Enum)
-					#print (str(Enum))
 					Tnum = int(Tnum)
-					#print (str(Tnum))
 					Summary = str(Summary.encode('ascii','ignore').strip())
 					Summary = Summary.replace("'","''")
-					#print (Summary)
+					Summary = Summary.replace("&#39;","''")
 					Link = str(Link.strip().encode('ascii','replace'))
-					#print (Link)
 
 					cur.execute("SELECT * FROM shows WHERE TShow LIKE \"" + TShow + "\" AND Tnum LIKE \"" + str(Tnum) + "\"")
 					try:
 						if not cur.fetchone():
 							cur.execute("INSERT INTO shows VALUES(?, ?, ?, ?, ?, ?, ?)", (TShow, Episode, Season, Enum, Tnum, Summary, Link))
 							sql.commit()
-							print ("New Episode Found: " + TShow + " Episode: " + Episode)
+							#print ("New Episode Found: " + TShow + " Episode: " + Episode)
 					except Exception: 
 						print ("Error adding " + TShow)
 						with open(PROBLEMS, 'a') as file:
@@ -783,11 +767,12 @@ def gettvshows():
 						file.close()
 					
 				
-		
+		progress(xnum)	
 		counter = counter + 1
 
 	fixTVfiles()
-	print ("TV entries checked.")
+	clearprogress()
+	print ("\n\nTV Episode entries checked.")
 
 
 def fixmvfiles():
@@ -801,15 +786,15 @@ def fixmvfiles():
 	with open(PLdir, 'w') as file:
 		file.write(startfile)
 	file.close()
-	print ("Movie File Cleaned")
+	print ("\nMovie File Cleaned. Restoring Genres Now.")
 	
-#mark
 
 def getmovies():
 	response = http.urlopen('GET', MOVIEGET, preload_content=False).read()
 	response = str(response)
 	#print (response)
 	shows = response.split('<Video ratingKey=')
+	xnum = int(len(shows))-1
 	counter = 1
 	Moviedir = homedir + "movielist.txt"
 
@@ -833,7 +818,7 @@ def getmovies():
 		
 		title = title.replace('&apos;','\'')
 		title = title.replace('&amp;','&')
-		title = title.replace('&#39;','\'')
+		title = title.replace("&#39;","'")
 		#title = title.replace('?','')
 		#title = title.replace('/',' ')
 		
@@ -936,7 +921,7 @@ def getmovies():
 			rating = rating.split("\"")
 			rating = rating[0]
 		except IndexError:
-			print ("No Rating Available. Skipping " + name)
+			#print ("No Rating Available. Skipping " + name)
 			rating = "none"
 		
 		tagline = tagline.split("tagline=\"")
@@ -945,7 +930,7 @@ def getmovies():
 			tagline = tagline.split("\" ")
 			tagline = tagline[0]
 		except IndexError:
-			print ("No Tagline Available. Skipping " + name)
+			#print ("No Tagline Available. Skipping " + name)
 			tagline = "none"
 			
 		summary = summary.split("summary=\"")
@@ -954,7 +939,7 @@ def getmovies():
 			summary = summary.split("\"")
 			summary = summary[0]
 		except IndexError:
-			print ("No Summary Available. Skipping " + name)
+			#print ("No Summary Available. Skipping " + name)
 			summary = "none"
 
 		#marker
@@ -962,7 +947,7 @@ def getmovies():
 			
 		summary = summary.replace('&apos;','\'')
 		summary = summary.replace('&amp;','&')
-		summary = summary.replace('&#39;','\'')
+		summary = summary.replace("&#39;","'")
 		summary = summary.replace(',', ' ')	
 		summary = summary.replace('\'','')
 		try:
@@ -971,14 +956,11 @@ def getmovies():
 			pass
 		name = name.replace('&apos;','\'')
 		name = name.replace('&amp;','&')
-		name = name.replace('&#39;','\'')
 		name = name.replace(',', ' ')
 		name = name.replace("'","''")
-		#print (tagline)
 		#tagline = tagline.replace('&apos;','\'')
 		tagline = tagline.replace('&apos;','')
 		tagline = tagline.replace('&amp;','&')
-		tagline = tagline.replace('&#39;','\'')
 		tagline = tagline.replace(',', ' ')
 		tagline = tagline.replace('\'','')
 		try:
@@ -988,7 +970,6 @@ def getmovies():
 		#directors = directors.replace('&apos;','\'')
 		directors = directors.replace('&apos;','')
 		directors = directors.replace('&amp;','&')
-		directors = directors.replace('&#39;','\'')
 		directors = directors.replace(',', ' ')
 		directors = directors.replace('\'','')
 		try:
@@ -998,12 +979,10 @@ def getmovies():
 		#bgenre = bgenre.replace('&apos;','\'')
 		bgenre = bgenre.replace('&apos;','')
 		bgenre = bgenre.replace('&amp;','&')
-		bgenre = bgenre.replace('&#39;','\'')
 		bgenre = bgenre.replace(',', ' ')
 		bgenre = bgenre.replace("none", "")
 		#bactors = bactors.replace('&apos;','\'')
 		bactors = bactors.replace('&apos;','')
-		bactlrs = bactors.replace('&#39;','\'')
 		bactors = bactors.replace('\'','')
 		bactors = bactors.replace('&amp;','&')
 		bactors = bactors.replace(',', ' ')
@@ -1011,21 +990,20 @@ def getmovies():
 			bactors = bactors.decode("ascii", "ignore")
 		except Exception:
 			pass
-		#print (name + "  " + summary + "  " + rating + "  " + tagline + "  " + bgenre + "  " + directors + "  " + bactors)
 		
 		try:
 			cur.execute('SELECT * FROM Movies WHERE Movie LIKE \'' + name + '\'')
 			if not cur.fetchone():
 				cur.execute('INSERT INTO Movies VALUES(?, ?, ?, ?, ?, ?, ?)', (name, summary, rating, tagline, bgenre, directors, bactors))
 				sql.commit()
-				print ("New movie found and added to the DB.")
 		except Exception:
-			print ("Error adding " + name)
+			print ("\nError adding " + name)
 			with open(PROBLEMS, 'a') as file:
 				file.write(name.decode("ascii", "ignore") + " " + bactors + "\n")
 			file.close()
+		progress(xnum)
 		counter = counter + 1
-
+	clearprogress()
 	fixmvfiles()
 
 def getcommercials():
@@ -1034,7 +1012,7 @@ def getcommercials():
 	command = "SELECT setting FROM settings WHERE item LIKE \"COMPART\""
 	cur.execute(command)
 	if not cur.fetchone():
-		getsections()
+		getsection()
 		print ("You need to supply the link to find your commercials.\nExample: http://192.168.1.134:32400/library/metadata/\n")
 		COMPART = str(input('Link:'))
 		cur.execute("INSERT INTO settings VALUES(?,?)", ("COMPART",COMPART.strip()))
@@ -1070,7 +1048,7 @@ def getcommercials():
 		if not cur.fetchone():
 			cur.execute("INSERT INTO commercials VALUES (?,?)", (comc, duration))
 			sql.commit()
-			print ("New Commercial Found: " + comc)
+			#print ("New Commercial Found: " + comc)
 		counter = counter + 1
 	
 	print ("Done")
@@ -1107,7 +1085,6 @@ def getprerolls():
                 comc = comc[1]
                 comc = comc.split("\"")
                 comc = comc[0].strip()
-		print (comc)
 
                 duration = duration.split("duration=\"")
                 duration = duration[1]
@@ -1118,7 +1095,7 @@ def getprerolls():
                 if not cur.fetchone():
                         cur.execute("INSERT INTO prerolls VALUES (?,?)", (comc, duration))
                         sql.commit()
-                        print ("New preroll Found: " + comc)
+                        #print ("New preroll Found: " + comc)
                 counter = counter + 1
 
         print ("Done")
@@ -1176,7 +1153,7 @@ def getcustomsection(name):
                 if not cur.fetchone():
                         cur.execute("INSERT INTO " + sname + " VALUES (?,?,?)", (comc, duration, type))
                         sql.commit()
-                        print ("New " + sname + " Found: " + comc)
+                        #print ("New " + sname + " Found: " + comc)
                 counter = counter + 1
 
         print ("Done")
@@ -1191,7 +1168,7 @@ def startupactiontv():
 def startupactionmovie():
 	cur.execute("DELETE FROM Movies")
 	sql.commit()
-        print ("TV Tables purged and ready for data.")
+        print ("Movie Tables purged and ready for data.")
 
 def getfavorites():
 	global favtv
@@ -1271,7 +1248,6 @@ def getgenresmovie():
 			pass
 		else:
 			genre = genre.strip()
-			#print (genre)
 			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\""
 			cur.execute(command)
 			movies = cur.fetchall()
@@ -1282,13 +1258,12 @@ def getgenresmovie():
 				except NameError:
 					writeme = genre + ":" + movie
 				moviegenres.append(writeme)
-				#print (writeme)
 				del writeme
-	#print moviegenres
 	print ("Movie Genres Saved.")
 	
 def restoregenrestv():
 	global tvgenres
+	xnum = int(len(tvgenres))-1
 	for genre in tvgenres:
 		genre = genre.split(":")
 		shows = genre[1]
@@ -1297,11 +1272,13 @@ def restoregenrestv():
 		for show in shows:
 			show = show.strip()
 			say = addgenreshow(show,genre)
-			#print (say)
+		progress(xnum)
+	clearprogress()
 	print ("TV Genres Restored.")
 
 def restoregenremovies():
 	global moviegenres
+	xnum = int(len(moviegenres))-1
 	for gre in moviegenres:
 		if gre == " ":
 			pass
@@ -1313,8 +1290,9 @@ def restoregenremovies():
 			for show in shows:
 				show = show.strip()
 				say = addgenremovie(show, genre)
-				#print (say)
-        print ("Movie Genres Restored.")
+		progress(xnum)
+	clearprogress()
+        print ("\nMovie Genres Restored.")
 
 def addgenreshow(show, genre):
         command = 'SELECT * FROM TVshowlist WHERE TShow LIKE \'' + show + '\''
@@ -1377,8 +1355,9 @@ try:
 	if ("updatetv" in option):
 		getgenrestv()
 		startupactiontv()
-		gettvshows()
 		getshows()
+		gettvshows()
+		#getshows()
 		restoregenrestv()
 	elif ("updatemovies" in option):
 		getgenresmovie()
