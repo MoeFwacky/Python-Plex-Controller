@@ -452,6 +452,7 @@ for item in resces:
         if "Plex Media Server" in item.product:
                 servers.append(item.name)
                 if item.name == server:
+			PLEXSVR = item.name
 			PLEXSERVERIP = str(item.connections[0].address)
 			PLEXSERVERPORT = str(item.connections[0].port)
 			#PLEXSERVERTOKEN = str(item.connections[0].accessToken)
@@ -461,7 +462,10 @@ sql.commit()
 cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
 sql.commit()
 '''
-
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
+if not cur.fetchone():
+        cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSVR',PLEXSVR))
+        sql.commit()
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
 if not cur.fetchone():
         cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSERVERIP',PLEXSERVERIP))
