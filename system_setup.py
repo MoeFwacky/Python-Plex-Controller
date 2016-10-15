@@ -193,26 +193,6 @@ if not os.path.exists(homedir):
 	print (homedir + " has been successfully created.\n")
 else:
 	print (homedir + " already exists. Moving on.")
-if "Linux" in ostype:
-	studio = homedir + "Studio/"
-else:
-	studio = homedir +"Studio\\"
-if not os.path.exists(studio):
-	os.makedirs(studio)
-
-if "Linux" in ostype:
-	genre = homedir + "Genre/"
-else:
-	genre = homedir + "Genre\\"
-if not os.path.exists(genre):
-	os.makedirs(genre)
-
-if "Linux" in ostype:
-	genre = genre + "TV/"
-else:
-	genre = genre + "TV\\"
-if not os.path.exists(genre):
-	os.makedirs(genre)
 	
 file1 = homedir + "playstate.txt"
 try:
@@ -447,7 +427,6 @@ for item in resces:
 #for item in servers:
 	#print item
 server = worklist(servers)
-print server
 for item in resces:
         if "Plex Media Server" in item.product:
                 servers.append(item.name)
@@ -456,12 +435,6 @@ for item in resces:
 			PLEXSERVERIP = str(item.connections[0].address)
 			PLEXSERVERPORT = str(item.connections[0].port)
 			#PLEXSERVERTOKEN = str(item.connections[0].accessToken)
-'''
-cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
-sql.commit()
-cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
-sql.commit()
-'''
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 if not cur.fetchone():
         cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSVR',PLEXSVR))
@@ -476,9 +449,26 @@ if not cur.fetchone():
         sql.commit()
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 if not cur.fetchone():
-        PLEXCLIENT = str(input('Plex Client Name: '))
-        cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXCLIENT',PLEXCLIENT))
-        sql.commit()
+	daclients = []
+        for client in plex.clients():
+                daclients.append(client.title)
+        print ("Select a Client. The Following Clients are available:")
+        counter = 1
+        for client in daclients:
+                print (str(counter) + "- " + client.strip() + "\n")
+                counter = counter + 1
+        choice = int(input('New Client: '))
+        try:
+                client = daclients[choice-1].strip()
+                cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXCLIENT\'')
+                sql.commit()
+                cur.execute('INSERT INTO settings VALUES(?,?)',('PLEXCLIENT',client))
+                sql.commit()
+                cur.execute("SELECT * FROM settings WHERE item LIKE \'PLEXCLIENT\'")
+                test = cur.fetchone()
+                print ("Client successfully set to: " + client.strip())
+        except Exception:
+                print ("Error. Unable to update client. Please try again.")
 
 #get wildcard show name. Used as part of random media picking mechanism.
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'WILDCARD\'')
