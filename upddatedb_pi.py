@@ -1,4 +1,3 @@
-homedir = '/home/pi/hasystem/'
 import urllib3
 import subprocess
 import requests
@@ -63,7 +62,7 @@ def getsections():
                         section = section.split("\"")
                         section = section[0]
 
-                        link = "http://" + wlink + ":" + wip + "/library/" + section + "/all/"
+                        link = "http://" + wlink + ":" + wip + "/library/sections/" + section + "/all/"
                         print ("Name: " + name + "\nSection: " + section + "\nLink: " + link)
                 except IndexError:
                         pass
@@ -74,8 +73,10 @@ sql.commit()
 command = 'SELECT setting FROM settings WHERE item LIKE \'TVPART\''
 cur.execute(command)
 if not cur.fetchone():
-	print ("Looks like you have never run the update DB script. I need some information to proceed.\n Enter the link to your metadata.\n Example: http://192.168.1.134:32400/library/metadata/\n")
-	TVPART = str(input('Link:'))
+	print ("Looks like you have never run the update DB script. Getting necessary links now.")
+	#Example: http://192.168.1.134:32400/library/metadata/\n")
+	#TVPART = str(input('Link:'))
+	TVPART = "http://" + wlink + ":" + wip + "/library/metadata/"
 	cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVPART",TVPART.strip()))
 	sql.commit()
 	print (TVPART + " has been added to the settings table. Moving on.")
