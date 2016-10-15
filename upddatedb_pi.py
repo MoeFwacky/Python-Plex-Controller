@@ -1,3 +1,4 @@
+homedir = '/home/pi/hasystem/'
 import urllib3
 import subprocess
 import requests
@@ -39,9 +40,9 @@ file.close()
 ostype = platform.system()
 
 def getsections():
-        cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERIP\"")
+        cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERIP\"")
         wlink = cur.fetchone()[0]
-        cur.execute("SELECT setting FROM settings WHERE item LIKE \"SERVERPORT\"")
+        cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERPORT\"")
         wip = cur.fetchone()[0]
         slink = "http://" + wlink + ":" + wip + "/library/sections/"
         response = http.urlopen('GET', slink, preload_content=False).read()
