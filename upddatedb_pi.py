@@ -430,7 +430,7 @@ def getshow(show):
 				file.write("\n")
 			file.close()
 	except IndexError:
-		print (\n"No Studio Available. Skipping " + TShow)
+		print ("\nNo Studio Available. Skipping " + TShow)
 
 	show = show.split('" key')
 	show = show[0]
