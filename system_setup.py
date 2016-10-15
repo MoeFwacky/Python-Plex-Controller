@@ -412,14 +412,6 @@ if "reset" in extraopt:
 	cur.execute('DELETE FROM settings')
 	sql.commit()
 
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERTOKEN\'')
-if not cur.fetchone():
-        print ("Enter Local Access Token. Example: WKDLCLltoslekCLASSSssELKSNC\n")
-        PLEXSERVERTOKEN = str(input('Plex Server TOKEN: '))
-        cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSERVERTOKEN',PLEXSERVERTOKEN))
-        sql.commit()
-
-
 #checks for plex user name and PW. Used for Plex API.
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
 if not cur.fetchone():
