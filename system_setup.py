@@ -419,13 +419,6 @@ servers = []
 for item in resces:
 	if "Plex Media Server" in item.product:
 		servers.append(item.name)
-		if item.name == "Helm_PC":
-			print item.connections[0].address
-			plex = user.resource(item.name).connect()
-			client = plex.client("RasPlex")
-			#client.pause('video')
-#for item in servers:
-	#print item
 server = worklist(servers)
 for item in resces:
         if "Plex Media Server" in item.product:
@@ -434,7 +427,6 @@ for item in resces:
 			PLEXSVR = item.name
 			PLEXSERVERIP = str(item.connections[0].address)
 			PLEXSERVERPORT = str(item.connections[0].port)
-			#PLEXSERVERTOKEN = str(item.connections[0].accessToken)
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 if not cur.fetchone():
         cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSVR',PLEXSVR))
