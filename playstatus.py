@@ -1,19 +1,15 @@
 import os
+import subprocess
 import time
-place = homedir + "playstatus.txt"
 place2 = homedir + "playstatestatus.txt"
 with open(place, "w") as file:
 	file.write("")
 file.close()
 
-command = "ps aux | grep piplaystate.py | grep -v grep >> " + homedir + "playstatus.txt"
-os.system(command)
+command = "ps aux | grep piplaystate.py | grep -v grep"
+stuff = subprocess.check_output(command, shell=True)
 
 time.sleep(1)
-
-with open(place, "r") as file:
-	stuff = file.read()
-file.close()
 with open(place2, "r") as file:
 	status = file.read()
 file.close()
@@ -25,9 +21,13 @@ if "hasystem/piplaystate.py" in stuff:
 	print ("The Playback script is running")
 else:
 	print ("The Playback checking script is not running. Trying to restart.")
-	command = "python /home/pi/hasystem/piplaystate.py >/dev/null 2>&1 &"
+	command = "python /home/pi/hasystem/piplaystate.py >/dev/null 2>&1"
 	os.system(command)
 	time.sleep(1)
-	print ("I have tried to automatically start the script. Rerun playcheckstatus to confirm it is running.")
+	stuff = subprocess.check_output(command, shell=True)
+	if "hasystem/piplaystate.py" in stuff:
+		print ("The Playback script is running")
+	else:
+		print ("Error: Failed to automatically start piplaystate.py.")
 
 
