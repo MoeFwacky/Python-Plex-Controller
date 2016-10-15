@@ -254,287 +254,6 @@ def getshows():
 	print ("\n\nTV Show List Generated.")
 
 
-def fixTVfiles():
-
-	if "Windows" in ostype:
-		PLdir = homedir + "Genre\\TV\\"
-	else:
-		PLdir = homedir + "/Genre/TV/"
-
-	from os import listdir
-	from os.path import isfile, join
-	
-	showlist = [f for f in listdir(PLdir) if isfile(join(PLdir, f))]
-	say = showlist
-	for item in say:
-		WorkingDir = PLdir + item
-		with open(WorkingDir, 'r') as file:
-			startfile = file.read()
-		file.close()
-		startfile = startfile.rstrip()
-		with open(WorkingDir, 'w') as file:
-			file.write(startfile)
-		file.close()
-
-	print ("Part 1 done. Moving on.")
-	if "Windows" in ostype:
-		PLdir = homedir + "\\Studio\\"
-	else:
-		PLdir = homedir + "/Studio/" 
-
-	showlist = [f for f in listdir(PLdir) if isfile(join(PLdir, f))]
-	say = showlist
-	for item in say:
-		WorkingDir = PLdir + item
-		with open(WorkingDir, 'r') as file:
-			startfile = file.read()
-		file.close()
-		startfile = startfile.rstrip()
-		with open(WorkingDir, 'w') as file:
-			file.write(startfile)
-		file.close()
-	print ("\nTV Files Cleaned")
-
-def getshow(show):
-	response = http.urlopen('GET', TVGET, preload_content=False).read()
-	response = str(response)
-	shows = response.split('<Directory ratingKey=')
-	counter = 1
-
-	workingdir = homedir + "tvshowlist.txt"
-
-	while counter <= int(len(shows)-1):
-
-		show = shows[counter]
-
-		genres = show
-		studio = show
-
-
-		title = show
-		title = title.split('title="')
-		title = title[1]
-		title = title.split('"')
-		title = title[0]
-
-		title = title.replace('&apos;','\'')
-		title = title.replace('&amp;','&')
-		title = title.replace('?','')
-		title = title.replace('/',' ')
-
-		try:
-			with open(workingdir, 'a') as file:
-				file.write(title)
-				file.write("\n")
-			file.close()
-		except FileNotFoundError:
-			with open(workingdir, 'w+') as file:
-				file.write(title)
-				file.write("\n")
-			file.close()
-
-
-		name = title
-		TShow = name
-		if (("'" in TShow) and ("''" not in TShow)):
-			TShow = TShow.replace("'","''")
-		title = title + '.txt.'
-		title = homedir + title
-
-	genres = genres.split("<Genre tag=\"")
-	try:
-			genre = genres[1]
-	except IndexError:
-			genre = "none"
-	try:
-			genre2 = genres[2]
-			genre2 = genre2.split('" />')
-			genre2 = genre2[0]
-	except IndexError:
-			genre2 = "none"
-	try:
-			genre3 = genres[3]
-			genre3 = genre3.split('" />')
-			genre3 = genre3[0]
-	except IndexError:
-			genre3 = "none"
-	genre = genre.split('" />')
-
-	genre = genre[0]
-
-
-	if (genre != "none"):
-		if "Windows" in ostype:
-			path = homedir + "\\Genre\\TV\\" + str(genre) + ".txt"
-		else:
-			path = homedir + "Genre/TV/" + str(genre) + ".txt"
-		try:
-			with open(path, 'a') as file:
-				file.write(TShow)
-				file.write("\n")
-			file.close()
-		except FileNotFoundError:
-			with open(path, 'w') as file:
-				file.write(TShow)
-				file.write("\n")
-			file.close()
-		if "none" != genre2:
-			if "Windows" in ostype:
-				path = homedir + "\\Genre\\TV\\" + str(genre2) + ".txt"
-			else:
-				path = homedir + "Genre/TV/" + str(genre2) + ".txt"
-			
-			try:
-				with open(path, 'a') as file:
-					file.write(TShow)
-					file.write("\n")
-				file.close()
-			except FileNotFoundError:
-				print (genre2 + " created!")
-	with open(path, 'w+') as file:
-		file.write(TShow)
-		file.write("\n")
-	file.close()
-	if "none" != genre3:
-		if "Windows" in ostype:
-			path = homedir + "\\Genre\\TV\\" + str(genre3) + ".txt"
-		else:
-			path = homedir + "Genre/TV/" + str(genre3) + ".txt"
-		try:
-			with open(path, 'a') as file:
-				file.write(TShow)
-				file.write("\n")
-			file.close()
-		except FileNotFoundError:
-			print (genre3 + " created!")
-			with open(path, 'w+') as file:
-				file.write(TShow)
-				file.write("\n")
-			file.close()
-
-	studio = studio.split("studio=\"")
-	try:
-		studio = studio[1]
-		studio = studio.split("\"")
-		studio = studio[0]
-		path = homedir + "/Studio/" + str(studio) + ".txt"
-		try:
-			with open(path, 'a') as file:
-				file.write(TShow)
-				file.write("\n")
-			file.close()
-		except FileNotFoundError:
-			print ("Studio File Created")
-			with open(path, 'w+') as file:
-				file.write(TShow)
-				file.write("\n")
-			file.close()
-	except IndexError:
-		print ("\nNo Studio Available. Skipping " + TShow)
-
-	show = show.split('" key')
-	show = show[0]
-	show = show.replace("\"", "")
-	show = show.rstrip()
-	episode = show
-
-	link = TVPART + show + "/allLeaves"
-
-	xresponse = http.urlopen('GET', link, preload_content=False).read()
-	xresponse = str(xresponse)
-
-	episodes = xresponse.split('type="episode" title="')
-	for episode in episodes:
-		Season = episode
-		Enum = episode
-		Summary = episode
-		Link = episode
-		episode = episode.split('"')
-		episode = episode[0]
-		episode = episode + "\n"
-		episode = episode.replace('&apos;','\'')
-		episode = episode.replace('&amp;','&')
-		episode = episode.replace("&#39;","'")
-		Episode = episode.strip()
-		if ("<?xml version=" in episode.strip()):
-			Tnum = 0
-		else:
-
-			if ("(" in episode):
-				xepisode = name + " " + episode
-				with open(FIXME, 'a') as file:
-					file.write(xepisode)
-				file.close()
-			if episode != "Original":
-				try:
-					Tnum = Tnum + 1
-				except Exception:
-					Tnum = 0
-				Season = Season.split('parentIndex="')
-
-				Season = Season[1]
-				Season = Season.split('"')
-				Season = Season[0]
-
-				Enum = Enum.split('index="')
-				Enum = Enum[1]
-				Enum = Enum.split('"')
-				Enum = Enum[0]
-
-				Summary = Summary.split('summary="')
-				Summary = Summary[1]
-				Summary = Summary.split('" index')
-				Summary = Summary[0]
-				Summary = Summary.replace(",", "")
-				Summary = Summary.replace('\xe2',"")
-				Summary = Summary.replace("&quot","")
-				Summary = Summary.replace("&#39;","'")
-				try:
-					Summary = Summary.decode("ascii", "ignore")
-				except Exception:
-					pass
-				#Summary = remove_accents(Summary)
-
-
-				Link = Link.split('<Part id=')
-				Link = Link[1]
-				Link = Link.split('key="')
-				Link = Link[1]
-				Link = Link.split('" duration')
-				Link = Link[0]
-
-				TShow = str(TShow)
-				TShow = TShow.replace("&#39;","''")
-				Episode = str(Episode)
-				Episode = Episode.replace("&#39;","''")
-				Season = int(Season)
-				Enum = int(Enum)
-				Tnum = int(Tnum)
-				Summary = str(Summary.encode('ascii','ignore').strip())
-				Link = str(Link.strip().encode('ascii','replace'))
-				try:
-					cur.execute('SELECT * FROM shows WHERE TShow LIKE \'' + TShow + '\' AND Tnum LIKE \'' + str(Tnum) + '\'')
-					if not cur.fetchone():
-						cur.execute('INSERT INTO shows VALUES(?, ?, ?, ?, ?, ?, ?)', (TShow, Episode, Season, Enum, Tnum, Summary, Link))
-						sql.commit()
-						print ("New Episode Found: " + TShow + " Episode: " + Episode)
-				except Exception:
-					print ("Error adding " + TShow)
-					with open(PROBLEMS, 'a') as file:
-						file.write(TShow + " " + Episode + "\n")
-					file.close()
-
-
-
-			counter = counter + 1
-
-	fixTVfiles()
-	print ("TV entries checked.")
-
-
-
-	
-
 def gettvshows():	
 	print ("Getting TV Show Episodes Now.")
 	response = http.urlopen('GET', TVGET, preload_content=False).read()
@@ -543,15 +262,9 @@ def gettvshows():
 	xnum = int(len(shows))-1
 	counter = 1
 
-	workingdir = homedir + "tvshowlist.txt"
-
 	while counter <= int(len(shows)-1):
 
 		show = shows[counter]
-		
-		genres = show
-		studio = show
-		
 		
 		title = show
 		title = title.split('title="')
@@ -564,106 +277,11 @@ def gettvshows():
 		title = title.replace('?','')
 		title = title.replace('/',' ')
 		
-		try:
-			with open(workingdir, 'a') as file:
-				file.write(title)
-				file.write("\n")
-			file.close()
-		except FileNotFoundError:
-			with open(workingdir, 'w+') as file:
-				file.write(title)
-				file.write("\n")
-			file.close()
-			
-		
+		TShow = title
 		name = title
-		TShow = name
 		if (("'" in TShow) and ("''" not in TShow)):
 			TShow = TShow.replace("'","''")
-		title = title + '.txt.'
-		title = homedir + title
 		
-		genres = genres.split("<Genre tag=\"")
-		try:
-			genre = genres[1]
-		except IndexError:
-			genre = "none"
-		try:
-			genre2 = genres[2]
-			genre2 = genre2.split('" />')
-			genre2 = genre2[0]
-		except IndexError:
-			genre2 = "none"
-		try:
-			genre3 = genres[3]
-			genre3 = genre3.split('" />')
-			genre3 = genre3[0]
-		except IndexError:
-			genre3 = "none"
-		genre = genre.split('" />')
-		
-		genre = genre[0]
-			
-		if (genre != "none"):
-		
-			path = homedir + "Genre/TV/" + str(genre) + ".txt"
-			try:
-				with open(path, 'a') as file:
-					file.write(TShow)
-					file.write("\n")
-				file.close()
-			except FileNotFoundError:
-				with open(path, 'w') as file:
-					file.write(TShow)
-					file.write("\n")
-				file.close()
-			if "none" != genre2:
-				path = homedir + "Genre/TV/" + str(genre2) + ".txt"
-				try:
-					with open(path, 'a') as file:
-						file.write(TShow)
-						file.write("\n")
-					file.close()
-				except FileNotFoundError:
-					print (genre2 + " created!")
-					with open(path, 'w+') as file:
-						file.write(TShow)
-						file.write("\n")
-					file.close()
-			if "none" != genre3:
-				path = homedir + "Genre/TV/" + str(genre3) + ".txt"
-				try:
-					with open(path, 'a') as file:
-						file.write(TShow)
-						file.write("\n")
-					file.close()
-				except FileNotFoundError:
-					print (genre3 + " created!")
-					with open(path, 'w+') as file:
-						file.write(TShow)
-						file.write("\n")
-					file.close()
-				
-		studio = studio.split("studio=\"")
-		try:
-			studio = studio[1]
-			studio = studio.split("\"")
-			studio = studio[0]
-			path = homedir + "/Studio/" + str(studio) + ".txt"
-			try:
-				with open(path, 'a') as file:
-					file.write(TShow)
-					file.write("\n")
-				file.close()
-			except FileNotFoundError:
-				print ("Studio File Created")
-				with open(path, 'w+') as file:
-					file.write(TShow)
-					file.write("\n")
-				file.close()
-		except IndexError:
-			print ("\nNo Studio Available. Skipping " + TShow)
-			
 		show = show.split('" key')
 		show = show[0]
 		show = show.replace("\"", "")
@@ -696,19 +314,11 @@ def gettvshows():
 						file.write(xepisode)
 					file.close()
 				if episode != "Original":
-				#else:
-				
-					#with open(title, "a") as file:
-						#file.write(episode)
-					#file.close()
-				
 					try:
 						Tnum = Tnum + 1
 					except Exception:
 						Tnum = 0
-					#print (Season)
 					Season = Season.split('parentIndex="')
-					#print (Season)
 					
 					Season = Season[1]
 					Season = Season.split('"')
@@ -730,8 +340,6 @@ def gettvshows():
 						Summary = Summary.decode("ascii", "ignore")
 					except Exception:
 						pass
-					#Summary = remove_accents(Summary)
-					
 					
 					Link = Link.split('<Part id=')
 					Link = Link[1]
@@ -741,7 +349,6 @@ def gettvshows():
 					Link = Link[0]
 					
 					TShow = str(TShow)
-					#TShow = TShow.replace("'","''")
 					TShow = TShow.replace("&#39;","''")
 					Episode = str(Episode)
 					Episode = Episode.replace("'","''")
@@ -765,29 +372,13 @@ def gettvshows():
 						with open(PROBLEMS, 'a') as file:
 							file.write(TShow + " " + Episode + "\n")
 						file.close()
-					
 				
 		progress(xnum)	
 		counter = counter + 1
 
-	fixTVfiles()
 	clearprogress()
 	print ("\n\nTV Episode entries checked.")
 
-
-def fixmvfiles():
-
-	PLdir = homedir + "movielist.txt"
-	
-	with open(PLdir, 'r') as file:
-		startfile = file.read()
-	file.close()
-	startfile = startfile.rstrip()
-	with open(PLdir, 'w') as file:
-		file.write(startfile)
-	file.close()
-	print ("\nMovie File Cleaned. Restoring Genres Now.")
-	
 
 def getmovies():
 	response = http.urlopen('GET', MOVIEGET, preload_content=False).read()
@@ -796,7 +387,6 @@ def getmovies():
 	shows = response.split('<Video ratingKey=')
 	xnum = int(len(shows))-1
 	counter = 1
-	Moviedir = homedir + "movielist.txt"
 
 	while counter <= int(len(shows)-1):
 
@@ -819,20 +409,6 @@ def getmovies():
 		title = title.replace('&apos;','\'')
 		title = title.replace('&amp;','&')
 		title = title.replace("&#39;","'")
-		#title = title.replace('?','')
-		#title = title.replace('/',' ')
-		
-		try:
-			with open(Moviedir, 'a') as file:
-				file.write(title)
-				file.write("\n")
-			file.close()
-		except FileNotFoundError:
-			with open(Moviedir, 'w+') as file:
-				file.write(title)
-				file.write("\n")
-			file.close()
-			
 		
 		name = title
 			
@@ -862,7 +438,6 @@ def getmovies():
 		
 		genre = genre[0]
 		bgenre = genre + " " + genre2 + " " + genre3
-		#print (genre)
 		
 		directors = director.split("<Director tag=\"")
 		
@@ -1004,7 +579,7 @@ def getmovies():
 		progress(xnum)
 		counter = counter + 1
 	clearprogress()
-	fixmvfiles()
+	print ("\nDone.")
 
 def getcommercials():
 	cur.execute("CREATE TABLE IF NOT EXISTS commercials(name TEXT, duration INT)")
@@ -1098,7 +673,7 @@ def getprerolls():
                         #print ("New preroll Found: " + comc)
                 counter = counter + 1
 
-        print ("Done")
+        print ("\nDone")
 
 def getcustomsection(name):
 	sname = "CUSTOM_" + name.lower().strip()
@@ -1156,7 +731,7 @@ def getcustomsection(name):
                         #print ("New " + sname + " Found: " + comc)
                 counter = counter + 1
 
-        print ("Done")
+        print ("\nDone")
 
 def startupactiontv():
 	cur.execute("DELETE FROM TVshowlist")
@@ -1262,6 +837,7 @@ def getgenresmovie():
 	print ("Movie Genres Saved.")
 	
 def restoregenrestv():
+	print ("\nRestoring Custom TV Genres Now.")
 	global tvgenres
 	xnum = int(len(tvgenres))-1
 	for genre in tvgenres:
@@ -1274,9 +850,10 @@ def restoregenrestv():
 			say = addgenreshow(show,genre)
 		progress(xnum)
 	clearprogress()
-	print ("TV Genres Restored.")
+	print ("\nTV Genres Restored.")
 
 def restoregenremovies():
+	print ("\nRestoring Custom Movie Genres.")
 	global moviegenres
 	xnum = int(len(moviegenres))-1
 	for gre in moviegenres:
