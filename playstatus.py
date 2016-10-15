@@ -25,7 +25,7 @@ if "hasystem/piplaystate.py" in stuff:
 	print ("The Playback script is running")
 else:
 	print ("The Playback checking script is not running. Trying to restart.")
-	command = "python /home/pi/hasystem/piplaystate.py >/dev/null 2>&1 ?"
+	command = "python /home/pi/hasystem/piplaystate.py >/dev/null 2>&1 &"
 	os.system(command)
 	time.sleep(1)
 	print ("I have tried to automatically start the script. Rerun playcheckstatus to confirm it is running.")
