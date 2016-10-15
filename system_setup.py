@@ -6,6 +6,54 @@ import sqlite3
 import urllib3
 import platform
 
+def worklist(thearray):
+        if int(len(thearray) == 0):
+                return ("Error: No results found.")
+        movies = thearray
+        mcount = 1
+        mvcount = 0
+        mmin = 0
+        mmax = 9
+        mpmin = 1
+        if mmax >= len(movies):
+                mmax = int(len(movies))-1
+        exitc = ""
+        while "quit" not in exitc:
+                cls()
+                try:
+                        print ("Error: " + Error + "\nThe Following Items Were Found:\n")
+                        del Error
+                except NameError:
+                        print ("The Following Items Were Found:\n")
+                while mmin <= mmax:
+                        print (str(mmin+1) + ": " + movies[mmin])
+                        mmin = mmin + 1
+                print ("\nShowing Items " + str(mpmin) + " out of " + str(mmax+1)+ " Total Found: " + str(len(movies)))
+                print ("\nSelect an item to return the corresponding item.\nTo see a description of an item enter \'desc number\', where number is the corresponding number.\nTo jump to a letter enter \'letter a\', where a is the desired letter.\nEnter \'Yes\' to go to the next page, and \'No\' to exit.\n")
+                getme = input('Choice:')
+                if (("yes" in getme.lower()) and ("letter" not in getme.lower())):
+                        mvcount = mvcount + 10
+                        mpmin = mmax + 1
+                        mmax = mmax + 10
+                        if (mmax > int(len(movies)-1)):
+                                mcheck = int(mmax) - int(len(movies)-1)
+                                if ((mcheck > 0) and (mcheck < 10)):
+                                        mmax = mmax-mcheck
+                                elif mcheck > 10:
+                                        return ("Done.")
+                        if (mmax == int(len(movies)+9)):
+                                return ("Done")
+                elif (("no" in getme.lower()) and ("letter" not in getme.lower())):
+                        exitc = "quit"
+                        return ("done")
+                else:
+			try:
+				return movies[int(getme)-1]
+			except Exception:
+				Error = "Invalid Selection. Please Try Again."
+				mmin = mmin - 10
+
+
 
 http = urllib3.PoolManager()
 
@@ -363,14 +411,14 @@ sql.commit()
 if "reset" in extraopt:
 	cur.execute('DELETE FROM settings')
 	sql.commit()
-'''
-#check to see if client IP is present. Used for play check script.
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'ClientIP\'')
+
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERTOKEN\'')
 if not cur.fetchone():
-	clientip = str(input('Input Client IP: '))
-	cur.execute('INSERT INTO settings VALUES(?,?)', ('ClientIP', clientip.strip()))
-	sql.commit()
-'''
+        print ("Enter Local Access Token. Example: WKDLCLltoslekCLASSSssELKSNC\n")
+        PLEXSERVERTOKEN = str(input('Plex Server TOKEN: '))
+        cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSERVERTOKEN',PLEXSERVERTOKEN))
+        sql.commit()
+
 
 #checks for plex user name and PW. Used for Plex API.
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
@@ -379,45 +427,61 @@ if not cur.fetchone():
 	writeme = str("PLEXUN")
 	cur.execute('INSERT INTO settings VALUES(?,?)', (writeme,PLEXUN))
 	sql.commit()
+else:
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+	PLEXUN = cur.fetchone()[0]
 
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
 if not cur.fetchone():
 	PLEXPW = str(input('Plex Password: '))
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXPW',PLEXPW))
 	sql.commit()
+else:
+	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+	PLEXPW = cur.fetchone()[0]
 
-#checks for client name and server name. used by Plex API.
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
-if not cur.fetchone():
-	PLEXSVR = str(input('Plex Server Name: '))
-	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSVR',PLEXSVR))
-	sql.commit()
-	
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
-if not cur.fetchone():
-	PLEXCLIENT = str(input('Plex Client Name: '))
-	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXCLIENT',PLEXCLIENT))
-	sql.commit()
+from plexapi.myplex import MyPlexAccount
+user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+resces = user.resources()
+servers = []
+for item in resces:
+	if "Plex Media Server" in item.product:
+		servers.append(item.name)
+		if item.name == "Helm_PC":
+			print item.connections[0].address
+			plex = user.resource(item.name).connect()
+			client = plex.client("RasPlex")
+			#client.pause('video')
+#for item in servers:
+	#print item
+server = worklist(servers)
+print server
+for item in resces:
+        if "Plex Media Server" in item.product:
+                servers.append(item.name)
+                if item.name == server:
+			PLEXSERVERIP = str(item.connections[0].address)
+			PLEXSERVERPORT = str(item.connections[0].port)
+			#PLEXSERVERTOKEN = str(item.connections[0].accessToken)
+'''
+cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
+sql.commit()
+cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
+sql.commit()
+'''
 
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
 if not cur.fetchone():
-	print ("Enter Server IP. Example- 192.168.1.134\n")
-        PLEXSERVERIP = str(input('Plex Server IP: '))
         cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSERVERIP',PLEXSERVERIP))
         sql.commit()
-
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
 if not cur.fetchone():
-	print ("Enter Server Port. Example- 32400\n")
-        PLEXSERVERPORT = str(input('Plex Server PORT: '))
         cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSERVERPORT',PLEXSERVERPORT))
         sql.commit()
-
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERTOKEN\'')
+cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
 if not cur.fetchone():
-	print ("Enter Local Access Token. Example: WKDLCLltoslekCLASSSssELKSNC\n")
-        PLEXSERVERTOKEN = str(input('Plex Server TOKEN: '))
-        cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSERVERTOKEN',PLEXSERVERTOKEN))
+        PLEXCLIENT = str(input('Plex Client Name: '))
+        cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXCLIENT',PLEXCLIENT))
         sql.commit()
 
 #get wildcard show name. Used as part of random media picking mechanism.
@@ -427,12 +491,6 @@ if not cur.fetchone():
 	cur.execute('INSERT INTO settings VALUES(?,?)', ('WILDCARD',WILDCARD))
 	sql.commit()
 	
-#get homedirectory. Used as part of random media picking mechanism.
-cur.execute('SELECT setting FROM settings WHERE item LIKE \'HOMEDIR\'')
-if not cur.fetchone():
-	cur.execute('INSERT INTO settings VALUES(?,?)', ('HOMEDIR',homedir))
-	sql.commit()
-
 
 cur.execute('CREATE TABLE IF NOT EXISTS States(Option TEXT, State TEXT)')
 sql.commit()
