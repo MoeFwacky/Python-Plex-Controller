@@ -4,3 +4,73 @@ startnextprogram,Starts the next program.,startnextprogram
 queueshow,Lists the contents of the queue.,queueshow
 suggestmovie,Suggests a movie. Can add \"genre.genrehere\" or \"actor.actorhere\" or \"rating.ratinghere\" to limit your suggestion.,suggestmovie genre.action.
 moviedetails,Gets the details for the specified movie.,moviedetails "The quick and the dead"
+showdetails,Gets the details for the specified show.,showdetails Psych.
+idtonightsmovie,When in block package mode this command identifies the next random movie.,idtonightsmovie
+findmovie,Finds movies based on name/rating/genre/actors.,findmovie genre.action
+findshow,Finds shows based on name/rating/genre/duration.,findshow rating.TV-MA
+tvgenres,Lists available TV genres,tvgenres
+suggesttv,Suggests a show. Can optionally restrict by \"genre.\" or \"duration.\" or \"rating.\".,suggesttv genre.action
+suggestblock,Suggests a block from the available blocks.,suggestblock
+addsuggestion,Adds suggestion to the play queue.,addsuggestion
+skipthat,Skips the item up next.,skipthat
+skipafterthat,Skips the second item in the queue. Note: only supports normal mode.,skipafterthat
+whatispending,Lists what is in the pending(previously suggested) queue.,whatispending
+playme,Play a specific item,playme psych
+nowplaying,Lists what is currently playing on your specified video client.,nowplaying
+nextep,Gets the next episode from the specified show.,nextep Deadwood
+queuead,Adds specified item to the queue.,queueadd 'the matrix'
+queueremove,Removes the specified item from the play queue.,queueremove "the matrix"
+idplaymode,Identifies the current playmode.,idplaymode
+getplaymode, Identifies the current playmode.,getplaymode
+setplaymode, Sets playmode to the specified value.,setplaymode monday_block
+availableblocks,Lists the available blocks.,availableblocks
+explainblock,Explains the specified block. Note: When a block is active you can use this command without specifying a block.,explainblock monday_block
+epdetails,Gets the details for the specified show episode. Note: You must specify a show name a season number and an episode number.,epdetails "deadwood" 1 1
+setnextep,Sets the next episode to play from the specified show to the specified season and episode number.,setnextep Deadwood 1 3
+stopplayback,Stops playback on your video client.,stopplayback
+pauseplayback,Pauses/Resumes Playback on your video client.,pauseplayback
+addblock,Adds a block. Note: If no block name and item are specified you will be prompted to created a block.,addblock monday_block Deadwood
+addtoblock,Adds the specified item to the specified block.,addtoblock monday_block Psych
+removefromblock,Removes the specified item from the specified block.,removefromblock monday_block psych
+restartblock,Restarts the specified block from the beginning. Note: can be used without specifying a block when you are a block is active.,restartblock monday_block
+removeblock,Removes the specified block.,removeblock monday_block
+setupnext,Sets the next item in the queue to the specified item.,setupnext Deadwood
+playcheckstatus,Checks that status of the play checking script.,playcheckstatus
+playcheckstart,Enables Playback State Checking.,playcheckstart
+playcheckstop,Disables Playback State Checking.,playcheckstop
+playchecksleep,Enables Playback Sleep function.,playchecksleep
+whereat,Lists where you are at in the current program.,whereat
+playwhereleftoff,Resumes the specified item from where you left off rather than starting it from the beginning.,playwhereleftoff "The quick and the dead"
+resumeplay,Resumes the specified item from where you left off rather than starting it from the beginning.,resumeplay "The quick and the dead"
+findnewmovie,Finds a new random movie Note: used for random movies in blocks.,findnewmovie
+addfavoritemovie,Adds the favorite genre to the specified movie.,addfavoritemovie Tremors
+addfavoriteshow,Adds the favorite genre to the specified show.,addfavoriteshow Deadwood
+addgenreshow,Adds the specified genre to the specified shows genre list.,addgenreshow deadwood wildwest
+addgenremovie,Adds the specified genre to the specified movies genre list.,addgenremovie Deadwood superhero
+removegenreshow,Removes the specified genre from the specified shows genre list.,removegenreshow Psych crime
+removegenremovie,Removes the specified genre from the specified movies genre list.,removegenremovie Deadpool romance
+listclients,Lists the available clients,listclients
+changeclient,Changes the video client to the chosen client.Note: Client list is querryed from server and returned for choise.,changeclient
+listwildcard,Lists the current wild card show,listwildcard
+changewildcard,Changes the current wild card show to the specified show.,changewildcard "my name is earl"
+settonightsmovie,Sets tonights movie to the specified movie. Note: used for random movie items in blocks., settongitsmovie "tremors"
+skipback,Skips back in the current feature 30 seconds.,skipback
+skipahead,Skips ahead in the current feature 30 seconds.,skipahead
+muteaudio.,Mutes audio on your video client.,muteaudio
+unmuteaudio.,unmutes audio on your video client.,unmuteaudio
+mutemusic.,Mutes audio on your music client.,mutemusic
+unmutemusic.,unmutes audio on your music client.,unmutemusic
+randommovieblock,Generates a random movie block of the specified genre.,randommovieblock action
+randomtvblock,Generates a random show block of the specified genre.,randomtvblock comedy
+listmoviegenres,Lists the movie genres found in your library.,listmoviegenres
+listepisodes,Lists the episodes for a specific show.,listepisodes Deadwood
+seriesskipback,Skips back to the previous episode in the given series.,seriesskipback Deadwood
+seriesskipahead,Skips ahead to the next episode in the given series.,seriesskipahead Deadwood
+reorderblock,Chanage the order of the specified block.,reorderblock monday_block
+enablefavoritesmode,Enables Favorites mode for shows or movies. Note: You must specify either \"shows\" or \"movies\" to use this command.,enablefavoritesmode shows
+disablefavoritesmode, disables favorites mode for shows or movies. Note: You must specify either \"shows\" or \"movies\" to use this command.,disablefavoritesmode shows
+backuptvdb,Backs up the TV tables,backuptvdb
+backupmoviedb,Backs up the movie tables,backupmoviedb
+restoretvdb,Restors the TV tables from backup,restoretvdb
+restoremoviedb,restores the movies tables from backup, restoremoviedb
+moviechoice,Gives a choice of 3 items from the specified genre/rating/actor,moviechoice genre.favorite
