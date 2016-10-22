@@ -1,0 +1,6 @@
+whatupnext,Lists the item that will play next.,whatupnext
+whatsafterthat,Lists the second item in the queue.Note: Only works in normal mode.,whatsafterthat
+startnextprogram,Starts the next program.,startnextprogram
+queueshow,Lists the contents of the queue.,queueshow
+suggestmovie,Suggests a movie. Can add \"genre.genrehere\" or \"actor.actorhere\" or \"rating.ratinghere\" to limit your suggestion.,suggestmovie genre.action.
+moviedetails,Gets the details for the specified movie.,moviedetails "The quick and the dead"
