@@ -6,6 +6,8 @@ import sqlite3
 import urllib3
 import platform
 
+#urllib3.disable_warning()
+
 def worklist(thearray):
         if int(len(thearray) == 0):
                 return ("Error: No results found.")
@@ -414,6 +416,7 @@ else:
 
 from plexapi.myplex import MyPlexAccount
 user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+
 resces = user.resources()
 servers = []
 for item in resces:
@@ -427,6 +430,10 @@ for item in resces:
 			PLEXSVR = item.name
 			PLEXSERVERIP = str(item.connections[0].address)
 			PLEXSERVERPORT = str(item.connections[0].port)
+
+baseurl = "http://" + PLEXSERVERIP + ":" + PLEXSERVERPORT
+from plexapi.server import PlexServer
+plex = PlexServer(baseurl)
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 if not cur.fetchone():
         cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSVR',PLEXSVR))
@@ -504,9 +511,9 @@ if ("pass" in updatecheck):
 	choice = str(input('Yes or No? '))
 	if "y" in choice.lower():
 		if "Windows" not in ostype:
-			command = "python " + homedir + "upddatedb_pi.py all"
+			command = "python " + homedir + "upddatedb_pi_b.py all"
 		else:
-			command = homedir + "upddatedb_pi.py all"
+			command = homedir + "upddatedb_pi_b.py all"
 		os.system(command)
 	print ("If you needed that entry for cron it was: @reboot python /home/pi/hasystem/piplaystate.py &")
 else:
