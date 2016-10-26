@@ -6,6 +6,8 @@ import sqlite3
 import urllib3
 import platform
 
+#urllib3.disable_warning()
+
 def worklist(thearray):
         if int(len(thearray) == 0):
                 return ("Error: No results found.")
@@ -240,7 +242,7 @@ except IOError:
 		file.write("Off")
 	file.close()
 	print ("playstatestatus text file successfully added.")
-file5 = homedir + "system.py"
+file5 = homedir + "system_b.py"
 try:
 	with open (file5, "r") as file:
 		readme = file.read()
@@ -248,7 +250,7 @@ try:
 	print ("check pass. system.py exists.")
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system.py"
+		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system_b.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		#print (newfile)
@@ -313,7 +315,7 @@ except IOError:
 		print ("File successfully moved to the necessary directory.")
 	except Exception:
 		print ("warning playstatus.py does not exist. The play check status script will not work.")
-file8 = homedir + "upddatedb_pi.py"
+file8 = homedir + "upddatedb_pi_b.py"
 try:
 	with open (file8, "r") as file:
 		readme = file.read()
@@ -322,7 +324,7 @@ try:
 	updatecheck = "pass"
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/upddatedb_pi.py"
+		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/upddatedb_pi_b.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		#print (newfile)
@@ -345,7 +347,7 @@ except IOError:
 		print ("warning updateddb_pi.py does not exist. The system will be unable to build the shows and movie tables in your database.")
 		updatecheck = "fail"
 		
-file8a = homedir + "getshow.py"
+file8a = homedir + "getshow_b.py"
 try:
 	with open (file8a, "r") as file:
 		readme = file.read()
@@ -354,7 +356,7 @@ try:
 	updatecheck = "pass"
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/getshow.py"
+		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/getshow_b.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		#print (newfile)
@@ -414,6 +416,7 @@ else:
 
 from plexapi.myplex import MyPlexAccount
 user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+
 resces = user.resources()
 servers = []
 for item in resces:
@@ -427,6 +430,10 @@ for item in resces:
 			PLEXSVR = item.name
 			PLEXSERVERIP = str(item.connections[0].address)
 			PLEXSERVERPORT = str(item.connections[0].port)
+
+baseurl = "http://" + PLEXSERVERIP + ":" + PLEXSERVERPORT
+from plexapi.server import PlexServer
+plex = PlexServer(baseurl)
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 if not cur.fetchone():
         cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXSVR',PLEXSVR))
@@ -488,9 +495,6 @@ sql.commit()
 cur.execute('INSERT INTO States VALUES(?,?)', ('Nowplaying','Stopped'))
 sql.commit()
 
-cur.execute('CREATE TABLE IF NOT EXISTS shows(TShow TEXT, Episode TEXT, Season INT, Enum INT, Tnum INT, Summary TEXT, Link TEXT)')
-sql.commit()
-
 cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
 sql.commit()
 
@@ -507,9 +511,9 @@ if ("pass" in updatecheck):
 	choice = str(input('Yes or No? '))
 	if "y" in choice.lower():
 		if "Windows" not in ostype:
-			command = "python " + homedir + "upddatedb_pi.py all"
+			command = "python " + homedir + "upddatedb_pi_b.py all"
 		else:
-			command = homedir + "upddatedb_pi.py all"
+			command = homedir + "upddatedb_pi_b.py all"
 		os.system(command)
 	print ("If you needed that entry for cron it was: @reboot python /home/pi/hasystem/piplaystate.py &")
 else:

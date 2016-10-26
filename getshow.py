@@ -1,4 +1,3 @@
-#homedir = 'full path to location of myplex.db goes here.'
 import urllib3
 import subprocess
 import requests
@@ -117,6 +116,8 @@ def getshow(findme):
 		#print (title)
 		if findme.lower().strip() == title.lower().strip():
 			print ("FOUND!!")
+			cur.execute("DELETE FROM shows WHERE Tshow LIKE \"" + findme + "\"")
+			sql.commit()
 			summary = show
 			rating = show
 			duration = show
@@ -231,6 +232,7 @@ def gettvshows(findme):
 		
 		title = title.replace('&apos;','\'')
 		title = title.replace('&amp;','&')
+		title = title.replace('&#39;','\'')
 		title = title.replace('?','')
 		title = title.replace('/',' ')
 		
@@ -267,6 +269,8 @@ def gettvshows(findme):
 				episode = episode + "\n"
 				episode = episode.replace('&apos;','\'')
 				episode = episode.replace('&amp;','&')
+				episode = episode.replace('&amp;','&')
+				episode = episode.replace('&#39;','\'')
 				Episode = episode.strip()
 				if ("<?xml version=" in episode.strip()):
 					#print ("Pass")
@@ -362,11 +366,9 @@ def gettvshows(findme):
 
 
 try:
-	print (str(sys.argv))
-	print (str(sys.argv[1]))
 	findme = str(sys.argv[1])
 	getshow(findme)
-	gettvshows(findme)
+	#gettvshows(findme)
 
 except IndexError:
 	print ("Error: You must specify a show to use this command.")		
