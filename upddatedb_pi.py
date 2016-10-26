@@ -115,9 +115,16 @@ else:
 	MOVIEGET = test
 
 print ("Database update starting...\n")	
-
-cur.execute('CREATE TABLE IF NOT EXISTS shows(TShow TEXT, Episode TEXT, Season INT, Enum INT, Tnum INT, Summary TEXT, Link TEXT)')
-sql.commit()
+try:
+	print ("Obsolete shows table found. Creating a backup and trying to drop.")
+	command = cp "\"" + homedir + "myplex.db\" \"" + homedir + "sback_myplex.db\""
+	os.system(command)
+	cur.execute('DROP TABLE shows')
+	sql.commit()
+	print ("Obsolete shows table found and removed.\n")
+except Exception:
+	print ("Failed to drop obsolete shows table.")
+	pass
 cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
 sql.commit()
 cur.execute('CREATE TABLE IF NOT EXISTS TVshowlist(TShow TEXT, Summary TEXT, Genre TEXT, Rating TEXT, Duration INT, Totalnum INT)')
@@ -258,154 +265,34 @@ def getshows():
 	print ("\n\nTV Show List Generated.")
 
 
-def gettvshows():	
-	print ("Getting TV Show Episodes Now.")
-	response = http.urlopen('GET', TVGET, preload_content=False).read()
-	response = str(response)
-	shows = response.split('<Directory ratingKey=')
-	xnum = int(len(shows))-1
-	counter = 1
-
-	while counter <= int(len(shows)-1):
-
-		show = shows[counter]
-		
-		title = show
-		title = title.split('title="')
-		title = title[1]
-		title = title.split('"')
-		title = title[0]
-		
-		title = title.replace('&apos;','\'')
-		title = title.replace('&amp;','&')
-		title = title.replace('?','')
-		title = title.replace('/',' ')
-		
-		TShow = title
-		name = title
-		if (("'" in TShow) and ("''" not in TShow)):
-			TShow = TShow.replace("'","''")
-		
-		show = show.split('" key')
-		show = show[0]
-		show = show.replace("\"", "")
-		show = show.rstrip()
-		episode = show
-		
-		link = TVPART + show + "/allLeaves"
-		xresponse = http.urlopen('GET', link, preload_content=False).read()
-		xresponse = str(xresponse)
-		
-		episodes = xresponse.split('type="episode" title="')
-		for episode in episodes:
-			Season = episode
-			Enum = episode
-			Summary = episode
-			Link = episode
-			episode = episode.split('"')
-			episode = episode[0]
-			episode = episode + "\n"
-			episode = episode.replace('&apos;','\'')
-			episode = episode.replace('&amp;','&')
-			Episode = episode.strip()
-			if ("<?xml version=" in episode.strip()):
-				Tnum = 0
-			else:
-			
-				if ("(" in episode):
-					xepisode = name + " " + episode
-					with open(FIXME, 'a') as file:
-						file.write(xepisode)
-					file.close()
-				if episode != "Original":
-					try:
-						Tnum = Tnum + 1
-					except Exception:
-						Tnum = 0
-					Season = Season.split('parentIndex="')
-					
-					Season = Season[1]
-					Season = Season.split('"')
-					Season = Season[0]
-					
-					Enum = Enum.split('index="')
-					Enum = Enum[1]
-					Enum = Enum.split('"')
-					Enum = Enum[0]
-					
-					Summary = Summary.split('summary="')
-					Summary = Summary[1]
-					Summary = Summary.split('" index')
-					Summary = Summary[0]
-					Summary = Summary.replace(",", "")
-					Summary = Summary.replace('\xe2',"")
-					Summary = Summary.replace("&quot","")
-					try:
-						Summary = Summary.decode("ascii", "ignore")
-					except Exception:
-						pass
-					
-					Link = Link.split('<Part id=')
-					Link = Link[1]
-					Link = Link.split('key="')
-					Link = Link[1]
-					Link = Link.split('" duration')
-					Link = Link[0]
-					
-					TShow = str(TShow)
-					TShow = TShow.replace("&#39;","''")
-					Episode = str(Episode)
-					Episode = Episode.replace("'","''")
-					Episode = Episode.replace("&#39;","''")
-					Season = int(Season)
-					Enum = int(Enum)
-					Tnum = int(Tnum)
-					Summary = str(Summary.encode('ascii','ignore').strip())
-					Summary = Summary.replace("'","''")
-					Summary = Summary.replace("&#39;","''")
-					Link = str(Link.strip().encode('ascii','replace'))
-
-					cur.execute("SELECT * FROM shows WHERE TShow LIKE \"" + TShow + "\" AND Tnum LIKE \"" + str(Tnum) + "\"")
-					try:
-						if not cur.fetchone():
-							cur.execute("INSERT INTO shows VALUES(?, ?, ?, ?, ?, ?, ?)", (TShow, Episode, Season, Enum, Tnum, Summary, Link))
-							sql.commit()
-							#print ("New Episode Found: " + TShow + " Episode: " + Episode)
-					except Exception: 
-						print ("Error adding " + TShow)
-						with open(PROBLEMS, 'a') as file:
-							file.write(TShow + " " + Episode + "\n")
-						file.close()
-				
-		progress(xnum)	
-		counter = counter + 1
-
-	clearprogress()
-	print ("\n\nTV Episode entries checked.")
-
-
 def getmovies():
+	print ("Getting Movies now.")
 	response = http.urlopen('GET', MOVIEGET, preload_content=False).read()
 	response = str(response)
-	#print (response)
 	shows = response.split('<Video ratingKey=')
 	xnum = int(len(shows))-1
 	counter = 1
 
 	while counter <= int(len(shows)-1):
 
-		show = shows[counter]
-		
+		ashow = shows[counter]
+		ashow = ashow.split("key=\"/library/metadata/")
+		ashow = ashow[1]
+		ashow = ashow.split("\"")
+		ashow = ashow[0]
+		ashow = TVPART + ashow.strip()
+		show = http.urlopen('GET', ashow, preload_content=False).read()
+
 		genres = show
 		studio = show
-		director = show
+		directors = show
 		actors = show
 		rating = show
 		summary = show
 		tagline = show
 		
 		title = show
-		title = title.split('title="')
+		title = title.split('" title="')
 		title = title[1]
 		title = title.split('"')
 		title = title[0]
@@ -415,84 +302,66 @@ def getmovies():
 		title = title.replace("&#39;","'")
 		
 		name = title
-			
-		genres = genres.split("<Genre tag=\"")
+
+		try:
+			genres = genres.split("</Media>")
+			genres = genres[1]
+			genres = genres.split("<Director")
+			genres = genres[0]
+			genres = genres.split('tag="')
+			bgenre = ""
+			for genre in genres:
+				genre = genre.split('"')
+				genre = genre[0]
+				genre = genre.replace("&amp;","&")
+				if ("\"" in genre):
+					pass
+				elif (("<Genre id=" in genre) or ("<Media videoResolution=" in genre)):
+					pass
+				else:
+					bgenre = bgenre + " " + genre
+		except IndexError:
+			bgenre = "None"
+		try:
+			directors = directors.split("</Media>")
+			directors = directors[1]
+			directors = directors.split("<Writer")
+			directors = directors[0]
+			directors = directors.split("<Director")
+			#print directors
+			dict = ""
+			cnt = 0
+			for director in directors:
+				if cnt == 0:
+					pass
+				else:
+					director = director.split("tag=\"")
+					director = director[1]
+					director = director.split("\"")
+					director = director[0]
+					dict = dict + director + " "
+				cnt = cnt + 1
+			directors = dict.strip()
+		except Exception:
+			directors = ""
 		
-		try:
-			genre = genres[1]
-		except IndexError:
-			genre = "none"
-		try:
-			genre2 = genres[2]
-			genre2 = genre2.split('" />')
-			genre2 = genre2[0]
-			
-			#print (genre2)
-		except IndexError:
-			genre2 = "none"
-		try:
-			genre3 = genres[3]
-			genre3 = genre3.split('" />')
-			genre3 = genre3[0]
-			
-			#print (genre2)
-		except IndexError:
-			genre3 = "none"
-		genre = genre.split('" />')
-		
-		genre = genre[0]
-		bgenre = genre + " " + genre2 + " " + genre3
-		
-		directors = director.split("<Director tag=\"")
-		
-		try:
-			director = directors[1]
-		except IndexError:
-			director = "none"
-		try:
-			director2 = directors[2]
-			director2 = director2.split('" />')
-			director2 = director2[0]
-			
-		except IndexError:
-			director2 = "none"
-		try:
-			director3 = directors[3]
-			director3 = director3.split('" />')
-			director3 = director3[0]
-			
-		except IndexError:
-			director3 = "none"
-		director = director.split('" />')
-		director = director[0]
-		directors = director + " " + director2 + " " + director3
-		directors = directors.replace("none", "")
-		#print (directors)
-		
-		actorss = actors.split("<Role tag=\"")
-		
-		try:
-			actors = actorss[1]
-		except IndexError:
-			actors = "none"
-		try:
-			actors2 = actorss[2]
-			actors2 = actors2.split('" />')
-			actors2 = actors2[0]
-			
-		except IndexError:
-			actors2 = "none"
-		try:
-			actors3 = actorss[3]
-			actors3 = actors3.split('" />')
-			actors3 = actors3[0]
-			
-		except IndexError:
-			actors3 = "none"
-		actors = actors.split('" />')
-		actors = actors[0]
-		bactors = actors + " " + actors2 + " " + actors3
-		bactors = bactors.replace("none", "")
+		try:	
+			bactors = ""
+			actors = actors.split("<Role id=\"")
+			cnt = 0
+			for actor in actors:
+				if cnt == 0:
+					pass
+				else:
+					actor = actor.split("tag=\"")
+					actor = actor[1]
+					actor = actor.split("\"")
+					actor = actor[0]
+					bactors = bactors + " " + actor
+				cnt = cnt + 1
+			bactors = bactors.strip()
+		except Exception:
+			bactors = ""
 		
 		rating = rating.split("contentRating=\"")
 		try:
@@ -521,9 +390,6 @@ def getmovies():
 			#print ("No Summary Available. Skipping " + name)
 			summary = "none"
 
-		#marker
-				
-			
 		summary = summary.replace('&apos;','\'')
 		summary = summary.replace('&amp;','&')
 		summary = summary.replace("&#39;","'")
@@ -537,7 +403,6 @@ def getmovies():
 		name = name.replace('&amp;','&')
 		name = name.replace(',', ' ')
 		name = name.replace("'","''")
-		#tagline = tagline.replace('&apos;','\'')
 		tagline = tagline.replace('&apos;','')
 		tagline = tagline.replace('&amp;','&')
 		tagline = tagline.replace(',', ' ')
@@ -546,7 +411,6 @@ def getmovies():
 			tagline = tagline.decode("ascii", "ignore")
 		except Exception:
 			pass
-		#directors = directors.replace('&apos;','\'')
 		directors = directors.replace('&apos;','')
 		directors = directors.replace('&amp;','&')
 		directors = directors.replace(',', ' ')
@@ -555,12 +419,10 @@ def getmovies():
 			directors = directors.decode("ascii", "ignore")
 		except Exception:
 			pass
-		#bgenre = bgenre.replace('&apos;','\'')
 		bgenre = bgenre.replace('&apos;','')
 		bgenre = bgenre.replace('&amp;','&')
 		bgenre = bgenre.replace(',', ' ')
 		bgenre = bgenre.replace("none", "")
-		#bactors = bactors.replace('&apos;','\'')
 		bactors = bactors.replace('&apos;','')
 		bactors = bactors.replace('\'','')
 		bactors = bactors.replace('&amp;','&')
@@ -739,8 +601,6 @@ def getcustomsection(name):
 
 def startupactiontv():
 	cur.execute("DELETE FROM TVshowlist")
-	sql.commit()
-	cur.execute("DELETE FROM shows")
 	sql.commit()
 	print ("TV Tables purged and ready for data.")
 
@@ -933,28 +793,55 @@ try:
 		print ("Notice: For Windows, the update db script may default to 'all' when there is an argument failure.\n")
 		option = "all"
 	#getsections()
+	#commands
 	if ("updatetv" in option):
+		bcmd = "python " + homedir + "system.py backuptvdb"
+		os.system(bcmd)
 		getgenrestv()
-		startupactiontv()
-		getshows()
-		gettvshows()
-		#getshows()
-		restoregenrestv()
+		try:
+			getgenrestv()
+			startupactiontv()
+			getshows()
+			restoregenrestv()
+		except KeyboardInterrupt:
+			print ("Cancel request received. Restoring tables.")
+			cmd = "python " + homedir + "system.py restoretvdb"
+			os.system(cmd)
+			print("Cancelled.")
 	elif ("updatemovies" in option):
-		getgenresmovie()
-		startupactionmovie()
-		getmovies()
-		restoregenremovies()
+		bcmd = "python " + homedir + "system.py backupmoviedb"
+		os.system(bcmd)
+		try:
+			getgenresmovie()
+			startupactionmovie()
+			getmovies()
+			restoregenremovies()
+		except KeyboardInterrupt:
+			print ("Cancel request received. Restoring tables.")
+                        cmd = "python " + homedir + "system.py restoremoviedb"
+                        os.system(cmd)
+                        print("Cancelled.")
 	elif ("all" in option):
-		getgenrestv()
-		getgenresmovie()
-		startupactiontv()
-		startupactionmovie()
-		gettvshows()
-		getshows()
-		getmovies()
-		restoregenrestv()
-		restoregenremovies()
+		bcmd = "python " + homedir + "system.py backuptvdb"
+                os.system(bcmd)
+		bcmd = "python " + homedir + "system.py backupmoviedb"
+                os.system(bcmd)
+		try:
+			getgenrestv()
+			getgenresmovie()
+			startupactiontv()
+			startupactionmovie()
+			getshows()
+			getmovies()
+			restoregenrestv()
+			restoregenremovies()
+		except KeyboardInterrupt:
+			print ("Cancel request received. Restoring tables.")
+                        cmd = "python " + homedir + "system.py restoremoviedb"
+                        os.system(cmd)
+			cmd = "python " + homedir + "system.py restoretvdb"
+                        os.system(cmd)
+                        print("Cancelled.")
 	elif ("getcommercials" in option):
 		getcommercials()
 		print ("Commercial Get Finished.")
