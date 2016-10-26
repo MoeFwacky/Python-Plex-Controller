@@ -115,9 +115,12 @@ else:
 	MOVIEGET = test
 
 print ("Database update starting...\n")	
-
-#cur.execute('CREATE TABLE IF NOT EXISTS shows(TShow TEXT, Episode TEXT, Season INT, Enum INT, Tnum INT, Summary TEXT, Link TEXT)')
-#sql.commit()
+try:
+	cur.execute('DROP TABLE shows')
+	sql.commit()
+	print ("Obsolete shows table found and removed.\n")
+except Exception:
+	pass
 cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
 sql.commit()
 cur.execute('CREATE TABLE IF NOT EXISTS TVshowlist(TShow TEXT, Summary TEXT, Genre TEXT, Rating TEXT, Duration INT, Totalnum INT)')
@@ -258,133 +261,8 @@ def getshows():
 	print ("\n\nTV Show List Generated.")
 
 
-def gettvshows():	
-	print ("Getting TV Show Episodes Now.")
-	response = http.urlopen('GET', TVGET, preload_content=False).read()
-	response = str(response)
-	shows = response.split('<Directory ratingKey=')
-	xnum = int(len(shows))-1
-	counter = 1
-
-	while counter <= int(len(shows)-1):
-
-		show = shows[counter]
-		
-		title = show
-		title = title.split('title="')
-		title = title[1]
-		title = title.split('"')
-		title = title[0]
-		
-		title = title.replace('&apos;','\'')
-		title = title.replace('&amp;','&')
-		title = title.replace('?','')
-		title = title.replace('/',' ')
-		
-		TShow = title
-		name = title
-		if (("'" in TShow) and ("''" not in TShow)):
-			TShow = TShow.replace("'","''")
-		
-		show = show.split('" key')
-		show = show[0]
-		show = show.replace("\"", "")
-		show = show.rstrip()
-		episode = show
-		
-		link = TVPART + show + "/allLeaves"
-		xresponse = http.urlopen('GET', link, preload_content=False).read()
-		xresponse = str(xresponse)
-		
-		episodes = xresponse.split('type="episode" title="')
-		for episode in episodes:
-			Season = episode
-			Enum = episode
-			Summary = episode
-			Link = episode
-			episode = episode.split('"')
-			episode = episode[0]
-			episode = episode + "\n"
-			episode = episode.replace('&apos;','\'')
-			episode = episode.replace('&amp;','&')
-			Episode = episode.strip()
-			if ("<?xml version=" in episode.strip()):
-				Tnum = 0
-			else:
-			
-				if ("(" in episode):
-					xepisode = name + " " + episode
-					with open(FIXME, 'a') as file:
-						file.write(xepisode)
-					file.close()
-				if episode != "Original":
-					try:
-						Tnum = Tnum + 1
-					except Exception:
-						Tnum = 0
-					Season = Season.split('parentIndex="')
-					
-					Season = Season[1]
-					Season = Season.split('"')
-					Season = Season[0]
-					
-					Enum = Enum.split('index="')
-					Enum = Enum[1]
-					Enum = Enum.split('"')
-					Enum = Enum[0]
-					
-					Summary = Summary.split('summary="')
-					Summary = Summary[1]
-					Summary = Summary.split('" index')
-					Summary = Summary[0]
-					Summary = Summary.replace(",", "")
-					Summary = Summary.replace('\xe2',"")
-					Summary = Summary.replace("&quot","")
-					try:
-						Summary = Summary.decode("ascii", "ignore")
-					except Exception:
-						pass
-					
-					Link = Link.split('<Part id=')
-					Link = Link[1]
-					Link = Link.split('key="')
-					Link = Link[1]
-					Link = Link.split('" duration')
-					Link = Link[0]
-					
-					TShow = str(TShow)
-					TShow = TShow.replace("&#39;","''")
-					Episode = str(Episode)
-					Episode = Episode.replace("'","''")
-					Episode = Episode.replace("&#39;","''")
-					Season = int(Season)
-					Enum = int(Enum)
-					Tnum = int(Tnum)
-					Summary = str(Summary.encode('ascii','ignore').strip())
-					Summary = Summary.replace("'","''")
-					Summary = Summary.replace("&#39;","''")
-					Link = str(Link.strip().encode('ascii','replace'))
-
-					cur.execute("SELECT * FROM shows WHERE TShow LIKE \"" + TShow + "\" AND Tnum LIKE \"" + str(Tnum) + "\"")
-					try:
-						if not cur.fetchone():
-							cur.execute("INSERT INTO shows VALUES(?, ?, ?, ?, ?, ?, ?)", (TShow, Episode, Season, Enum, Tnum, Summary, Link))
-							sql.commit()
-							#print ("New Episode Found: " + TShow + " Episode: " + Episode)
-					except Exception: 
-						print ("Error adding " + TShow)
-						with open(PROBLEMS, 'a') as file:
-							file.write(TShow + " " + Episode + "\n")
-						file.close()
-				
-		progress(xnum)	
-		counter = counter + 1
-
-	clearprogress()
-	print ("\n\nTV Episode entries checked.")
-
-
 def getmovies():
+	print ("Getting Movies now.")
 	response = http.urlopen('GET', MOVIEGET, preload_content=False).read()
 	response = str(response)
 	shows = response.split('<Video ratingKey=')
@@ -720,8 +598,6 @@ def getcustomsection(name):
 def startupactiontv():
 	cur.execute("DELETE FROM TVshowlist")
 	sql.commit()
-	#cur.execute("DELETE FROM shows")
-	#sql.commit()
 	print ("TV Tables purged and ready for data.")
 
 def startupactionmovie():
@@ -919,9 +795,9 @@ try:
 		os.system(bcmd)
 		getgenrestv()
 		try:
+			getgenrestv()
 			startupactiontv()
 			getshows()
-			#gettvshows()
 			restoregenrestv()
 		except KeyboardInterrupt:
 			print ("Cancel request received. Restoring tables.")
@@ -951,7 +827,6 @@ try:
 			getgenresmovie()
 			startupactiontv()
 			startupactionmovie()
-			#gettvshows()
 			getshows()
 			getmovies()
 			restoregenrestv()
