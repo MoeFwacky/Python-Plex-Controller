@@ -117,7 +117,7 @@ else:
 print ("Database update starting...\n")	
 try:
 	print ("Obsolete shows table found. Creating a backup and trying to drop.")
-	command = cp "\"" + homedir + "myplex.db\" \"" + homedir + "sback_myplex.db\""
+	command = "cp \"" + homedir + "myplex.db\" \"" + homedir + "sback_myplex.db\""
 	os.system(command)
 	cur.execute('DROP TABLE shows')
 	sql.commit()
