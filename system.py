@@ -164,11 +164,11 @@ def checkprecomm(show):
 		cur.execute(com2)
 		if not cur.fetchone():
 					pass
-			else:
-					cur.execute(com2)
-					show = cur.fetchone()[0]
-					show = "playcommercial." + show
-					return show
+		else:
+			cur.execute(com2)
+			show = cur.fetchone()[0]
+			show = "playcommercial." + show
+			return show
 		return oshow
 	except sqlite3.OperationalError:
 		return oshow
@@ -6245,7 +6245,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.00a"
+	version = "3.00c"
 	return version
 	
 
