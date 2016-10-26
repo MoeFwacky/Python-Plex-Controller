@@ -242,7 +242,7 @@ except IOError:
 		file.write("Off")
 	file.close()
 	print ("playstatestatus text file successfully added.")
-file5 = homedir + "system_b.py"
+file5 = homedir + "system.py"
 try:
 	with open (file5, "r") as file:
 		readme = file.read()
@@ -250,7 +250,7 @@ try:
 	print ("check pass. system.py exists.")
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system_b.py"
+		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		#print (newfile)
@@ -315,7 +315,7 @@ except IOError:
 		print ("File successfully moved to the necessary directory.")
 	except Exception:
 		print ("warning playstatus.py does not exist. The play check status script will not work.")
-file8 = homedir + "upddatedb_pi_b.py"
+file8 = homedir + "upddatedb_pi.py"
 try:
 	with open (file8, "r") as file:
 		readme = file.read()
@@ -324,7 +324,7 @@ try:
 	updatecheck = "pass"
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/upddatedb_pi_b.py"
+		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/upddatedb_pi.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		#print (newfile)
@@ -347,7 +347,7 @@ except IOError:
 		print ("warning updateddb_pi.py does not exist. The system will be unable to build the shows and movie tables in your database.")
 		updatecheck = "fail"
 		
-file8a = homedir + "getshow_b.py"
+file8a = homedir + "getshow.py"
 try:
 	with open (file8a, "r") as file:
 		readme = file.read()
@@ -356,7 +356,7 @@ try:
 	updatecheck = "pass"
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/getshow_b.py"
+		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/getshow.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		#print (newfile)
@@ -511,9 +511,9 @@ if ("pass" in updatecheck):
 	choice = str(input('Yes or No? '))
 	if "y" in choice.lower():
 		if "Windows" not in ostype:
-			command = "python " + homedir + "upddatedb_pi_b.py all"
+			command = "python " + homedir + "upddatedb_pi.py all"
 		else:
-			command = homedir + "upddatedb_pi_b.py all"
+			command = homedir + "upddatedb_pi.py all"
 		os.system(command)
 	print ("If you needed that entry for cron it was: @reboot python /home/pi/hasystem/piplaystate.py &")
 else:
