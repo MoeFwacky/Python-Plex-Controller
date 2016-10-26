@@ -102,7 +102,7 @@ def playstatus():
 
 		plex = PlexServer(baseurl, token)
 	except Exception:
-	user = MyPlexAccount.signin(PLEXUN, PLEXPW)
+		user = MyPlexAccount.signin(PLEXUN, PLEXPW)
 		print ("Local Fail. Trying cloud access.")
 
 	plex = user.resource(PLEXSVR).connect()

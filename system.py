@@ -152,24 +152,26 @@ def checkprecomm(show):
 	show = show.replace("playcommercial.","")
 	com1 = "SELECT name FROM prerolls WHERE name LIKE \"" + show + "\""
 	com2 = "SELECT name FROM commercials WHERE name LIKE \"" + show + "\""
-	cur.execute(com1)
-	if not cur.fetchone():
-		pass
-	else:
+	try:
 		cur.execute(com1)
-		show = cur.fetchone()[0]
-		show = "preroll." + show
-		return show
-	cur.execute(com2)
-	if not cur.fetchone():
-                pass
-        else:
-                cur.execute(com2)
-                show = cur.fetchone()[0]
-                show = "playcommercial." + show
-                return show
-	return oshow
-	
+		if not cur.fetchone():
+			pass
+		else:
+			cur.execute(com1)
+			show = cur.fetchone()[0]
+			show = "preroll." + show
+			return show
+		cur.execute(com2)
+		if not cur.fetchone():
+					pass
+			else:
+					cur.execute(com2)
+					show = cur.fetchone()[0]
+					show = "playcommercial." + show
+					return show
+		return oshow
+	except sqlite3.OperationalError:
+		return oshow
 
 def getcustomtable(table):
 	item = "CUSTOM_" + table.strip()
@@ -3930,13 +3932,16 @@ def queuefill():
 	showmode = checkmode("show")
 	moviemode = checkmode("movie")
 	if playme == 8:
-		block = getrandomblock()
+		try:
+			block = getrandomblock()
+		except Exception:
+			playme = randint(1,7)
 		if "Error:" not in block:
 			if ("on" in checkblockrandom()):
 				say = setplaymode(block)
 				playme = randint(1,7)
 			else:
-                                playme = randint(1,7)
+				playme = randint(1,7)
 	if playme == 9:
 		if ("on" not in checkcustomrandom()):
 			playme = randint(1,7)
