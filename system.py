@@ -3021,7 +3021,7 @@ def playshow(show):
 			rcheck = replacecheck(show)	
 			thecountx = 1
 		else:
-			thecountx = thecount + 1
+			thecountx = thecount + 2
 		command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
 		cur.execute(command)
 		cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecountx))
