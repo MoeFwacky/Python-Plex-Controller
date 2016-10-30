@@ -2420,7 +2420,7 @@ def listepisodes(show):
 			cls()
 			print ("Showing Items " + str(count) + " - " + str(mmax+1) + " out of " + str(max-1) + "\n")
 			while (count + 1) <= mmax+1:
-				print (str(count) + ": " + str(the_show[count-1].title))
+				print (str(count) + ": " + the_show[count-1].title)
 				count = count + 1
 			print ("\nSelect a number or type yes to go on. Type \"quit\" to exit.\n")
 			getme = input("Choice: " )
@@ -2935,29 +2935,46 @@ def replaceshowinblock(show, nshow, block, playflag):
 		
 
 def playholiday(holiday):
-	holiday = holiday.replace("holiday.","")
-	cur.execute("SELECT items FROM Holidays WHERE name LIKE \"" + holiday.strip() + "\"")
-	titles = cur.fetchone()[0]
-	titles = titles.split(";")
-	ttls = []
-	for item in titles:
-		if item != "":
-			ttls.append(item)
-	min = 0
-	max = int(len(ttls)) - 1
-	pcnt = randint(min,max)
-	plexlogin()
-	if "movie." in ttls[pcnt]:
-		playshow(ttls[pcnt])
-		return "Playing " + ttls[pcnt] + " for the holiday " + holiday + " now."
-	else:
-		title = ttls[pcnt]
-		title = title.split(":")
-		ssn = title[1].strip()
-		ep = title[2].strip()
-		title = title[0].strip()
-		playspshow(title, ssn, ep)
-		return "Playing " + title + " for the holiday " + holiday + " now."
+	try:
+		cur.execute("SELECT State FROM States WHERE Option LIKE \"NEXTHOLIDAY\"")
+		show = cur.fetchone()[0]
+		cur.execute("DELETE FROM States WHERE Option LIKE \"NEXTHOLIDAY\"")
+		sql.commit()
+		if "movie." in show:
+			playshow(show)
+			return ("Playing " + show + " for the holiday " + holiday + " now.")
+		else:
+			title = show
+			title = title.split(":")
+			ssn = title[1].strip()
+			ep = title[2].strip()
+			title = title[0].strip()
+			playspshow(title, ssn, ep)
+			return "Playing " + title + " for the holiday " + holiday + " now."
+	except Exception:
+		holiday = holiday.replace("holiday.","")
+		cur.execute("SELECT items FROM Holidays WHERE name LIKE \"" + holiday.strip() + "\"")
+		titles = cur.fetchone()[0]
+		titles = titles.split(";")
+		ttls = []
+		for item in titles:
+			if item != "":
+				ttls.append(item)
+		min = 0
+		max = int(len(ttls)) - 1
+		pcnt = randint(min,max)
+		plexlogin()
+		if "movie." in ttls[pcnt]:
+			playshow(ttls[pcnt])
+			return "Playing " + ttls[pcnt] + " for the holiday " + holiday + " now."
+		else:
+			title = ttls[pcnt]
+			title = title.split(":")
+			ssn = title[1].strip()
+			ep = title[2].strip()
+			title = title[0].strip()
+			playspshow(title, ssn, ep)
+			return "Playing " + title + " for the holiday " + holiday + " now."
 
 def playshow(show):
 	show = checkcustomtables(show)
@@ -3722,7 +3739,7 @@ def playwhereleftoff(show, nvalue):
 		nvalue = int(nvalue) * 1000
 	leftoff = int(whereleftoff(show)) * 60000
 	leftoff = leftoff + nvalue
-	command = "SELECT Episode FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
+	command = "SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
 		schecker = "lost"
@@ -4969,7 +4986,8 @@ def whatupnext():
 			epnum = int(thecount)-1
 			shows = plex.library.section("TV Shows")
 			the_show = shows.get(playme).episodes()
-			ep = str(the_show[epnum].title)
+			#ep = str(the_show[epnum].title)
+			ep = the_show[epnum].title
 			ssn = str(the_show[epnum].seasonNumber)
 			xep = str(the_show[epnum].index)
 			playme = "The TV Show " + playme +" Season " + ssn + " Episode " + xep + ", " + ep
@@ -4978,7 +4996,52 @@ def whatupnext():
 		upnext = "Up next we have " + playme
 	elif ("holiday." in playmode):
 		say = playmode.replace("holiday.","")
-		say = "Up next a random " + say + " holiday program will play."
+		holiday = playmode.split("holiday.")
+		holiday = holiday[1].strip()
+		#say = "Up next a random " + say + " holiday program will play."
+		#print say
+		try:
+			command = "SELECT State FROM States WHERE Option LIKE \"NEXTHOLIDAY\""
+			cur.execute(command)
+			show = cur.fetchone()[0]
+			if "movie." in show:
+				show = show.replace("movie.","The Movie ")
+				say = "The next item is " + show + " for the holiday " + holiday + "."
+			else:
+				title = show
+				title = title.split(":")
+				ssn = title[1].strip()
+				ep = title[2].strip()
+				title = title[0].strip()
+				say = "The next item is " + title + " for the holiday " + holiday + "."
+		except Exception:
+			holiday = playmode.replace("holiday.","")
+			cur.execute("SELECT items FROM Holidays WHERE name LIKE \"" + holiday.strip() + "\"")
+			titles = cur.fetchone()[0]
+			titles = titles.split(";")
+			ttls = []
+			for item in titles:
+				if item != "":
+					ttls.append(item)
+			min = 0
+			max = int(len(ttls)) - 1
+			pcnt = randint(min,max)
+			plexlogin()
+			addme = ttls[pcnt]
+			cur.execute("INSERT INTO States VALUES (?,?)",("NEXTHOLIDAY",addme))
+			sql.commit()
+			show = addme
+			if "movie." in show:
+                                show = show.replace("movie.","The Movie ")
+                                say = "The next item is " + show + " for the holiday " + holiday + "."
+                        else:
+                                title = show
+                                title = title.split(":")
+                                ssn = title[1].strip()
+                                ep = title[2].strip()
+                                title = title[0].strip()
+                                say = "The next item is " + title + " for the holiday " + holiday + "."
+
 		return (say)
 	elif (("custom." in playmode) or ("CUSTOM." in playmode)):
 		say = playmode.replace("custom.","")
@@ -5387,6 +5450,11 @@ def skipthat():
 	elif ("binge." in mode):
 
 		return ("We are in binge mode. Change playmodes to use this option or add 'normal' to your command to skip what is up next in the queue.")
+	elif ("holiday." in mode):
+		cur.execute("DELETE FROM States WHERE Option LIKE \"NEXTHOLIDAY\"")
+		sql.commit()
+		say = whatupnext()
+		return (say)
 	else:
 		play = upnext()
 		list = getblockpackagelist()
@@ -6148,7 +6216,7 @@ def startnextprogram():
 	command = "SELECT State FROM States WHERE Option LIKE \"Playmode\""
 	cur.execute(command)
 	pmode = cur.fetchone()[0]
-	if (("normal" in pmode) or ("binge." in pmode) or ("minithon." in pmode) or ("custom." in pmode)):
+	if (("normal" in pmode) or ("binge." in pmode) or ("minithon." in pmode) or ("custom." in pmode) or ("holiday." in show)):
 		rcheck = resumestatus()
 		if ("on" in rcheck.lower()):
 			say = playwhereleftoff(show, "none")
@@ -6245,7 +6313,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.00c"
+	version = "3.00c2"
 	return version
 	
 
