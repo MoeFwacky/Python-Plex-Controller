@@ -16,7 +16,7 @@ try:
 except NameError:
 	pass
 
-MYDB = homedir + "test_myplex.db"
+MYDB = homedir + "myplex.db"
 http = urllib3.PoolManager()
 
 sql = sqlite3.connect(MYDB)
@@ -543,9 +543,9 @@ try:
 except KeyboardInterrupt:
 	print ("Cancel request received. Restoring tables.")
 	if (("movie" in tpe) or ("both" in tpe)):
-		cmd = "python " + homedir + "test_system.py restoremoviedb"
+		cmd = "python " + homedir + "system.py restoremoviedb"
 		os.system(cmd)
 	elif (("show" in tpe) or ("both" in tpe)):
-		cmd = "python " + homedir + "test_system.py restoretvdb"
+		cmd = "python " + homedir + "system.py restoretvdb"
 		os.system(cmd)
 	print("Cancelled.")
