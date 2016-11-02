@@ -9,13 +9,14 @@ import platform
 #top
 
 global pcount
-
+global TVGET
+global LOGGEDIN
 try:
 	input = raw_input
 except NameError:
 	pass
 
-MYDB = homedir + "myplex.db"
+MYDB = homedir + "test_myplex.db"
 http = urllib3.PoolManager()
 
 sql = sqlite3.connect(MYDB)
@@ -32,78 +33,78 @@ def getsections():
 	return foundsect
 
 def plexlogin():
-        global PLEXUN
-        global PLEXSVR
-        global PLEXCLIENT
-        global plex
-        global client
-        global LOGGEDIN
-        try:
-                cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
-                PLEXUN = cur.fetchone()
-                PLEXUN = PLEXUN[0]
-                cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-                PLEXPW = cur.fetchone()
-                PLEXPW = PLEXPW[0]
-                cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
-                PLEXSVR = cur.fetchone()
-                PLEXSVR = PLEXSVR[0]
-                cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
-                PLEXCLIENT = cur.fetchone()
-                PLEXCLIENT = PLEXCLIENT[0]
-                try:
-                        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
-                        PLEXSERVERIP = cur.fetchone()
-                        PLEXSERVERIP = PLEXSERVERIP[0]
-                        cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
-                        PLEXSERVERPORT = cur.fetchone()
-                        PLEXSERVERPORT = PLEXSERVERPORT[0]
-                except Exception:
-                        print ("Local Variables not set. Run setup to use local access.")
-                from plexapi.myplex import MyPlexAccount
-                try:
-                        LOGGEDIN
-                except Exception:
-                        try:
-                                from plexapi.server import PlexServer
-                                baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
-                                plex = PlexServer(baseurl)
-                        except Exception:
-                                print ("Local Fail. Trying cloud access.")
-                                user = MyPlexAccount.signin(PLEXUN,PLEXPW)
-                                plex = user.resource(PLEXSVR).connect()
-                        client = plex.client(PLEXCLIENT)
-                        LOGGEDIN = "YES"
-        except IndexError:
-                print ("Error getting necessary plex api variables. Run system_setup.py.")
+	global PLEXUN
+	global PLEXSVR
+	global PLEXCLIENT
+	global plex
+	global client
+	global LOGGEDIN
+	try:
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+		PLEXUN = cur.fetchone()
+		PLEXUN = PLEXUN[0]
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+		PLEXPW = cur.fetchone()
+		PLEXPW = PLEXPW[0]
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
+		PLEXSVR = cur.fetchone()
+		PLEXSVR = PLEXSVR[0]
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
+		PLEXCLIENT = cur.fetchone()
+		PLEXCLIENT = PLEXCLIENT[0]
+		try:
+			cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
+			PLEXSERVERIP = cur.fetchone()
+			PLEXSERVERIP = PLEXSERVERIP[0]
+			cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
+			PLEXSERVERPORT = cur.fetchone()
+			PLEXSERVERPORT = PLEXSERVERPORT[0]
+		except Exception:
+			print ("Local Variables not set. Run setup to use local access.")
+		from plexapi.myplex import MyPlexAccount
+		try:
+			LOGGEDIN
+		except Exception:
+			try:
+				from plexapi.server import PlexServer
+				baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
+				plex = PlexServer(baseurl)
+			except Exception:
+				print ("Local Fail. Trying cloud access.")
+				user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+				plex = user.resource(PLEXSVR).connect()
+			client = plex.client(PLEXCLIENT)
+			LOGGEDIN = "YES"
+except IndexError:
+		print ("Error getting necessary plex api variables. Run system_setup.py.")
 
 def getmovies():
 	mcheck = "fail"
-        command = "SELECT setting FROM settings WHERE item LIKE \"MOVIEGET\""
-        cur.execute(command)
-        if not cur.fetchone():
-                mcheck = "fail"
-        else:
-                cur.execute(command)
-                MOVIEGET = cur.fetchone()[0]
-                if "http" in MOVIEGET:
-                        cur.execute("DELETE FROM settings WHERE item LIKE \"MOVIEGET\"")
-                        sql.commit()
-                else:
-                        mcheck = "pass"
-        if "fail" in mcheck:
-                print ("We need to update your settings to use the new movieget function. Input the name of the section that is your \"Movies\" section.")
-                foundsect = getsections()
-                MOVIEGET = str(input('Enter Section Name: '))
-                MOVIEGET = MOVIEGET.strip()
-                if MOVIEGET in foundsect:
-                        print (MOVIEGET.strip())
-                        cur.execute("INSERT INTO settings VALUES (?,?)",("MOVIEGET",MOVIEGET))
-                        sql.commit()
-                else:
-                        print ("Error: " + MOVIEGET + " not found as an available section in your library.")
-        else:
-                print ('Using the following movie library: ' + MOVIEGET)
+	command = "SELECT setting FROM settings WHERE item LIKE \"MOVIEGET\""
+	cur.execute(command)
+	if not cur.fetchone():
+		mcheck = "fail"
+	else:
+		cur.execute(command)
+		MOVIEGET = cur.fetchone()[0]
+		if "http" in MOVIEGET:
+			cur.execute("DELETE FROM settings WHERE item LIKE \"MOVIEGET\"")
+			sql.commit()
+		else:
+			mcheck = "pass"
+	if "fail" in mcheck:
+		print ("We need to update your settings to use the new movieget function. Input the name of the section that is your \"Movies\" section.")
+		foundsect = getsections()
+		MOVIEGET = str(input('Enter Section Name: '))
+		MOVIEGET = MOVIEGET.strip()
+		if MOVIEGET in foundsect:
+			print (MOVIEGET.strip())
+			cur.execute("INSERT INTO settings VALUES (?,?)",("MOVIEGET",MOVIEGET))
+			sql.commit()
+		else:
+			print ("Error: " + MOVIEGET + " not found as an available section in your library.")
+	else:
+		print ('Using the following movie library: ' + MOVIEGET)
 	plexlogin()
 	movies = []
 	mlist = plex.library.section(MOVIEGET)
@@ -155,9 +156,9 @@ def getmovies():
 				pass
 			elif ((item not in agenre) and (item not in bgenre)):
 				try:
-                                        bgenre = bgenre + " " + item.strip()
-                                except NameError:
-                                        bgenre = item.strip()
+					bgenre = bgenre + " " + item.strip()
+				except NameError:
+					bgenre = item.strip()
 		bgenre = bgenre.strip()
 		directors = ""
 		bactors = ""
@@ -177,6 +178,7 @@ def getmovies():
 	print ("\nDone.")
 
 def getgenres(show):
+	global TVGET
 	command = "SELECT setting FROM settings WHERE item LIKE \"TVGENREFIX\""
 	cur.execute(command)
 	if not cur.fetchone():
@@ -206,12 +208,9 @@ def getgenres(show):
 
 				link = "http://" + wlink + ":" + wip + "/library/sections/" + section + "/all/"
 				sctsn.append(link)
-				print ("Name: " + name + "\nSection: " + section + "\nLink: " + link)
-			except IndexError:
-				pass
-		TVGENREFIX = input("Enter link to your TV Show Library: ")
+				if name == TVGET:
+					TVGENREFIX = link
 		print TVGENREFIX
-		print sctsn
 		if TVGENREFIX.strip() not in sctsn:
 			Print ("Error: Invalid Selection Choice. Alternate Method Will Fail!")
 		else:
@@ -266,32 +265,33 @@ def getgenres(show):
 	return ("")
 
 def getshows():
+	global TVGET
 	tcheck = "fail"
-        command = "SELECT setting FROM settings WHERE item LIKE \"TVGET\""
-        cur.execute(command)
-        if not cur.fetchone():
-                tcheck = "fail"
-        else:
-                cur.execute(command)
-                TVGET = cur.fetchone()[0]
-                if "http" in TVGET:
-                        cur.execute("DELETE FROM settings WHERE item LIKE \"TVGET\"")
-                        sql.commit()
-                else:
-                        tcheck = "pass"
-        if "fail" in tcheck:
-                print ("We need to update your settings to use the new tvget function. Input the name of the section that is your \"TV Shows\" section.")
-                foundsect = getsections()
-                TVGET = str(input('Enter Section Name: '))
-                TVGET = TVGET.strip()
-                if TVGET in foundsect:
-                        print (TVGET.strip())
-                        cur.execute("INSERT INTO settings VALUES (?,?)",("TVGET",TVGET))
-                        sql.commit()
-                else:
-                        print ("Error: " + TVGET + " not found as an available section in your library.")
-        else:
-                print ('Using the following TV Show library: ' + TVGET)	
+	command = "SELECT setting FROM settings WHERE item LIKE \"TVGET\""
+	cur.execute(command)
+	if not cur.fetchone():
+		tcheck = "fail"
+	else:
+		cur.execute(command)
+		TVGET = cur.fetchone()[0]
+		if "http" in TVGET:
+			cur.execute("DELETE FROM settings WHERE item LIKE \"TVGET\"")
+			sql.commit()
+		else:
+			tcheck = "pass"
+	if "fail" in tcheck:
+		print ("We need to update your settings to use the new tvget function. Input the name of the section that is your \"TV Shows\" section.")
+		foundsect = getsections()
+		TVGET = str(input('Enter Section Name: '))
+		TVGET = TVGET.strip()
+		if TVGET in foundsect:
+			print (TVGET.strip())
+			cur.execute("INSERT INTO settings VALUES (?,?)",("TVGET",TVGET))
+			sql.commit()
+		else:
+			print ("Error: " + TVGET + " not found as an available section in your library.")
+	else:
+			print ('Using the following TV Show library: ' + TVGET)	
 	plexlogin()
 	tlist = plex.library.section(TVGET)
 	tvlist = tlist.search("")
@@ -387,82 +387,82 @@ def getcustom(section):
 		USETABLE = "prerolls"
 	elif ("commercial" in section.lower()):
 		cur.execute("CREATE TABLE IF NOT EXISTS commercials(name TEXT, duration INT)")
-                sql.commit()
-                mcheck = "fail"
-                command = "SELECT setting FROM settings WHERE item LIKE \"COMPART\""
-                cur.execute(command)
-                if not cur.fetchone():
-                        mcheck = "fail"
-                else:
-                        cur.execute(command)
-                        COMPART = cur.fetchone()[0]
-                        if "http" in COMPART:
-                                cur.execute("DELETE FROM settings WHERE item LIKE \"COMPART\"")
-                                sql.commit()
-                        else:
-                                mcheck = "pass"
-                if "fail" in mcheck:
-                        print ("We need to update your settings to use the new Commercial get function. Input the name of the section that is your \"Commercials\" section.")
-                        foundsect = getsections()
-                        COMPART = str(input('Enter Section Name: '))
-                        COMPART = COMPART.strip()
-                        if COMPART in foundsect:
-                                print (COMPART.strip())
-                                cur.execute("INSERT INTO settings VALUES (?,?)",("COMPART",COMPART))
-                                sql.commit()
-                        else:
-                                print ("Error: " + COMPART + " not found as an available section in your library.")
-                else:
-                        print ('Using the following Commercial library: ' + COMPART)
-                USEME = COMPART
-                USETABLE = "commercials"
+		sql.commit()
+		mcheck = "fail"
+		command = "SELECT setting FROM settings WHERE item LIKE \"COMPART\""
+		cur.execute(command)
+		if not cur.fetchone():
+			mcheck = "fail"
+		else:
+			cur.execute(command)
+			COMPART = cur.fetchone()[0]
+			if "http" in COMPART:
+				cur.execute("DELETE FROM settings WHERE item LIKE \"COMPART\"")
+				sql.commit()
+			else:
+				mcheck = "pass"
+		if "fail" in mcheck:
+			print ("We need to update your settings to use the new Commercial get function. Input the name of the section that is your \"Commercials\" section.")
+			foundsect = getsections()
+			COMPART = str(input('Enter Section Name: '))
+			COMPART = COMPART.strip()
+			if COMPART in foundsect:
+				print (COMPART.strip())
+				cur.execute("INSERT INTO settings VALUES (?,?)",("COMPART",COMPART))
+				sql.commit()
+			else:
+				print ("Error: " + COMPART + " not found as an available section in your library.")
+		else:
+			print ('Using the following Commercial library: ' + COMPART)
+		USEME = COMPART
+		USETABLE = "commercials"
 	elif ("custom." in section.lower()):
 		section = section.lower()
 		section = section.replace("custom.","").strip()
 		item = "CUSTOM_" + section
 		cur.execute("CREATE TABLE IF NOT EXISTS " + item + "(name TEXT, duration INT, type TEXT)")
-                sql.commit()
+		sql.commit()
 		command = "SELECT setting FROM settings WHERE item LIKE \"" + item + "\""
 		mcheck = "fail"
 		cur.execute(command)
-                if not cur.fetchone():
-                        mcheck = "fail"
-                else:
-                        cur.execute(command)
-                        COMPART = cur.fetchone()[0]
-                        if "http" in COMPART:
-                                cur.execute("DELETE FROM settings WHERE item LIKE \"" + item + "\"")
-                                sql.commit()
-                        else:
-                                mcheck = "pass"
-                if "fail" in mcheck:
-                        print ("We need to update your settings to use the new Custom get function. Input the name of the section that is your \"" + item + "\" section.")
-                        foundsect = getsections()
-                        COMPART = str(input('Enter Section Name: '))
-                        COMPART = COMPART.strip()
-                        if COMPART in foundsect:
-                                print (COMPART.strip())
-                                cur.execute("INSERT INTO settings VALUES (?,?)",(item,COMPART))
-                                sql.commit()
-                        else:
-                                print ("Error: " + COMPART + " not found as an available section in your library.")
-                else:
-                        print ('Using the following Custom library: ' + COMPART)
-                USEME = COMPART
-                USETABLE = item
+		if not cur.fetchone():
+			mcheck = "fail"
+		else:
+			cur.execute(command)
+			COMPART = cur.fetchone()[0]
+			if "http" in COMPART:
+				cur.execute("DELETE FROM settings WHERE item LIKE \"" + item + "\"")
+				sql.commit()
+			else:
+				mcheck = "pass"
+		if "fail" in mcheck:
+			print ("We need to update your settings to use the new Custom get function. Input the name of the section that is your \"" + item + "\" section.")
+			foundsect = getsections()
+			COMPART = str(input('Enter Section Name: '))
+			COMPART = COMPART.strip()
+			if COMPART in foundsect:
+				print (COMPART.strip())
+				cur.execute("INSERT INTO settings VALUES (?,?)",(item,COMPART))
+				sql.commit()
+			else:
+				print ("Error: " + COMPART + " not found as an available section in your library.")
+		else:
+			print ('Using the following Custom library: ' + COMPART)
+		USEME = COMPART
+		USETABLE = item
         plexlogin()
-	mlist = plex.library.section(USEME)
-	mxlist = mlist.search("")
+		mlist = plex.library.section(USEME)
+		mxlist = mlist.search("")
         count = 0
         xnum = int(len(mxlist)-1)
         for video in mxlist:
-                try:
-                        name = str(video.title)
-                except Exception:
-                        name = video.title
-                        name = name.encode("utf8")
-                        name = str(name)
-                name = name.replace("'","''")
+			try:
+				name = str(video.title)
+			except Exception:
+				name = video.title
+				name = name.encode("utf8")
+				name = str(name)
+			name = name.replace("'","''")
 		duration = int(video.duration)/1000
 		cur.execute("SELECT * FROM " + USETABLE + " WHERE name LIKE \"" + name + "\"")
 		if not cur.fetchone():
@@ -482,9 +482,9 @@ def progress(num):
         num = int(num)
         global pcount
         try:
-                pcount
+			pcount
         except NameError:
-                pcount = 0
+			pcount = 0
         pcount = pcount + 1
         perc = round((float(pcount) / float(num)) * 100, 1)
         sys.stdout.write("\r" + str(perc) + "%")
@@ -542,9 +542,9 @@ try:
 except KeyboardInterrupt:
 	print ("Cancel request received. Restoring tables.")
 	if (("movie" in tpe) or ("both" in tpe)):
-		cmd = "python " + homedir + "system.py restoremoviedb"
+		cmd = "python " + homedir + "test_system.py restoremoviedb"
 		os.system(cmd)
 	elif (("show" in tpe) or ("both" in tpe)):
-		cmd = "python " + homedir + "system.py restoretvdb"
+		cmd = "python " + homedir + "test_system.py restoretvdb"
 		os.system(cmd)
 	print("Cancelled.")
