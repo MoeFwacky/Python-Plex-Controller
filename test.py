@@ -16,7 +16,7 @@ try:
 except NameError:
 	pass
 
-MYDB = homedir + "test_myplex.db"
+MYDB = homedir + "myplex.db"
 http = urllib3.PoolManager()
 
 sql = sqlite3.connect(MYDB)
@@ -456,13 +456,13 @@ def getcustom(section):
         count = 0
         xnum = int(len(mxlist)-1)
         for video in mxlist:
-			try:
-				name = str(video.title)
-			except Exception:
-				name = video.title
-				name = name.encode("utf8")
-				name = str(name)
-			name = name.replace("'","''")
+		try:
+			name = str(video.title)
+		except Exception:
+			name = video.title
+			name = name.encode("utf8")
+			name = str(name)
+		name = name.replace("'","''")
 		duration = int(video.duration)/1000
 		cur.execute("SELECT * FROM " + USETABLE + " WHERE name LIKE \"" + name + "\"")
 		if not cur.fetchone():
@@ -495,14 +495,14 @@ def clearprogress():
         pcount = 0
 
 def startupactionmovie():
-        command = "python " + homedir + "test_system.py backupmoviedb"
+        command = "python " + homedir + "system.py backupmoviedb"
         os.system(command)
         cur.execute("DELETE FROM Movies")
         sql.commit()
         print ("Movie Table purged and ready for data.")
 
 def startupactiontv():
-	command = "python " + homedir + "test_system.py backuptvdb"
+	command = "python " + homedir + "system.py backuptvdb"
         os.system(command)
         cur.execute("DELETE FROM TVshowlist")
         sql.commit()
@@ -542,9 +542,9 @@ try:
 except KeyboardInterrupt:
 	print ("Cancel request received. Restoring tables.")
 	if (("movie" in tpe) or ("both" in tpe)):
-		cmd = "python " + homedir + "test_system.py restoremoviedb"
+		cmd = "python " + homedir + "system.py restoremoviedb"
 		os.system(cmd)
 	elif (("show" in tpe) or ("both" in tpe)):
-		cmd = "python " + homedir + "test_system.py restoretvdb"
+		cmd = "python " + homedir + "system.py restoretvdb"
 		os.system(cmd)
 	print("Cancelled.")
