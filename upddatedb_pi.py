@@ -507,7 +507,7 @@ def getcustom(section):
 				sql.commit()
 				#print ("Found and added: " + name + ".")
 			elif ("CUSTOM_" in USETABLE):
-				cur.execute("INSERT INTO " + USETABLE + " VALUES (?,?,?)",(name, duration, section))
+				cur.execute("INSERT INTO " + USETABLE + " VALUES (?,?,?)",(name, duration, USEME))
 				sql.commit()
 				#print ("Found and added: " + name + ".")
 		progress(xnum)
