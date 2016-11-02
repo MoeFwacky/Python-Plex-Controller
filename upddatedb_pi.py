@@ -8,21 +8,13 @@ import sqlite3
 import platform
 #top
 
+global pcount
+global TVGET
+global LOGGEDIN
 try:
 	input = raw_input
 except NameError:
 	pass
-
-global favtv
-global favmve
-global tvgenres
-global moviegenres
-global pcount
-
-favtv = []
-favmve = []
-tvgenres = []
-moviegenres = []
 
 MYDB = homedir + "myplex.db"
 http = urllib3.PoolManager()
@@ -30,139 +22,247 @@ http = urllib3.PoolManager()
 sql = sqlite3.connect(MYDB)
 cur = sql.cursor()
 
-FIXME = homedir + "fixme.txt"
-PROBLEMS = homedir + "problems.txt"
-with open (PROBLEMS, "w") as file:
-	file.write('')
-file.close()
-
-ostype = platform.system()
-
-cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERIP\"")
-wlink = cur.fetchone()[0]
-cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERPORT\"")
-wip = cur.fetchone()[0]
-
 def getsections():
-        slink = "http://" + wlink + ":" + wip + "/library/sections/"
-        response = http.urlopen('GET', slink, preload_content=False).read()
-        response = str(response)
-        response = response.split("Directory allowSync=")
-        print ("The Following Sections are available off your server.")
-        for item in response:
-                name = item
-                section = item
-                try:
-                        name = name.split("title=\"")
-                        name = name[1]
-                        name = name.split("\"")
-                        name = name[0]
+	plexlogin()
+	xlibrary = plex.library.sections()
+	foundsect = []
+	print ("The Following Sections are available off your server.")
+	for lib in xlibrary:
+		print lib.title
+		foundsect.append(lib.title)
+	return foundsect
 
-                        section = section.split("key=\"")
-                        section = section[1]
-                        section = section.split("\"")
-                        section = section[0]
-
-                        link = "http://" + wlink + ":" + wip + "/library/sections/" + section + "/all/"
-                        print ("Name: " + name + "\nSection: " + section + "\nLink: " + link)
-                except IndexError:
-                        pass
-
-cur.execute('CREATE TABLE IF NOT EXISTS settings(item TEXT, setting TEXT)')
-sql.commit()
-
-command = 'SELECT setting FROM settings WHERE item LIKE \'TVPART\''
-cur.execute(command)
-if not cur.fetchone():
-	print ("Looks like you have never run the update DB script. Getting necessary links now.")
-	#Example: http://192.168.1.134:32400/library/metadata/\n")
-	#TVPART = str(input('Link:'))
-	TVPART = "http://" + wlink + ":" + wip + "/library/metadata/"
-	cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVPART",TVPART.strip()))
-	sql.commit()
-	print (TVPART + " has been added to the settings table. Moving on.")
-else:
-	cur.execute(command)
-	test2 = cur.fetchone()[0]
-	TVPART = test2
-
-command = 'SELECT setting FROM settings WHERE item LIKE \'TVGET\''
-cur.execute(command)
-if not cur.fetchone():
-	getsections()
-	print ("Enter the link to your TV show tree.\nExample: http://192.168.1.134:32400/library/sections/1/all/ \n")
-	TVGET = str(input('Link:'))
-	cur.execute('INSERT INTO settings VALUES(?, ?)', ("TVGET",TVGET.strip()))
-	sql.commit()
-	print (TVGET + " has been added to the settings table. Moving on.")
-else:
-	cur.execute(command)
-	test1 = cur.fetchone()[0]
-	TVGET = test1
-
-command = 'SELECT setting FROM settings WHERE item LIKE \'MOVIEGET\''
-cur.execute(command)
-if not cur.fetchone():
-	getsections()
-	print ("Enter the link to your Movie tree.\nExample: http://192.168.1.134:32400/library/sections/2/all/ \n")
-	MOVIEGET = str(input('Link:'))
-	cur.execute('INSERT INTO settings VALUES(?, ?)', ("MOVIEGET",MOVIEGET.strip()))
-	sql.commit()
-	print (MOVIEGET + " has been added to the settings table. Moving on.")
-else:
-	cur.execute(command)
-	test = cur.fetchone()[0]
-	MOVIEGET = test
-
-print ("Database update starting...\n")	
-try:
-	print ("Obsolete shows table found. Creating a backup and trying to drop.")
-	command = "cp \"" + homedir + "myplex.db\" \"" + homedir + "sback_myplex.db\""
-	os.system(command)
-	cur.execute('DROP TABLE shows')
-	sql.commit()
-	print ("Obsolete shows table found and removed.\n")
-except Exception:
-	print ("Failed to drop obsolete shows table.")
-	pass
-cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
-sql.commit()
-cur.execute('CREATE TABLE IF NOT EXISTS TVshowlist(TShow TEXT, Summary TEXT, Genre TEXT, Rating TEXT, Duration INT, Totalnum INT)')
-sql.commit()
-
-def progress(num):
-	num = int(num)
-	global pcount
+def plexlogin():
+	global PLEXUN
+	global PLEXSVR
+	global PLEXCLIENT
+	global plex
+	global client
+	global LOGGEDIN
 	try:
-		pcount
-	except NameError:
-		pcount = 0
-	pcount = pcount + 1
-	perc = round((float(pcount) / float(num)) * 100, 1)
-	sys.stdout.write("\r" + str(perc) + "%")
-	sys.stdout.flush()
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+		PLEXUN = cur.fetchone()
+		PLEXUN = PLEXUN[0]
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+		PLEXPW = cur.fetchone()
+		PLEXPW = PLEXPW[0]
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
+		PLEXSVR = cur.fetchone()
+		PLEXSVR = PLEXSVR[0]
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXCLIENT\'')
+		PLEXCLIENT = cur.fetchone()
+		PLEXCLIENT = PLEXCLIENT[0]
+		try:
+			cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERIP\'')
+			PLEXSERVERIP = cur.fetchone()
+			PLEXSERVERIP = PLEXSERVERIP[0]
+			cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERPORT\'')
+			PLEXSERVERPORT = cur.fetchone()
+			PLEXSERVERPORT = PLEXSERVERPORT[0]
+		except Exception:
+			print ("Local Variables not set. Run setup to use local access.")
+		from plexapi.myplex import MyPlexAccount
+		try:
+			LOGGEDIN
+		except Exception:
+			try:
+				from plexapi.server import PlexServer
+				baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
+				plex = PlexServer(baseurl)
+			except Exception:
+				print ("Local Fail. Trying cloud access.")
+				user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+				plex = user.resource(PLEXSVR).connect()
+			client = plex.client(PLEXCLIENT)
+			LOGGEDIN = "YES"
+	except IndexError:
+		print ("Error getting necessary plex api variables. Run system_setup.py.")
 
-def clearprogress():
-	global pcount
-	pcount = 0
+def getmovies():
+	mcheck = "fail"
+	command = "SELECT setting FROM settings WHERE item LIKE \"MOVIEGET\""
+	cur.execute(command)
+	if not cur.fetchone():
+		mcheck = "fail"
+	else:
+		cur.execute(command)
+		MOVIEGET = cur.fetchone()[0]
+		if "http" in MOVIEGET:
+			cur.execute("DELETE FROM settings WHERE item LIKE \"MOVIEGET\"")
+			sql.commit()
+		else:
+			mcheck = "pass"
+	if "fail" in mcheck:
+		print ("We need to update your settings to use the new movieget function. Input the name of the section that is your \"Movies\" section.")
+		foundsect = getsections()
+		MOVIEGET = str(input('Enter Section Name: '))
+		MOVIEGET = MOVIEGET.strip()
+		if MOVIEGET in foundsect:
+			print (MOVIEGET.strip())
+			cur.execute("INSERT INTO settings VALUES (?,?)",("MOVIEGET",MOVIEGET))
+			sql.commit()
+		else:
+			print ("Error: " + MOVIEGET + " not found as an available section in your library.")
+	else:
+		print ('Using the following movie library: ' + MOVIEGET)
+	plexlogin()
+	movies = []
+	mlist = plex.library.section(MOVIEGET)
+	mxlist = mlist.search("")
+	count = 0
+	xnum = int(len(mxlist)-1)
+	for video in mxlist:
+		try:
+			name = str(video.title)
+		except Exception:
+			name = video.title
+			name = name.encode("utf8")
+			name = str(name)
+		name = name.replace("'","''")
+		summary = video.summary
+		try:
+			summary = str(summary)
+		except Exception:
+			summary = summary.encode("ascii", "ignore")
+		rating = str(video.contentRating)
+		try:
+			tagline = str(video.tagline)
+		except Exception:
+			try:
+				tagline = tagline.decode("ascii", "ignore")
+			except Exception:
+				tagline = ""
+		tagline = tagline.replace("'","''")
+		agenre = video.genres
+		gcmd = "SELECT Genre FROM backupmovies WHERE Movie LIKE \"" + name + "\""
+		cur.execute(gcmd)
+		if not cur.fetchone():
+			gcheck = []
+		else:
+			cur.execute(gcmd)
+			gcheck = cur.fetchone()[0]
+			gcheck = gcheck.split(' ')
 
-def getshows():	
-	print ("Getting TVshowlist now.")
-	response = http.urlopen('GET', TVGET, preload_content=False).read()
+		for item in agenre:
+			if item == " ":
+				pass
+			elif (item not in gcheck):
+				try:
+					bgenre = bgenre + " " + item.tag
+				except NameError:
+					bgenre = item.tag
+		try:
+			bgenre
+		except NameError:
+			bgenre = ""
+		for item in gcheck:
+			if item == " ":
+				pass
+			elif ((item not in agenre) and (item not in bgenre)):
+				try:
+					bgenre = bgenre + " " + item.strip()
+				except NameError:
+					bgenre = item.strip()
+		bgenre = bgenre.strip()
+
+		directors = video.directors
+		for dt in directors:
+			try:
+				xdt = xdt + " " + dt.tag
+			except NameError:
+				xdt = dt.tag
+		try:
+			directors = xdt
+			del xdt
+		except Exception:
+			directors = ""
+		try:
+			directors = str(directors)
+		except Exception:
+			directors = str(directors.encode("ascii", "ignore"))
+
+		actors = video.roles
+		for act in actors:
+			try:
+				xact = xact + " " + act.tag
+			except NameError:
+				xact = act.tag
+		try:
+			bactors = xact
+			del xact
+		except Exception:
+			bactors = ""
+		try:
+			bactors = str(bactors)
+		except Exception:
+			bactors = str(bactors.encode("ascii", "ignore"))
+		try:
+			cur.execute('SELECT * FROM Movies WHERE Movie LIKE \'' + name + '\'')
+			if not cur.fetchone():
+				cur.execute('INSERT INTO Movies VALUES(?, ?, ?, ?, ?, ?, ?)', (name, summary, rating, tagline, bgenre, directors, bactors))
+				sql.commit()
+		except IndexError:
+			print ("\nError adding " + name)
+			with open(PROBLEMS, 'a') as file:
+				file.write(name.decode("ascii", "ignore") + " " + bactors + "\n")
+			file.close()
+		progress(xnum)
+		del bgenre
+	clearprogress()
+	print ("\nDone.")
+
+def getgenres(show):
+	global TVGET
+	command = "SELECT setting FROM settings WHERE item LIKE \"TVGENREFIX\""
+	cur.execute(command)
+	if not cur.fetchone():
+		cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERIP\"")
+		wlink = cur.fetchone()[0]
+		cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERPORT\"")
+		wip = cur.fetchone()[0]
+		slink = "http://" + wlink + ":" + wip + "/library/sections/"
+		response = http.urlopen('GET', slink, preload_content=False).read()
+		response = str(response)
+		response = response.split("Directory allowSync=")
+		#print ("The Following Sections are available off your server.")
+		sctsn = []
+		for item in response:
+			try:
+				name = item
+				section = item
+				name = name.split("title=\"")
+				name = name[1]
+				name = name.split("\"")
+				name = name[0]
+
+				section = section.split("key=\"")
+				section = section[1]
+				section = section.split("\"")
+				section = section[0]
+
+				link = "http://" + wlink + ":" + wip + "/library/sections/" + section + "/all/"
+				sctsn.append(link)
+				if name == TVGET:
+					TVGENREFIX = link
+			except IndexError:
+				pass
+		print TVGENREFIX
+		if TVGENREFIX.strip() not in sctsn:
+			Print ("Error: Invalid Selection Choice. Alternate Method Will Fail!")
+		else:
+			cur.execute("INSERT INTO settings VALUES (?,?)",("TVGENREFIX",TVGENREFIX))
+			sql.commit()
+	cur.execute(command)
+	TVGENREFIX = cur.fetchone()[0]
+	response = http.urlopen('GET', TVGENREFIX, preload_content=False).read()
 	response = str(response)
 	shows = response.split('<Directory ratingKey=')
 	counter = 1
 	xnum = int(len(shows))-1
-
 	while counter <= int(len(shows)-1):
-
-		show = shows[counter]
-		
-		genres = show
-		studio = show
-		
-		
-		title = show
+		xshow = shows[counter]
+		genres = xshow	
+		title = xshow
 		title = title.split('title="')
 		title = title[1]
 		title = title.split('"')
@@ -172,692 +272,315 @@ def getshows():
 		title = title.replace('&amp;','&')
 		title = title.replace('?','')
 		title = title.replace('/',' ')
-		title = title.replace("&#39;","'")
-		
-		summary = show
-		rating = show
-		duration = show
-		totalnum = show
-		
-		summary = show
-		summary = summary.split('summary="')
-		summary = summary[1]
-		summary = summary.split('"')
-		summary = summary[0]
-		summary = summary.replace('\'','')
-		
-		rating = show
-		try:
-			rating = rating.split('contentRating="')
-			rating = rating[1]
-			rating = rating.split('"')
-			rating = rating[0]
-		except Exception:
-			rating = 'N\A'
-		duration = show
-		duration = duration.split('duration="')
-		duration = duration[1]
-		duration = duration.split('"')
-		duration = duration[0]
-		duration = int(duration)/60000
-		
-		totalnum = show
-		totalnum = totalnum.split(' leafCount="')
-		totalnum = totalnum[1]
-		totalnum = totalnum.split('"')
-		totalnum = totalnum[0]
-		
-		name = title
-		TShow = name
-				
-		genres = genres.split("<Genre tag=\"")
-		try:
-			genre = genres[1]
-		except IndexError:
-			genre = "none"
-		try:
-			genre2 = genres[2]
-			genre2 = genre2.split('" />')
-			genre2 = genre2[0]
-		except IndexError:
-			genre2 = "none"
-		try:
-			genre3 = genres[3]
-			genre3 = genre3.split('" />')
-			genre3 = genre3[0]
-		except IndexError:
-			genre3 = "none"
-		genre = genre.split('" />')
-		
-		genre = genre[0] + ";" + genre2 + ";" + genre3 + ";"
-		genre = genre.replace('none;','')
-		
+		title = title.replace("&#39;","'")	
+		if (title == show):
+			genres = genres.split("<Genre tag=\"")
+			try:
+				genre = genres[1]
+			except IndexError:
+				genre = "none"
+			try:
+				genre2 = genres[2]
+				genre2 = genre2.split('" />')
+				genre2 = genre2[0]
+			except IndexError:
+				genre2 = "none"
+			try:
+				genre3 = genres[3]
+				genre3 = genre3.split('" />')
+				genre3 = genre3[0]
+			except IndexError:
+				genre3 = "none"
+			genre = genre.split('" />')
 			
-			
-		studio = studio.split("studio=\"")
-		try:
-			studio = studio[1]
-			studio = studio.split("\"")
-			studio = studio[0]
-		except IndexError:
-			studio = "None"
-		TShow = TShow.replace("'","''")
-		summary = summary.replace("&#39;","'")
-		summary = summary.replace("'","''")
-		summary = str(summary.decode('ascii','ignore')).strip()
-		cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE \"" + TShow + "\"")
-		try:
-			if not cur.fetchone():
-				cur.execute("INSERT INTO TVshowlist VALUES(?, ?, ?, ?, ?, ?)", (TShow, summary, genre, rating, int(duration), int(totalnum)))
-				sql.commit()
-				#marker
-				progress(xnum)
-		except IndexError: 
-			print ("\nError adding " + TShow)
-			with open(PROBLEMS, 'a') as file:
-				file.write(TShow + "\n")
-			file.close()
-				
-		
+			genre = genre[0] + ";" + genre2 + ";" + genre3 + ";"
+			genre = genre.replace('none;','')
+			genre = genre.split(";")
+			return genre
 		counter = counter + 1
+	return ("")
 
-	clearprogress()	
-	print ("\n\nTV Show List Generated.")
-
-
-def getmovies():
-	print ("Getting Movies now.")
-	response = http.urlopen('GET', MOVIEGET, preload_content=False).read()
-	response = str(response)
-	shows = response.split('<Video ratingKey=')
-	xnum = int(len(shows))-1
-	counter = 1
-
-	while counter <= int(len(shows)-1):
-
-		ashow = shows[counter]
-		ashow = ashow.split("key=\"/library/metadata/")
-		ashow = ashow[1]
-		ashow = ashow.split("\"")
-		ashow = ashow[0]
-		ashow = TVPART + ashow.strip()
-		show = http.urlopen('GET', ashow, preload_content=False).read()
-
-		genres = show
-		studio = show
-		directors = show
-		actors = show
-		rating = show
-		summary = show
-		tagline = show
-		
-		title = show
-		title = title.split('" title="')
-		title = title[1]
-		title = title.split('"')
-		title = title[0]
-		
-		title = title.replace('&apos;','\'')
-		title = title.replace('&amp;','&')
-		title = title.replace("&#39;","'")
-		
-		name = title
-
-		try:
-			genres = genres.split("</Media>")
-			genres = genres[1]
-			genres = genres.split("<Director")
-			genres = genres[0]
-			genres = genres.split('tag="')
-			bgenre = ""
-			for genre in genres:
-				genre = genre.split('"')
-				genre = genre[0]
-				genre = genre.replace("&amp;","&")
-				if ("\"" in genre):
-					pass
-				elif (("<Genre id=" in genre) or ("<Media videoResolution=" in genre)):
-					pass
-				else:
-					bgenre = bgenre + " " + genre
-		except IndexError:
-			bgenre = "None"
-		try:
-			directors = directors.split("</Media>")
-			directors = directors[1]
-			directors = directors.split("<Writer")
-			directors = directors[0]
-			directors = directors.split("<Director")
-			#print directors
-			dict = ""
-			cnt = 0
-			for director in directors:
-				if cnt == 0:
-					pass
-				else:
-					director = director.split("tag=\"")
-					director = director[1]
-					director = director.split("\"")
-					director = director[0]
-					dict = dict + director + " "
-				cnt = cnt + 1
-			directors = dict.strip()
-		except Exception:
-			directors = ""
-		
-		try:	
-			bactors = ""
-			actors = actors.split("<Role id=\"")
-			cnt = 0
-			for actor in actors:
-				if cnt == 0:
-					pass
-				else:
-					actor = actor.split("tag=\"")
-					actor = actor[1]
-					actor = actor.split("\"")
-					actor = actor[0]
-					bactors = bactors + " " + actor
-				cnt = cnt + 1
-			bactors = bactors.strip()
-		except Exception:
-			bactors = ""
-		
-		rating = rating.split("contentRating=\"")
-		try:
-			rating = rating[1]
-			rating = rating.split("\"")
-			rating = rating[0]
-		except IndexError:
-			#print ("No Rating Available. Skipping " + name)
-			rating = "none"
-		
-		tagline = tagline.split("tagline=\"")
-		try:
-			tagline = tagline[1]
-			tagline = tagline.split("\" ")
-			tagline = tagline[0]
-		except IndexError:
-			#print ("No Tagline Available. Skipping " + name)
-			tagline = "none"
-			
-		summary = summary.split("summary=\"")
-		try:
-			summary = summary[1]
-			summary = summary.split("\"")
-			summary = summary[0]
-		except IndexError:
-			#print ("No Summary Available. Skipping " + name)
-			summary = "none"
-
-		summary = summary.replace('&apos;','\'')
-		summary = summary.replace('&amp;','&')
-		summary = summary.replace("&#39;","'")
-		summary = summary.replace(',', ' ')	
-		summary = summary.replace('\'','')
-		try:
-			summary = summary.decode("ascii", "ignore")
-		except Exception:
-			pass
-		name = name.replace('&apos;','\'')
-		name = name.replace('&amp;','&')
-		name = name.replace(',', ' ')
-		name = name.replace("'","''")
-		tagline = tagline.replace('&apos;','')
-		tagline = tagline.replace('&amp;','&')
-		tagline = tagline.replace(',', ' ')
-		tagline = tagline.replace('\'','')
-		try:
-			tagline = tagline.decode("ascii", "ignore")
-		except Exception:
-			pass
-		directors = directors.replace('&apos;','')
-		directors = directors.replace('&amp;','&')
-		directors = directors.replace(',', ' ')
-		directors = directors.replace('\'','')
-		try:
-			directors = directors.decode("ascii", "ignore")
-		except Exception:
-			pass
-		bgenre = bgenre.replace('&apos;','')
-		bgenre = bgenre.replace('&amp;','&')
-		bgenre = bgenre.replace(',', ' ')
-		bgenre = bgenre.replace("none", "")
-		bactors = bactors.replace('&apos;','')
-		bactors = bactors.replace('\'','')
-		bactors = bactors.replace('&amp;','&')
-		bactors = bactors.replace(',', ' ')
-		try:
-			bactors = bactors.decode("ascii", "ignore")
-		except Exception:
-			pass
-		
-		try:
-			cur.execute('SELECT * FROM Movies WHERE Movie LIKE \'' + name + '\'')
-			if not cur.fetchone():
-				cur.execute('INSERT INTO Movies VALUES(?, ?, ?, ?, ?, ?, ?)', (name, summary, rating, tagline, bgenre, directors, bactors))
-				sql.commit()
-		except Exception:
-			print ("\nError adding " + name)
-			with open(PROBLEMS, 'a') as file:
-				file.write(name.decode("ascii", "ignore") + " " + bactors + "\n")
-			file.close()
-		progress(xnum)
-		counter = counter + 1
-	clearprogress()
-	print ("\nDone.")
-
-def getcommercials():
-	cur.execute("CREATE TABLE IF NOT EXISTS commercials(name TEXT, duration INT)")
-	sql.commit()
-	command = "SELECT setting FROM settings WHERE item LIKE \"COMPART\""
+def getshows():
+	global TVGET
+	tcheck = "fail"
+	command = "SELECT setting FROM settings WHERE item LIKE \"TVGET\""
 	cur.execute(command)
 	if not cur.fetchone():
-		getsections()
-		print ("You need to supply the link to find your commercials.\nExample: http://192.168.1.134:32400/library/metadata/\n")
-		COMPART = str(input('Link:'))
-		cur.execute("INSERT INTO settings VALUES(?,?)", ("COMPART",COMPART.strip()))
-		sql.commit()
-		print (COMPART + " has been added to the settings table. Moving on.")
+		tcheck = "fail"
 	else:
 		cur.execute(command)
-		COMPART = cur.fetchone()[0]
-
-	cur.execute("DELETE FROM commercials")
-	sql.commit()
-	
-	response = http.urlopen('GET', COMPART, preload_content=False).read()
-	response = str(response)
-	commercials = response.split("<Video ratingKey=")
-	counter = 1
-
-	while counter <= int(len(commercials)-1):
-		comc = commercials[counter]
-		duration = comc
-
-		comc = comc.split("title=\"")
-		comc = comc[1]
-		comc = comc.split("\"")
-		comc = comc[0].strip()
-
-		duration = duration.split("duration=\"")
-		duration = duration[1]
-		duration = duration.split("\"")
-		duration = duration[0].strip()
-		duration = int(duration)/1000
-		cur.execute("SELECT * FROM commercials WHERE name LIKE \"" + comc + "\"")
-		if not cur.fetchone():
-			cur.execute("INSERT INTO commercials VALUES (?,?)", (comc, duration))
+		TVGET = cur.fetchone()[0]
+		if "http" in TVGET:
+			cur.execute("DELETE FROM settings WHERE item LIKE \"TVGET\"")
 			sql.commit()
-			#print ("New Commercial Found: " + comc)
-		counter = counter + 1
-	
-	print ("Done")
+		else:
+			tcheck = "pass"
+	if "fail" in tcheck:
+		print ("We need to update your settings to use the new tvget function. Input the name of the section that is your \"TV Shows\" section.")
+		foundsect = getsections()
+		TVGET = str(input('Enter Section Name: '))
+		TVGET = TVGET.strip()
+		if TVGET in foundsect:
+			print (TVGET.strip())
+			cur.execute("INSERT INTO settings VALUES (?,?)",("TVGET",TVGET))
+			sql.commit()
+		else:
+			print ("Error: " + TVGET + " not found as an available section in your library.")
+	else:
+			print ('Using the following TV Show library: ' + TVGET)	
+	plexlogin()
+	tlist = plex.library.section(TVGET)
+	tvlist = tlist.search("")
+	xnum = int(len(tvlist))-1
+	for show in tvlist:
+		name = str(show.title)
+		summary = show.summary
+		summary = str(summary.encode('ascii','ignore')).strip()
+		rating = str(show.contentRating)
+		rating = rating.replace("__NA__","NA")
+		duration =  int(show.duration)/60000
+		agenre = show.genres
+		try:
+			agenre = str(agenre)
+			if agenre == "__NA__":
+				agenre = ""
+				#print ("Genre Get Failed. Trying alternate method")
+				agenre = getgenres(name)
+		except IndexError:
+			print ("Genre Get Failed.")
+			agenre = getgenres(name)
+		gcmd = "SELECT Genre FROM backshowlist WHERE TShow LIKE \"" + name + "\""
+		cur.execute(gcmd)
+		if not cur.fetchone():
+			gcheck = []
+		else:
+			cur.execute(gcmd)
+			gcheck = cur.fetchone()[0]
+			gcheck = gcheck.replace(";"," ")
+			gcheck = gcheck.split(' ')
+		for item in agenre:
+			if ((item == " ") or (item == "")):
+				pass
+			elif (item not in gcheck):
+				try:
+					bgenre = bgenre + " " + item
+				except NameError:
+					bgenre = item
+		try:
+			str(bgenre)
+		except NameError:
+			bgenre = ""
+		for item in gcheck:
+			if item == " ":
+				pass
+			elif (item not in bgenre):
+				try:
+					bgenre = bgenre + " " + item.strip()
+				except NameError:
+					bgenre = item.strip()
+		bgenre = bgenre.strip()
+		totalnum = int(show.leafCount)
+		cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE\"" + name + "\"")
+		if not cur.fetchone():
+			cur.execute("INSERT INTO TVshowlist VALUES (?,?,?,?,?,?)",(name,summary,bgenre,rating,duration,totalnum))
+			sql.commit()
+			
+		progress(xnum)
+		del bgenre
+	clearprogress()
 
-def getprerolls():
-        cur.execute("CREATE TABLE IF NOT EXISTS prerolls(name TEXT, duration INT)")
-        sql.commit()
-        command = "SELECT setting FROM settings WHERE item LIKE \"PREROLLPART\""
-        cur.execute(command)
-        if not cur.fetchone():
-		getsections()
-                print ("You need to supply the link to find your prerolls.\nExample: http://192.168.1.134:32400/library/metadata/\n")
-                PREROLLPART = str(input('Link:'))
-                cur.execute("INSERT INTO settings VALUES(?,?)", ("PREROLLPART",PREROLLPART.strip()))
-                sql.commit()
-                print (PREROLLPART + " has been added to the settings table. Moving on.")
-        else:
-                cur.execute(command)
-                PREROLLPART = cur.fetchone()[0]
+def getcustom(section):
+	if ("preroll" in section.lower()):
+		cur.execute("CREATE TABLE IF NOT EXISTS prerolls(name TEXT, duration INT)")
+		sql.commit()
+		mcheck = "fail"
+		command = "SELECT setting FROM settings WHERE item LIKE \"PREROLLPART\""
+		cur.execute(command)
+		if not cur.fetchone():
+			mcheck = "fail"
+		else:
+			cur.execute(command)
+			PREROLLPART = cur.fetchone()[0]
+			if "http" in PREROLLPART:
+				cur.execute("DELETE FROM settings WHERE item LIKE \"PREROLLPART\"")
+				sql.commit()
+			else:
+				mcheck = "pass"
+		if "fail" in mcheck:
+			print ("We need to update your settings to use the new preroll get function. Input the name of the section that is your \"Pre Rolls\" section.")
+			foundsect = getsections()
+			PREROLLPART = str(input('Enter Section Name: '))
+			PREROLLPART = PREROLLPART.strip()
+			if PREROLLPART in foundsect:
+				print (PREROLLPART.strip())
+				cur.execute("INSERT INTO settings VALUES (?,?)",("PREROLLPART",PREROLLPART))
+				sql.commit()
+			else:
+				print ("Error: " + PREROLLPART + " not found as an available section in your library.")
+		else:
+			print ('Using the following Preroll library: ' + PREROLLPART)
+		USEME = PREROLLPART
+		USETABLE = "prerolls"
+	elif ("commercial" in section.lower()):
+		cur.execute("CREATE TABLE IF NOT EXISTS commercials(name TEXT, duration INT)")
+		sql.commit()
+		mcheck = "fail"
+		command = "SELECT setting FROM settings WHERE item LIKE \"COMPART\""
+		cur.execute(command)
+		if not cur.fetchone():
+			mcheck = "fail"
+		else:
+			cur.execute(command)
+			COMPART = cur.fetchone()[0]
+			if "http" in COMPART:
+				cur.execute("DELETE FROM settings WHERE item LIKE \"COMPART\"")
+				sql.commit()
+			else:
+				mcheck = "pass"
+		if "fail" in mcheck:
+			print ("We need to update your settings to use the new Commercial get function. Input the name of the section that is your \"Commercials\" section.")
+			foundsect = getsections()
+			COMPART = str(input('Enter Section Name: '))
+			COMPART = COMPART.strip()
+			if COMPART in foundsect:
+				print (COMPART.strip())
+				cur.execute("INSERT INTO settings VALUES (?,?)",("COMPART",COMPART))
+				sql.commit()
+			else:
+				print ("Error: " + COMPART + " not found as an available section in your library.")
+		else:
+			print ('Using the following Commercial library: ' + COMPART)
+		USEME = COMPART
+		USETABLE = "commercials"
+	elif ("custom." in section.lower()):
+		section = section.lower()
+		section = section.replace("custom.","").strip()
+		item = "CUSTOM_" + section
+		cur.execute("CREATE TABLE IF NOT EXISTS " + item + "(name TEXT, duration INT, type TEXT)")
+		sql.commit()
+		command = "SELECT setting FROM settings WHERE item LIKE \"" + item + "\""
+		mcheck = "fail"
+		cur.execute(command)
+		if not cur.fetchone():
+			mcheck = "fail"
+		else:
+			cur.execute(command)
+			COMPART = cur.fetchone()[0]
+			if "http" in COMPART:
+				cur.execute("DELETE FROM settings WHERE item LIKE \"" + item + "\"")
+				sql.commit()
+			else:
+				mcheck = "pass"
+		if "fail" in mcheck:
+			print ("We need to update your settings to use the new Custom get function. Input the name of the section that is your \"" + item + "\" section.")
+			foundsect = getsections()
+			COMPART = str(input('Enter Section Name: '))
+			COMPART = COMPART.strip()
+			if COMPART in foundsect:
+				print (COMPART.strip())
+				cur.execute("INSERT INTO settings VALUES (?,?)",(item,COMPART))
+				sql.commit()
+			else:
+				print ("Error: " + COMPART + " not found as an available section in your library.")
+		else:
+			print ('Using the following Custom library: ' + COMPART)
+		USEME = COMPART
+		USETABLE = item
+        plexlogin()
+	mlist = plex.library.section(USEME)
+	mxlist = mlist.search("")
+        count = 0
+        xnum = int(len(mxlist)-1)
+        for video in mxlist:
+		try:
+			name = str(video.title)
+		except Exception:
+			name = video.title
+			name = name.encode("utf8")
+			name = str(name)
+		name = name.replace("'","''")
+		duration = int(video.duration)/1000
+		cur.execute("SELECT * FROM " + USETABLE + " WHERE name LIKE \"" + name + "\"")
+		if not cur.fetchone():
+			if (("prerolls" in USETABLE) or ("commercials" in USETABLE)):
+				cur.execute("INSERT INTO " + USETABLE + " VALUES (?,?)",(name, duration))
+				sql.commit()
+				#print ("Found and added: " + name + ".")
+			elif ("CUSTOM_" in USETABLE):
+				cur.execute("INSERT INTO " + USETABLE + " VALUES (?,?,?)",(name, duration, section))
+				sql.commit()
+				#print ("Found and added: " + name + ".")
+		progress(xnum)
+	clearprogress()
+	print ("Done.")
 
-	cur.execute("DELETE FROM prerolls")
-	sql.commit()
+def progress(num):
+        num = int(num)
+        global pcount
+        try:
+			pcount
+        except NameError:
+			pcount =1 
+        perc = round((float(pcount) / float(num)) * 100, 1)
+        sys.stdout.write("\r" + str(perc) + "%")
+        sys.stdout.flush()
+	pcount = pcount + 1
 
-        response = http.urlopen('GET', PREROLLPART, preload_content=False).read()
-        response = str(response)
-        commercials = response.split("<Video ratingKey=")
-        counter = 1
-
-        while counter <= int(len(commercials)-1):
-                comc = commercials[counter]
-                duration = comc
-
-                comc = comc.split("title=\"")
-                comc = comc[1]
-                comc = comc.split("\"")
-                comc = comc[0].strip()
-
-                duration = duration.split("duration=\"")
-                duration = duration[1]
-                duration = duration.split("\"")
-                duration = duration[0].strip()
-                duration = int(duration)/1000
-                cur.execute("SELECT * FROM prerolls WHERE name LIKE \"" + comc + "\"")
-                if not cur.fetchone():
-                        cur.execute("INSERT INTO prerolls VALUES (?,?)", (comc, duration))
-                        sql.commit()
-                        #print ("New preroll Found: " + comc)
-                counter = counter + 1
-
-        print ("\nDone")
-
-def getcustomsection(name):
-	sname = "CUSTOM_" + name.lower().strip()
-	command = "CREATE TABLE IF NOT EXISTS "+ sname + "(name TEXT, duration INT, type TEXT)"
-	cur.execute(command)
-        sql.commit()
-        command = "SELECT setting FROM settings WHERE item LIKE \"" + sname + "\""
-        cur.execute(command)
-        if not cur.fetchone():
-		getsections()
-                print ("You need to supply the link to find your " + name.strip() + " section.\nExample: http://192.168.1.134:32400/library/sections/9/all/\n")
-                PREROLLPART = str(input('Link:'))
-                cur.execute("INSERT INTO settings VALUES(?,?)", (sname,PREROLLPART.strip()))
-                sql.commit()
-                print (PREROLLPART + " has been added to the settings table. Moving on.")
-        else:
-                cur.execute(command)
-                PREROLLPART = cur.fetchone()[0]
-
-        cur.execute("DELETE FROM " + sname)
-        sql.commit()
-
-        response = http.urlopen('GET', PREROLLPART, preload_content=False).read()
-        response = str(response)
-	type = response
-	type = type.split("librarySectionTitle=\"")
-	type = type[1]
-	type = type.split("\"")
-	type = type[0].strip()
-	
-        commercials = response.split("<Video ratingKey=")
-        counter = 1
-
-        while counter <= int(len(commercials)-1):
-                comc = commercials[counter]
-                duration = comc
-
-                comc = comc.split("title=\"")
-                comc = comc[1]
-                comc = comc.split("\"")
-                comc = comc[0].strip().strip()
-		comc = comc.replace("&#39;","''")
-		comc = comc.replace("&amp;","&")
-
-                duration = duration.split("duration=\"")
-                duration = duration[1]
-                duration = duration.split("\"")
-                duration = duration[0].strip()
-                duration = int(duration)/1000
-		
-                cur.execute("SELECT * FROM " + sname + " WHERE name LIKE \"" + comc + "\"")
-                if not cur.fetchone():
-                        cur.execute("INSERT INTO " + sname + " VALUES (?,?,?)", (comc, duration, type))
-                        sql.commit()
-                        #print ("New " + sname + " Found: " + comc)
-                counter = counter + 1
-
-        print ("\nDone")
-
-def startupactiontv():
-	cur.execute("DELETE FROM TVshowlist")
-	sql.commit()
-	print ("TV Tables purged and ready for data.")
+def clearprogress():
+        global pcount
+        pcount = 0
 
 def startupactionmovie():
-	cur.execute("DELETE FROM Movies")
-	sql.commit()
-        print ("Movie Tables purged and ready for data.")
-
-def getfavorites():
-	global favtv
-	global favmve
-	cur.execute("SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\"")
-	mlist = cur.fetchall()
-	for mve in mlist:
-		mve = mve[0]
-		if mve.strip() not in favmve:
-			favmve.append(mve)
-
-	cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%favorite%\"")
-	tvlist = cur.fetchall()
-	for item in tvlist:
-		item = item[0]
-		if item not in favtv:
-			favtv.append(item)
-
-	print ("Favorites Acquired. Moving On.")
-
-def restorefavorites():
-	global favtv
-        global favmve
-	cmdtv = "python ./system.py addfavoriteshow "
-	cmdmv = "python ./system.py addfavoritemovie "
-	
-	for show in favtv:
-		command = cmdtv + "\"" + show.strip() + "\""
-		os.system(command)
-	
-	for movie in favmve:
-		command = cmdmv + "\"" + movie.strip() + "\""
-		os.system(command)
-
-	print ("Favorites Restored.")
-
-def getgenrestv():
-	global tvgenres
-	command = "SELECT Genre FROM TVshowlist ORDER BY Genre ASC"
-        cur.execute(command)
-        fgenres = cur.fetchall()
-        xshowlist = []
-        for genres in fgenres:
-                genre = genres[0].split(";")
-                for xgen in genre:
-                        if xgen not in xshowlist:
-                                xshowlist.append(xgen)
-	for genre in xshowlist:
-		genre = genre.strip()
-		command = "SELECT TShow from TVshowlist where Genre LIKE \"%" + genre + "%\""
-		cur.execute(command)
-		shows = cur.fetchall()
-		for show in shows:
-			show = show[0]
-
-			try:
-				writeme = writeme + "," + show
-			except NameError:
-				writeme = genre + ":" + show
-		tvgenres.append(writeme)
-		del writeme
-	print ("TV Genres Saved.")
-
-def getgenresmovie():
-	global moviegenres
-	command = "SELECT Genre FROM Movies ORDER BY Genre ASC"
-	cur.execute(command)
-	fgenres = cur.fetchall()
-	xmovies = []
-	for genres in fgenres:
-		genre = genres[0].split(" ")
-		for xgen in genre:
-			if ((xgen not in xmovies) and (xgen != "")):
-				xmovies.append(xgen)
-	for genre in xmovies:
-		if genre == " ":
-			pass
-		else:
-			genre = genre.strip()
-			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%" + genre + "%\""
-			cur.execute(command)
-			movies = cur.fetchall()
-			for movie in movies:
-				movie = movie[0]
-				try:
-					writeme = writeme + "," + movie
-				except NameError:
-					writeme = genre + ":" + movie
-				moviegenres.append(writeme)
-				del writeme
-	print ("Movie Genres Saved.")
-	
-def restoregenrestv():
-	print ("\nRestoring Custom TV Genres Now.")
-	global tvgenres
-	xnum = int(len(tvgenres))-1
-	for genre in tvgenres:
-		genre = genre.split(":")
-		shows = genre[1]
-		genre = genre[0]
-		shows = shows.split(",")
-		for show in shows:
-			show = show.strip()
-			say = addgenreshow(show,genre)
-		progress(xnum)
-	clearprogress()
-	print ("\nTV Genres Restored.")
-
-def restoregenremovies():
-	print ("\nRestoring Custom Movie Genres.")
-	global moviegenres
-	xnum = int(len(moviegenres))-1
-	for gre in moviegenres:
-		if gre == " ":
-			pass
-		else:
-			gre = gre.split(":")
-			shows = gre[1]
-			genre = gre[0]
-			shows = shows.split(",")
-			for show in shows:
-				show = show.strip()
-				say = addgenremovie(show, genre)
-		progress(xnum)
-	clearprogress()
-        print ("\nMovie Genres Restored.")
-
-def addgenreshow(show, genre):
-        command = 'SELECT * FROM TVshowlist WHERE TShow LIKE \'' + show + '\''
-        cur.execute(command)
-        if not cur.fetchone():
-                return ("Error: " + show + " not found. Check title and try again.")
-        cur.execute(command)
-        stuff = cur.fetchone()
-        TShow = stuff[0]
-        summary = stuff[1]
-        try:
-                genres = stuff[2]
-        except Exception:
-                genres = ""
-        rating = stuff[3]
-        duration = stuff[4]
-        totalnum = stuff[5]
-        if genre.lower() in genres.lower():
-                return("Error: " + genre + " is already associated with the show " + show)
-        genres = genres + " " + genre
-        command = 'DELETE FROM TVshowlist WHERE TShow LIKE \'' + show + '\''
-        cur.execute(command)
+        command = "python " + homedir + "system.py backupmoviedb"
+        os.system(command)
+        cur.execute("DELETE FROM Movies")
         sql.commit()
-        cur.execute('INSERT INTO TVshowlist VALUES(?,?,?,?,?,?)',(TShow, summary, genres, rating, int(duration), int(totalnum)))
-        sql.commit()
-        return (genre + " has been associated with " + show)
+        print ("Movie Table purged and ready for data.")
 
-def addgenremovie(movie, genre):
-        command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + movie + '\''
-        cur.execute(command)
-        if not cur.fetchone():
-		say = "Error restoring genre " + genre + " to movie " + movie
-		return ("Error restoring genre " + genre + " to movie " + movie)
-        cur.execute(command)
-        stuff = cur.fetchone()
-        title = stuff[0]
-        summary = stuff[1]
-        rating = stuff[2]
-        tagline = stuff[3]
-        genres = stuff[4]
-        director = stuff[5]
-        actor = stuff[6]
-        if genre.lower() in genres.lower():
-                return("Error: " + genre + " is already associated with the movie " + movie)
-        genres = genres.strip() + " " + genre
-        command = 'DELETE FROM Movies WHERE Movie LIKE \'' + movie + '\''
-        cur.execute(command)
+def startupactiontv():
+	command = "python " + homedir + "system.py backuptvdb"
+        os.system(command)
+        cur.execute("DELETE FROM TVshowlist")
         sql.commit()
-        cur.execute('INSERT INTO Movies VALUES(?,?,?,?,?,?,?)',(title, summary, rating, tagline, genres, director, actor))
-        sql.commit()
-        return (genre + " successfully associated with the movie " + movie )
-	
+        print ("TV Table purged and ready for data.")
+
+cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
+sql.commit()
+cur.execute('CREATE TABLE IF NOT EXISTS TVshowlist(TShow TEXT, Summary TEXT, Genre TEXT, Rating TEXT, Duration INT, Totalnum INT)')
+sql.commit()
+
+print ("Database update starting...\n")
+
 try:
-	if "Windows" not in ostype:
-		option = str(sys.argv[1])
-	else:
-		print ("Notice: For Windows, the update db script may default to 'all' when there is an argument failure.\n")
-		option = "all"
-	#getsections()
-	#commands
-	if ("updatetv" in option):
-		bcmd = "python " + homedir + "system.py backuptvdb"
-		os.system(bcmd)
-		getgenrestv()
-		try:
-			getgenrestv()
-			startupactiontv()
-			getshows()
-			restoregenrestv()
-		except KeyboardInterrupt:
-			print ("Cancel request received. Restoring tables.")
-			cmd = "python " + homedir + "system.py restoretvdb"
-			os.system(cmd)
-			print("Cancelled.")
-	elif ("updatemovies" in option):
-		bcmd = "python " + homedir + "system.py backupmoviedb"
-		os.system(bcmd)
-		try:
-			getgenresmovie()
-			startupactionmovie()
-			getmovies()
-			restoregenremovies()
-		except KeyboardInterrupt:
-			print ("Cancel request received. Restoring tables.")
-                        cmd = "python " + homedir + "system.py restoremoviedb"
-                        os.system(cmd)
-                        print("Cancelled.")
-	elif ("all" in option):
-		bcmd = "python " + homedir + "system.py backuptvdb"
-                os.system(bcmd)
-		bcmd = "python " + homedir + "system.py backupmoviedb"
-                os.system(bcmd)
-		try:
-			getgenrestv()
-			getgenresmovie()
-			startupactiontv()
-			startupactionmovie()
-			getshows()
-			getmovies()
-			restoregenrestv()
-			restoregenremovies()
-		except KeyboardInterrupt:
-			print ("Cancel request received. Restoring tables.")
-                        cmd = "python " + homedir + "system.py restoremoviedb"
-                        os.system(cmd)
-			cmd = "python " + homedir + "system.py restoretvdb"
-                        os.system(cmd)
-                        print("Cancelled.")
-	elif ("getcommercials" in option):
-		getcommercials()
-		print ("Commercial Get Finished.")
-	elif ("getprerolls" in option):
-		getprerolls()
-		print ("Preroll Get Finished.")
-	elif ("getcustomsection" in option):
-		try:
-			option = str(sys.argv[2])
-			getcustomsection(option)
-			print ("Get Custom Done.")
-		except IndexError:
-			print ("Error: You must supply a section name to use this command.")
-	elif ("getsections" in option):
-		getsections()
-
-except TypeError:
-	print ("No option specified. Use 'updatetv' or 'updatemovies' or 'all' to update your db.")		
-print ("Done")
+	if ("movie" in str(sys.argv)):
+		tpe = "movie"
+		startupactionmovie()
+		getmovies()
+	elif ("shows" in str(sys.argv)):
+		tpe = "tv"
+		startupactiontv()
+		getshows()
+	elif ("prerolls" in str(sys.argv)):
+		tpe = "prerolls"
+		getcustom("prerolls")
+	elif ("commercials" in str(sys.argv)):
+		tpe = "commercials"
+		getcustom("commercials")
+	elif ("custom." in str(sys.argv)):
+		item = str(sys.argv[1])
+		getcustom(item)
+	elif("all" in str(sys.argv).lower()):
+		tpe = "both"
+		startupactionmovie()
+		getmovies()
+		startupactiontv()
+		getshows()
+except KeyboardInterrupt:
+	print ("Cancel request received. Restoring tables.")
+	if (("movie" in tpe) or ("both" in tpe)):
+		cmd = "python " + homedir + "system.py restoremoviedb"
+		os.system(cmd)
+	elif (("show" in tpe) or ("both" in tpe)):
+		cmd = "python " + homedir + "system.py restoretvdb"
+		os.system(cmd)
+	print("Cancelled.")
