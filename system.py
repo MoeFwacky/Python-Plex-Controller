@@ -2501,21 +2501,32 @@ def moviedetails(movie):
 	movie = movie.replace("movie.","")
 	if (("Error" in movie) or (movie == "done")):
 		return movie
-	command = 'SELECT * FROM Movies WHERE Movie LIKE \'' + movie + '\''
-	cur.execute(command)
-	xep = cur.fetchone()
-	ep = str(xep[0])
-	summary = str(xep[1])
-	summary = summary.replace("&apos;", "'")
-	summary = summary.replace("&#xA;", "")
-	xmovie = "movie." + movie.strip()
-	leftoff = whereleftoff(xmovie)
-	genres = str(xep[4]).strip()
-	genres = genres.replace("  "," ")
-	starring = str(xep[6]).strip()
-	director = str(xep[5]).strip()
-
-	showplay = "Movie: " + ep + "\nRated: " + str(xep[2]) + "\nStarring: " + starring + "\nDirected By: " + director + "\nGenres: " + genres + "\nTagline: " + str(xep[3]) + "\nSummary: " + summary + "\n\nResume from minute option: " + str(leftoff) + "."
+	plexlogin()
+	movie = plex.library.section('Movies').get(movie)
+	mvname = movie.title
+	mvrating = movie.contentRating
+	astarring = movie.roles
+	for item in astarring:
+		try:
+			starring = starring + ", " + item.tag
+		except NameError:
+			starring = item.tag
+	adirector = movie.directors
+	for item in adirector:
+		try:
+			director = director + ", " + item.tag
+		except NameError:
+			director = item.tag
+	agenres = movie.genres
+	for item in agenres:
+		try:
+			genres = genres + ", " + item.tag
+		except NameError:
+			genres = item.tag
+	tagline = movie.tagline
+	summary = movie.summary
+	leftoff = whereleftoff(mvname)
+	showplay = "Movie: " + mvname + "\nRated: " + str(mvrating) + "\nStarring: " + starring + " \nDirected By: " + director + "\nGenres: " + genres + "\nTagline: " + tagline + "\nSummary: " + summary + "\n\nResume from minute option: " + str(leftoff) + "."
 	return showplay
 
 def showdetails(show):
@@ -2977,6 +2988,7 @@ def playholiday(holiday):
 			return "Playing " + title + " for the holiday " + holiday + " now."
 
 def playshow(show):
+	SECTION = "TV Shows"
 	show = checkcustomtables(show)
 	if type(show) is tuple:
 		show = show[0].lower()
@@ -2996,7 +3008,24 @@ def playshow(show):
 	command = "SELECT * FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
-		schecker = "lost"
+		try:
+			plexlogin()
+			print (show)
+			for video in plex.search(show):
+				xshow = video
+			if xshow.type == "show":
+				show = video.title
+				print video.librarySectionID
+				SECTION = video.librarySectionID
+				xsec = plex.library.sections()
+				for lib in xsec:
+					if lib.key == SECTION:
+						SECTION = lib.title
+				schecker = "found"
+			else:
+				schecker = "lost"
+		except Exception:
+			schecker = "lost"
 	else:
 		schecker = "found"
 
@@ -3031,7 +3060,7 @@ def playshow(show):
 			thecount = 1
 		
 		thecount = thecount - 1
-		shows = plex.library.section('TV Shows')
+		shows = plex.library.section(SECTION)
 		theshow = shows.get(show).episodes()
 		xshow = theshow[thecount].title
 		if (int(thecount)+1 > int(len(theshow))-1):
@@ -3045,8 +3074,9 @@ def playshow(show):
 		sql.commit()	
 		thecount = str(thecount)
 	
-		shows = plex.library.section('TV Shows')
+		shows = plex.library.section(SECTION)
 		show = show.replace("''","'")
+		print xshow
 		xshow = xshow.replace("''","'")
 		the_show = shows.get(show)
 		#showplay = the_show.rstrip()
@@ -6313,7 +6343,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.00c2"
+	version = "3.00c3"
 	return version
 	
 
@@ -7412,8 +7442,11 @@ try:
 			if show == "playspshow":
 				pass
 			else:
+				oshow = show
 				show = titlecheck(show)
 				show = mediachecker(show)
+				if "Error:" in show:
+					show = oshow
 			pstatus = checkpstatus()
 			try:
 				title = str(sys.argv[2])
