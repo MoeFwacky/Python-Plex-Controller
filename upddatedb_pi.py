@@ -518,9 +518,9 @@ def progress(num):
         num = int(num)
         global pcount
         try:
-			pcount
+		pcount
         except NameError:
-			pcount =1 
+		pcount = 0 
         perc = round((float(pcount) / float(num)) * 100, 1)
         sys.stdout.write("\r" + str(perc) + "%")
         sys.stdout.flush()
