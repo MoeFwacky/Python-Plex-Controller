@@ -23,6 +23,7 @@ global file
 global show
 global play
 global pcmd
+global pcount
 
 SLEEPTIME = 15 
 try:
@@ -6277,6 +6278,91 @@ def qtpl():
         cur.execute(command)
         queuetpl = cur.fetchone()[0]
 	return queuetpl
+
+def progress(num):
+        num = int(num)
+        global pcount
+        try:
+                        pcount
+        except NameError:
+                        pcount =0
+        perc = round((float(pcount) / float(num)) * 100, 1)
+        sys.stdout.write("\r" + str(perc) + "%")
+        sys.stdout.flush()
+        pcount = pcount + 1
+
+def clearprogress():
+        global pcount
+        pcount = 0
+
+def backuptvcounts():
+	wfile = homedir + "tvcounts"
+	with open(wfile,"w+") as file:
+		file.write("")
+	file.close()
+	command = "SELECT * FROM TVCounts"
+	cur.execute(command)
+	if not cur.fetchall():
+		return ("Error: No TV Counts Found to Backup.")
+	cur.execute(command)
+	tl = cur.fetchall()
+	xnum = int(len(tl)-1)
+	for itm in tl:
+		if ((itm[0] == "") or ("Error:" in itm[0]) or ("movie." in itm[0])):
+			cur.execute("DELETE FROM TVCounts WHERE Show LIKE \"" + itm[0] + "\"")
+			sql.commit()
+		else:
+			wme = str(itm[0]) + ":::" + str(itm[1])
+			wme = wme.strip()
+			wme = wme + "\n"
+			with open(wfile, "a") as file:
+				file.write(wme)
+			file.close()
+			del wme
+		progress(xnum)
+	clearprogress()
+	del xnum
+	return ("\nTV Counts have been backed up to: \"" + wfile + "\".")
+
+def restoretvcounts():
+	wfile = homedir + "tvcounts"
+	try:
+		with open(wfile,"r") as file:
+			tcs = file.readlines()
+		file.close()
+	except IOError:
+		return ("Error: file \"tvcounts\" not found in \"" + homedir + "\". Make sure the tvcounts file exists in the correct location and try again.")
+	print ("\nDo you want to overwrite existing entries if any exit?\n")
+	cchk = input('Yes or No?: ')
+	if "yes" in cchk.lower():
+		cck = "yes"
+	else:
+		cck = "no"
+	xnum = int(len(tcs)-1)
+	for itm in tcs:
+		itm = itm.split(":::")
+		name = itm[0].strip()
+		try:
+			num = int(itm[1].strip())
+		except ValueError:
+			print num
+		command = ("SELECT * FROM TVCounts WHERE Show LIKE \"" + name + "\"")
+		cur.execute(command)
+		if not cur.fetchone():
+			cur.execute("INSERT INTO TVCounts VALUES (?,?)",(name,num))
+			sql.commit()
+		else:
+			if (cck == "yes"):
+				cur.execute("DELETE FROM TVCounts WHERE Show LIKE \"" + name + "\"")
+				sql.commit()
+				cur.execute("INSERT INTO TVCounts VALUES (?,?)",(name,num))
+				sql.commit()
+		progress(xnum)
+        clearprogress()
+        del xnum
+
+	return ("\nTV Counts have been restored.\n")
+			
 	
 def backuptvdb():
         try:
@@ -6343,7 +6429,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.00c3"
+	version = "3.00d"
 	return version
 	
 
@@ -6364,6 +6450,10 @@ try:
 	elif ("swhere" in show):
 		num = sys.argv[2]
 		say = swhere(num)
+	elif ("backuptvcounts" in show):
+		say = backuptvcounts()
+	elif ("restoretvcounts" in show):
+		say = restoretvcounts()
 	elif ("backuptvdb" in show):
 		backuptvdb()
 		say = "Done."
