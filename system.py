@@ -2989,7 +2989,7 @@ def playholiday(holiday):
 			return "Playing " + title + " for the holiday " + holiday + " now."
 
 def playshow(show):
-	SECTION = "TV Shows"
+	#SECTION = "TV Shows"
 	show = checkcustomtables(show)
 	if type(show) is tuple:
 		show = show[0].lower()
@@ -3008,32 +3008,53 @@ def playshow(show):
 	kcheckmovie = checkmode("movie")
 	command = "SELECT * FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
+	print (show)
 	if not cur.fetchone():
 		try:
 			plexlogin()
-			print (show)
-			for video in plex.search(show):
-				xshow = video
-			if xshow.type == "show":
-				show = video.title
-				print video.librarySectionID
-				SECTION = video.librarySectionID
-				xsec = plex.library.sections()
-				for lib in xsec:
-					if lib.key == SECTION:
-						SECTION = lib.title
-				schecker = "found"
-			else:
+			fchk = ""
+			cshow = show
+			cshow = cshow.replace("movie.","")
+			for video in plex.search(cshow):
+				print (1)
+				if "stop" not in fchk:
+					print (2)
+					xshow = video
+					print xshow.type
+					if xshow.type == "show":
+						show = xshow.title
+						SECTION = video.librarySectionID
+						xsec = plex.library.sections()
+						for lib in xsec:
+							if lib.key == SECTION:
+								SECTION = lib.title
+								schecker = "found"
+					elif xshow.type == "movie":
+						show = "movie." + show.strip()	
+						mck = "found"
+						SECTION = video.librarySectionID
+                                                xsec = plex.library.sections()
+                                                for lib in xsec:
+                                                        if lib.key == SECTION:
+                                                                SECTION = lib.title
+			try:
+				schecker
+			except Exception:
 				schecker = "lost"
 		except Exception:
 			schecker = "lost"
 	else:
+		SECTION = "TV Shows"
 		schecker = "found"
 
 	try:
 		schecker
 	except NameError:
 		schecker = "lost"
+	try:
+		mck
+	except NameError:
+		mck = "nogo"
 		
 	if ("found" in schecker):
 		if ("Kids" in kcheckshow):
@@ -3134,20 +3155,27 @@ def playshow(show):
 		show = show.replace("movie.", "")
 		command = "SELECT Movie FROM Movies WHERE Movie like\"" + show + "\""
 		cur.execute(command)
-		movies = cur.fetchall()
-		for mvs in movies:
-			if mvs[0].lower() == show.lower():
-				show = mvs[0]
-				show = show.rstrip()
-				show = show.replace("''","'")
-				movie = plex.library.section('Movies').get(show)
-				client = plex.client(PLEXCLIENT)
-				client.playMedia(movie)
-				#playfile(show)
-				showplay = show
-				nowplaywrite("Movie: " + showplay)
-				
-				return ("Playing the movie " + show + " now, Sir.") 
+		if not cur.fetchone():
+			if "nogo" in mck:
+				return ("Error: " + show + " not found to launch.")
+			else:
+				mvs = show
+		else:
+			cur.execute(command)
+			mvs = cur.fetchone()[0]
+		if mvs.lower() == show.lower():
+			show = mvs
+			show = show.rstrip()
+			show = show.replace("''","'")
+			print SECTION
+			movie = plex.library.section(SECTION).get(show)
+			client = plex.client(PLEXCLIENT)
+			client.playMedia(movie)
+			#playfile(show)
+			showplay = show
+			nowplaywrite("Movie: " + showplay)
+			
+			return ("Playing the movie " + show + " now, Sir.") 
 		return ("Error. " + show + " Not found!")
 	elif ("block." in show):
 		say = playblockpackage(show)
