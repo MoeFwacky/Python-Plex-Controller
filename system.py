@@ -18,6 +18,7 @@ from random import randint, shuffle
 
 #top
 user = getpass.getuser()
+http = urllib3.PoolManager()
 
 global file
 global show
@@ -2988,8 +2989,95 @@ def playholiday(holiday):
 			playspshow(title, ssn, ep)
 			return "Playing " + title + " for the holiday " + holiday + " now."
 
+def getgenres(show, section):
+        global TVGET
+	TVGET = section.strip()
+        if not cur.fetchone():
+                cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERIP\"")
+                wlink = cur.fetchone()[0]
+                cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERPORT\"")
+                wip = cur.fetchone()[0]
+                slink = "http://" + wlink + ":" + wip + "/library/sections/"
+                response = http.urlopen('GET', slink, preload_content=False).read()
+                response = str(response)
+                response = response.split("Directory allowSync=")
+                for item in response:
+                        try:
+                                name = item
+                                section = item
+                                name = name.split("title=\"")
+                                name = name[1]
+                                name = name.split("\"")
+                                name = name[0]
+				if name.lower() == TVGET.lower():
+					print ("FOUND1")
+
+					section = section.split("key=\"")
+					section = section[1]
+					section = section.split("\"")
+					section = section[0]
+
+					link = "http://" + wlink + ":" + wip + "/library/sections/" + section + "/all/"
+					TVGENREFIX = link
+                        except IndexError:
+                                pass
+        response = http.urlopen('GET', TVGENREFIX, preload_content=False).read()
+        response = str(response)
+        shows = response.split('<Directory ratingKey=')
+        counter = 1
+        xnum = int(len(shows))-1
+        while counter <= int(len(shows)-1):
+                xshow = shows[counter]
+                genres = xshow
+                title = xshow
+                title = title.split('title="')
+                title = title[1]
+                title = title.split('"')
+                title = title[0]
+
+                title = title.replace('&apos;','\'')
+                title = title.replace('&amp;','&')
+		title = title.replace('?','')
+                title = title.replace('/',' ')
+                title = title.replace("&#39;","'")
+                if (title.lower().strip() == show.lower().strip()):
+			print ("FOUND")
+                        genres = genres.split("<Genre tag=\"")
+                        try:
+                                genre = genres[1]
+                        except IndexError:
+                                genre = "none"
+                        try:
+                                genre2 = genres[2]
+                                genre2 = genre2.split('" />')
+                                genre2 = genre2[0]
+                        except IndexError:
+                                genre2 = "none"
+                        try:
+                                genre3 = genres[3]
+                                genre3 = genre3.split('" />')
+                                genre3 = genre3[0]
+                        except IndexError:
+                                genre3 = "none"
+                        genre = genre.split('" />')
+
+                        genre = genre[0] + ";" + genre2 + ";" + genre3 + ";"
+                        genre = genre.replace('none;','')
+                        genre = genre.split(";")
+                        return genre
+                counter = counter + 1
+        return ("")
+
+def deleteshow(show):
+	command = "DELETE FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
+	cur.execute(command)
+	sql.commit()
+	return ("Done.")
+
 def playshow(show):
 	#SECTION = "TV Shows"
+	oshow = show
+	show = mediachecker(show)
 	show = checkcustomtables(show)
 	if type(show) is tuple:
 		show = show[0].lower()
@@ -3002,50 +3090,98 @@ def playshow(show):
 		plexlogin()
 		say = playcustom(show, table)
 		return say
+	else:
+		show = oshow
 	global PLEXCLIENT
 	global pcmd
 	kcheckshow = checkmode("show")
 	kcheckmovie = checkmode("movie")
-	command = "SELECT * FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
-	cur.execute(command)
-	print (show)
-	if not cur.fetchone():
-		try:
-			plexlogin()
-			fchk = ""
-			cshow = show
-			cshow = cshow.replace("movie.","")
-			for video in plex.search(cshow):
-				print (1)
-				if "stop" not in fchk:
-					print (2)
-					xshow = video
-					print xshow.type
-					if xshow.type == "show":
-						show = xshow.title
-						SECTION = video.librarySectionID
-						xsec = plex.library.sections()
-						for lib in xsec:
-							if lib.key == SECTION:
-								SECTION = lib.title
-								schecker = "found"
-					elif xshow.type == "movie":
+	try:
+		plexlogin()
+		fchk = ""
+		cshow = show
+		cshow = cshow.replace("movie.","")
+		for video in plex.search(cshow):
+			if "stop" not in fchk:
+				xshow = video
+
+				if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
+					#print ("FOUND TV")
+					SECTION = video.librarySectionID
+					xsec = plex.library.sections()
+					for lib in xsec:
+						if lib.key == SECTION:
+							SECTION = lib.title
+							schecker = "found"
+					show = xshow.title
+					command = "SELECT * FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
+                                        cur.execute(command)
+                                        if not cur.fetchone():
+						name = str(show)
+						summary = xshow.summary
+						summary = str(summary.encode('ascii','ignore')).strip()
+						rating = str(xshow.contentRating)
+						rating = rating.replace("__NA__","NA")
+						duration = int(xshow.duration)/60000
+						agenre = xshow.genres
+						try:
+							agenre = str(agenre)
+							if agenre == "__NA__":
+								agenre = ""
+								print ("Genre Get Failed. Trying alternate method")
+								agenre = getgenres(name, SECTION)
+						except IndexError:
+							print ("Genre Get Failed.")
+							agenre = getgenres(name, SECTION)
+
+						bgenre = ""
+							
+						for item in agenre:
+							if ((item == " ") or(item == "")):
+								pass
+							elif (item not in bgenre):
+								try:
+									bgenre = bgenre + " " + item.strip()
+								except NameError:
+									bgenre = item.strip()
+						bgenre = bgenre.strip()
+						totalnum = int(xshow.leafCount)
+						'''
+						print (name)
+						print (summary)
+						print (bgenre)
+						print (totalnum)
+						print (rating)
+						print (duration)
+						'''
+
+						cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE\"" + name + "\"")
+						if not cur.fetchone():
+							cur.execute("INSERT INTO TVshowlist VALUES (?,?,?,?,?,?)",(name,summary,bgenre,rating,duration,totalnum))
+							sql.commit()
+							print ("\nFound and Successfully added " + name + " to the TVshowlist table.\n")
+					
+					fchk = "stop"
+				elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower()) and ("stop" not in fchk)):
+					SECTION = video.librarySectionID
+					xsec = plex.library.sections()
+					show = video.title
+					for lib in xsec:
+						if lib.key == SECTION:
+							SECTION = lib.title
+							#schecker = "found"
+					if ("movie." not in show):
 						show = "movie." + show.strip()	
-						mck = "found"
-						SECTION = video.librarySectionID
-                                                xsec = plex.library.sections()
-                                                for lib in xsec:
-                                                        if lib.key == SECTION:
-                                                                SECTION = lib.title
-			try:
-				schecker
-			except Exception:
-				schecker = "lost"
+					mck = "found"
+		try:
+			schecker
 		except Exception:
 			schecker = "lost"
-	else:
-		SECTION = "TV Shows"
-		schecker = "found"
+	except TypeError:
+		schecker = "lost"
+	#else:
+		#SECTION = "TV Shows"
+		#schecker = "found"
 
 	try:
 		schecker
@@ -3098,10 +3234,8 @@ def playshow(show):
 	
 		shows = plex.library.section(SECTION)
 		show = show.replace("''","'")
-		print xshow
 		xshow = xshow.replace("''","'")
 		the_show = shows.get(show)
-		#showplay = the_show.rstrip()
 		ep = the_show.get(xshow)
 		client = plex.client(PLEXCLIENT)
 		client.playMedia(ep)
@@ -3167,7 +3301,6 @@ def playshow(show):
 			show = mvs
 			show = show.rstrip()
 			show = show.replace("''","'")
-			print SECTION
 			movie = plex.library.section(SECTION).get(show)
 			client = plex.client(PLEXCLIENT)
 			client.playMedia(movie)
@@ -3610,10 +3743,19 @@ def commercialbreak():
 		cur.execute("SELECT duration FROM commercials WHERE name LIKE \"" + playme[pcnt-1] + "\"")
 		duration = cur.fetchone()
 		duration = duration[0]
-		playcommercial(playme[pcnt-1])
+		try:
+			ppc
+		except Exception:
+			ppc = "no"
+		if ("yes" not in ppc):
+			playcommercial(playme[pcnt-1])
 		pcnt = pcnt + 1
 		if int(duration) >= 60:
-			pcnt = pcnt + 1
+			if (ppc == "no"):
+				pcnt = pcnt + 1
+				ppc = "yes"
+		else:
+			ppc = "no"
 	if type == "show":
 		plexlogin()
 		whrat = int(whrat)
@@ -5429,7 +5571,12 @@ def nextep(show):
 	#epnum = str(epnum)
 	shows = plex.library.section('TV Shows')
 	theshow = shows.get(show).episodes()
-	episode = str(theshow[epnum].title)
+	episode = theshow[epnum].title
+	try:
+		episode = str(episode)
+	except Exception:
+		episode = episode.encode("utf8")
+		epidose = str(episode)
 	ssn = str(theshow[epnum].seasonNumber)
 	xep = str(theshow[epnum].index)
 	episode = episode.replace("''","'")
@@ -6457,7 +6604,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.00d"
+	version = "3.01a"
 	return version
 	
 
@@ -6478,6 +6625,9 @@ try:
 	elif ("swhere" in show):
 		num = sys.argv[2]
 		say = swhere(num)
+	elif ("deleteshow" in show):
+		show = sys.argv[2]
+		say = deleteshow(show)
 	elif ("backuptvcounts" in show):
 		say = backuptvcounts()
 	elif ("restoretvcounts" in show):
@@ -7562,7 +7712,7 @@ try:
 			else:
 				oshow = show
 				show = titlecheck(show)
-				show = mediachecker(show)
+				#show = mediachecker(show)
 				if "Error:" in show:
 					show = oshow
 			pstatus = checkpstatus()
