@@ -1813,12 +1813,13 @@ def mediachecker(title):
 			addme = title
 		else:
 			addme = didyoumeanboth(title)
-		'''
 		addme = didyoumeanboth(title)
                 if "Quit." in addme.strip():
                         return ("User Quit. No Action Taken.")
                 else:
-                        title = addme
+			title = addme
+		'''
+		pass
         elif ((check1 == "pass") and (check2 == "pass") and ("Fail" not in externalcheck())):
 		#print ("Title found in multiple librarys. Defaulting to TV show. If you want to use the movie put \"movie.\" in front of the title")
 		addme = title
@@ -3010,8 +3011,6 @@ def getgenres(show, section):
                                 name = name.split("\"")
                                 name = name[0]
 				if name.lower() == TVGET.lower():
-					print ("FOUND1")
-
 					section = section.split("key=\"")
 					section = section[1]
 					section = section.split("\"")
@@ -3041,7 +3040,6 @@ def getgenres(show, section):
                 title = title.replace('/',' ')
                 title = title.replace("&#39;","'")
                 if (title.lower().strip() == show.lower().strip()):
-			print ("FOUND")
                         genres = genres.split("<Genre tag=\"")
                         try:
                                 genre = genres[1]
@@ -4895,6 +4893,7 @@ def titlecheck(title):
 	if title.lower() in tvxlist:
 		check = "pass"
 	if "fail" in check:	
+		'''
 		try:
 			d = enchant.Dict("en_US")
 			options = []
@@ -4913,6 +4912,8 @@ def titlecheck(title):
 				print ("Assuming you meant " + newt )
 		except Exception:
 			pass
+		'''
+		newt = title
 	else:
 		if "movie." in otitle:
 			newt = "movie." + title
@@ -6604,7 +6605,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.01a"
+	version = "3.01b"
 	return version
 	
 
