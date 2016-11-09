@@ -1210,7 +1210,10 @@ def addblock(name, title):
 			title = title[0]
 		if (("custom." not in title) and ("random_" not in title)):
 			title = titlecheck(title)
-			title = mediachecker(title)
+			if ("ERROR" in title):
+				return title
+			xname = title
+			print (title)
 		if ("Quit." in title):
 			return ("User Quit. No action taken.")
 		if ("movie." in title) and ("random" not in title.lower()):
@@ -1221,21 +1224,7 @@ def addblock(name, title):
 				check = str(item)
 				if name == check:
 					return ("Error. That block already exists. Pick a new name or use 'addtoblock' to update an existing block.")
-
-			command = "SELECT Movie FROM Movies WHERE Movie LIKE \"" + title + "\""
-			cur.execute(command)
-			if not cur.fetchone():
-				print ("Error: " + title + " not found.\n")
-				xname = didyoumeanmovie(title)
-				if ("Error" in xname):
-					return(xname)
-				elif ("Quit" in xname):
-					return ("User quit. No action taken.")
-			else:
-				cur.execute(command)
-				xname = cur.fetchone()
-				xname = xname[0].strip()
-
+			xname = title
 			blname = str(name)
 			adtitle = "movie." + str(xname) + ";"
 			blcount = 0
@@ -1309,25 +1298,29 @@ def addblock(name, title):
 				if (title.lower() == item.lower().rstrip()):
 					xname = item
 					mycheck = "True"
+			'''
 			try:
 				mycheck
 			except Exception:
 				mycheck = "False"
 			if "True" in mycheck:
-				blname = str(name).strip()
-				adtitle = str(xname).strip() + ";"
-				#adtitle = adtitle.replace("'","''")
-				blcount = 0
-				cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (blname, adtitle, int(blcount)))
-				sql.commit()
-				blname = blname.replace("movie.", "The Movie ")
-				say = (xname.rstrip() + " has been added to the " + blname + ".")
+			'''
+			blname = str(name).strip()
+			adtitle = str(xname).strip() + ";"
+			#adtitle = adtitle.replace("'","''")
+			blcount = 0
+			cur.execute("INSERT INTO Blocks VALUES(?,?,?)", (blname, adtitle, int(blcount)))
+			sql.commit()
+			blname = blname.replace("movie.", "The Movie ")
+			say = (xname.rstrip() + " has been added to the " + blname + ".")
+			'''
 			else:
 				print (xname +" not found in library. Did you mean: \n")
 				for item in tvcheck:
 					if (xname.lower() in item.lower().rstrip()):
 						print (item)	
 				say = "Done."
+			'''
 			return (say)
 	else:
 		print ("Command line options not present. Proceeding to querry mode.")	
@@ -1527,25 +1520,13 @@ def addtoblock(blockname, name):
 	name = name.lower()
 	if (("random_movie." not in name) and ("random_tv." not in name) and ("custom." not in name) and ("playcommercial" not in name) and ("preroll" not in name)):
 		name = titlecheck(name.strip())
-		#name = name.replace("'","''")
-		name = mediachecker(name)
 		if ("Quit." in name):
 			return ("User Quit. No action Taken.")
+		elif ("ERROR:" in name):
+			return name
 	#name = name.replace('movie.movie.','movie.')
 	if (('movie.' in name) and ('random_movie.' not in name)):
-		chname = name.split("movie.")
-		chname = chname[1].strip()
-		#chname = chname.replace("'","''")
-		command = "SELECT Movie FROM Movies WHERE Movie LIKE \"" + chname + "\""
-		cur.execute(command)
-		if not cur.fetchone():
-			name = didyoumeanmovie(chname)
-		name = name.replace("'","''")
-		if ("Error" in name):
-			return(name)
-		elif ("Quit" in name):
-			return ("User Quit. No action Taken.")
-		#name = "movie." + name
+		pass
 	elif ("custom." in name):
 		name = name.replace("custom.","")
 	elif ("random_movie." in name):
@@ -1579,15 +1560,6 @@ def addtoblock(blockname, name):
 			if not cur.fetchone():
 				return ("Error: " + name + " not found as an available preroll.")
 		
-	else:
-		command = 'SELECT TShow FROM TVshowlist WHERE TShow LIKE \'' + name + '\''
-		cur.execute(command)
-		if not cur.fetchone():
-			name = didyoumeanshow(name)
-			if ("Error" in name):
-				return(name)
-			elif ("Quit" in name):
-				return ("User Quit. No action Taken.")
 	if "True" not in acheck:
 		print (blockname +" not found in library. Did you mean:")
 		for item in blist:
@@ -1933,7 +1905,7 @@ def playblockpackage(play):
                                                 commercial = commercial.split("playcommercial.")
                                                 commercial = commercial[1].strip()
                                         playcommercial(commercial)
-			elif ("preroll" in play):
+			elif ("preroll." in play):
 				preroll = play
 				play = whatupnext()
 				play = play.replace("Up next we have The Movie ","movie.")
@@ -3017,8 +2989,6 @@ def getgenres(show, section):
                                 name = name.split("\"")
                                 name = name[0]
 				if name.lower() == TVGET.lower():
-					print ("FOUND1")
-
 					section = section.split("key=\"")
 					section = section[1]
 					section = section.split("\"")
@@ -3048,7 +3018,6 @@ def getgenres(show, section):
                 title = title.replace('/',' ')
                 title = title.replace("&#39;","'")
                 if (title.lower().strip() == show.lower().strip()):
-			print ("FOUND")
                         genres = genres.split("<Genre tag=\"")
                         try:
                                 genre = genres[1]
@@ -4887,11 +4856,15 @@ def titlecheck(title):
 	for video in plex.search(cshow):
 		xshow = video
 		if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
-			print ("FOUND")
 			return xshow.title
 		elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
-			print ("FOUND")
-			return "movie." + xshow.title
+			say = xshow.title
+			xsec = plex.library.sections()
+			for lib in xsec:
+				if lib.key == video.librarySectionID:
+					if lib.title == "Movies":
+						say = "movie." + say
+			return say
 	return ("ERROR: " + oshow + " NOT FOUND.\n")
 		
 	title = title.replace("movie.","")
