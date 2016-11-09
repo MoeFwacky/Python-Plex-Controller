@@ -299,7 +299,6 @@ def removefromholiday(holiday, title):
                 epn = title[2].strip()
                 title = title[0].strip()
 		title = titlecheck(title.strip())
-                title = mediachecker(title)
 		shows = plex.library.section('TV Shows')
 		the_show = shows.get(title).episodes()
 		for ep in the_show:
@@ -331,7 +330,6 @@ def addholiday(holiday, title):
 	holiday = holiday.lower()
 	if ":" not in title:
 		title = titlecheck(title.strip())
-		title = mediachecker(title)
 		if ("Quit." in title):
 			return ("User Quit. No action taken.")
 		elif ("Error" in title):
@@ -342,7 +340,6 @@ def addholiday(holiday, title):
 		epn = title[2].strip()
 		title = title[0].strip()
 		title = titlecheck(title.strip())
-                title = mediachecker(title)
 		shows = plex.library.section('TV Shows')
 		the_show = shows.get(title).episodes()
 		for ep in the_show:
@@ -394,7 +391,6 @@ def addapproved(title):
 	if ("Error:" in checkpw):
 		return checkpw
 	title = titlecheck(title)
-	title = mediachecker(title)
 	command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDLIST\""
         cur.execute(command)
 	if not cur.fetchone():
@@ -423,7 +419,6 @@ def addapproved(title):
 
 def removeapproved(title):
 	title = titlecheck(title)
-        title = mediachecker(title)
         command = "SELECT State FROM States WHERE Option LIKE \"APPROVEDLIST\""
         cur.execute(command)
         if not cur.fetchone():
@@ -447,7 +442,6 @@ def removeapproved(title):
 		return (title + " not found in approved list to remove.")	
 def addrejected(title):
         title = titlecheck(title)
-        title = mediachecker(title)
         command = "SELECT State FROM States WHERE Option LIKE \"REJECTEDLIST\""
         cur.execute(command)
         if not cur.fetchone():
@@ -1364,7 +1358,6 @@ def addblock(name, title):
 				xname = str(input('Movie Name:'))
 				#xname = xname.replace("'","''")
 				xname = titlecheck(xname.strip())
-				xname = mediachecker(xname)
 				if ("Quit." in xname):
 					return ("User Quit. No action taken.")
 				blname = str(name)
@@ -1612,7 +1605,6 @@ def removefromblock(blockname, name):
 		pass
 	else:
 		name = titlecheck(name)
-		name = mediachecker(name)
 	list = getblockpackagelist()
 	for item in list:
 		item = item.replace(".txt", "")
@@ -1664,8 +1656,7 @@ def replaceinblock(block, nitem, oitem):
 	if oitem not in bxitems:
 		return ("Error: " + oitem + " not in " + block + " to replace.")
 	if (("playcommercial" not in nitem) and ("preroll" not in nitem)):
-		#nitem = titlecheck(nitem)
-		nitem = mediachecker(nitem)
+		nitem = titlecheck(nitem)
 	if "Quit" in nitem:
 		return ("User Quit. No action taken.")
 	elif ("Error: " in nitem):
@@ -1735,79 +1726,6 @@ def reorderblock(block):
 	sql.commit()
 	say = "The " + block + " block has been reordered."
 	return (say)
-
-def mediachecker(title):
-	title = titlecheck(title)
-	return title
-	'''
-	otitle = title
-	title = title.strip().lower()
-	#title = title.replace("'","''")
-        check1 = "start"
-        check2 = "start"
-	ctitle = title
-        ctitle = ctitle.replace("movie.","")
-        cur.execute("SELECT Movie FROM Movies WHERE Movie LIKE \"" + ctitle + "\"")
-        if not cur.fetchone():
-		cur.execute("SELECT Movie FROM Movies WHERE Movie LIKE \"%" + ctitle + "%\"")
-		if not cur.fetchone():
-			check1 = "fail"
-		else:
-			cur.execute("SELECT Movie FROM Movies WHERE Movie LIKE \"%" + ctitle + "%\" ORDER BY Movie ASC")
-			found = cur.fetchall()
-			if int(len(found)) == 1:
-				ctitle = found[0]
-				newt = "movie." + ctitle[0]
-				check1 = "pass"
-				if ("movie." in otitle):
-					return newt
-        else:
-                check1 = "pass"
-                newt = "movie." + ctitle
-		if ("movie." in otitle):
-			return newt
-		#return (newt)
-        cur.execute("SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + title + "\"")
-        if not cur.fetchone():
-		cur.execute("SELECT TShow FROM TVshowlist WHERE TShow LIKE \"%" + title + "%\"")
-		if not cur.fetchone():
-			check2 = "fail"
-		else:
-			cur.execute("SELECT TShow FROM TVshowlist WHERE TShow LIKE \"%" + title + "%\"")
-			found = cur.fetchall()
-                        if int(len(found)) == 1:
-                                ctitle = found[0]
-                                newt = ctitle[0]
-                                check1 = "pass"
-        else:
-                check2 = "pass"
-		#return (title)
-        if ((check1 == "fail") and (check2 == "fail")):
-		#if ("Fail" in externalcheck()):
-			#addme = title
-		#else:
-			#addme = didyoumeanboth(title)
-		say = titlecheck(title)
-		if ("ERROR:" in say):
-			return say
-		addme = didyoumeanboth(title)
-                if "Quit." in addme.strip():
-                        return ("User Quit. No Action Taken.")
-                else:
-                        title = addme
-        elif ((check1 == "pass") and (check2 == "pass") and ("Fail" not in externalcheck())):
-		#print ("Title found in multiple librarys. Defaulting to TV show. If you want to use the movie put \"movie.\" in front of the title")
-		addme = title
-                #addme = didyoumeanboth(title)
-                if "Quit." in addme:
-                        return ("User Quit. No Action Taken.")
-                else:
-                        title = addme
-        elif ((check1 == "pass") and (check2 == "fail")):
-                title = newt
-        #title = title.replace("'","''")
-        return (title)
-	'''
 
 def playblockpackage(play):
 	oblock = play
@@ -1951,7 +1869,6 @@ def playblockpackage(play):
 			play = titlecheck(play).strip()
 			if ("ERROR" in play):
 				return play
-			#play = mediachecker(play).strip()
 			rcheck = resumestatus()
 			if ("on" in rcheck.lower()):
 				say = playwhereleftoff(play,"none")
@@ -2058,7 +1975,7 @@ def wlistcolumns(thearray):
 				getme = getme[1].strip()
 				getme = int(getme)
 				titlecheck = startarray[getme-1]
-				media = mediachecker(titlecheck)
+				media = titlecheck(titlecheck)
 				exitd = 'go'
 				if "movie." in media:
 					media = media.replace("movie.","")
@@ -2183,7 +2100,7 @@ def worklist(thearray):
 				getme = getme[1].strip()
 				getme = int(getme)
 				titlecheck = movies[getme-1]
-				media = mediachecker(titlecheck)
+				media = titlecheck(titlecheck)
 				exitd = 'go'
 				if "movie." in media:
 					media = media.replace("movie.","")
@@ -2381,7 +2298,6 @@ def findmovie(movie):
 def listepisodes(show):
 	plexlogin()
 	show = titlecheck(show)
-	show = mediachecker(show)
 	command = "SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchall():
@@ -2478,7 +2394,6 @@ def epdetails(show, season, episode):
 
 def moviedetails(movie):
 	movie = titlecheck(movie)
-	movie = mediachecker(movie)
 	movie = movie.replace("movie.","")
 	if (("Error" in movie) or (movie == "done")):
 		return movie
@@ -2752,7 +2667,6 @@ def movierating(movie):
 
 def moviesummary(movie):
 	movie = titlecheck(movie)
-	movie = mediachecker(movie)
 	if ("Quit." in movie):
 		return ("User Quit. No action taken.")
 	elif ("Error:" in movie):
@@ -2777,7 +2691,6 @@ def moviesummary(movie):
 def setnextep(show, season, episode):
 	plexlogin()
 	show = titlecheck(show)
-	show = mediachecker(show)
 	if ("Quit." in show):
 		return ("User quit. No action taken.")
 	elif ("Error:" in show):
@@ -2902,9 +2815,7 @@ def replaceshowinblock(show, nshow, block, playflag):
 	if not cur.fetchone():
 		return ("Error: " + block + " not found. Check and try again.")
 	show = titlecheck(show)
-	show = mediachecker(show)
 	nshow = titlecheck(nshow)
-	nshow = mediachecker(nshow)
 	#rcheck = replacecheck(show)
 	if ("not designated to be replaced" in rcheck):
 		cur.execute("INSERT INTO replaceinblock VALUES (?,?,?,?)",(show.strip(),nshow.strip(),block.strip(),playflag.strip()))
@@ -3053,7 +2964,7 @@ def deleteshow(show):
 def playshow(show):
 	#SECTION = "TV Shows"
 	oshow = show
-	show = mediachecker(show)
+	show = titlecheck(show)
 	show = checkcustomtables(show)
 	if type(show) is tuple:
 		show = show[0].lower()
@@ -3222,7 +3133,6 @@ def playshow(show):
 	elif ("minithon." in show):
 		show = show.replace("minithon.","")
 		show = titlecheck(show)
-		show = mediachecker(show)
 		if ("Quit." in show):
 			return show
 		elif ("Error: " in show):
@@ -3909,7 +3819,6 @@ def playwhereleftoff(show, nvalue):
 	plexlogin()
 	show = show.replace(";;","'")
 	show = titlecheck(show)
-	show = mediachecker(show)
 	if nvalue == "none":
 		nvalue = 0
 	else:
@@ -4007,16 +3916,15 @@ def queueadd(addme):
 		if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 			title = titlecheck(title).strip()
 			title = title.replace("'","")
-			xname = title
+			name = title
+			if ("ERROR:" in name):
+				return name
 			#xname = xname.replace('movie.','')
 			if ("addrand" in addme):
 				say = queuefill()
 			elif ("Quit." in addme):
 				say = "User quit. No action taken."
 				return (say)
-			name = mediachecker(xname)
-		else:
-			name = mediachecker(title)
 	else:
 		name = title
 
@@ -4255,7 +4163,7 @@ def queueremove(item):
 				return ("Error: " + item + " not found to remove.")
 			
 		else:
-			removeme = mediachecker(item)
+			removeme = titlecheck(item)
 	removeme = removeme + ";"
 	removeme = removeme.lower()
 	if (removeme in oqueue):
@@ -4606,7 +4514,6 @@ def setupnext(title):
 	if ("CUSTOM." not in title):
 		if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 			title = titlecheck(title).strip()
-		title = mediachecker(title)
 	if "''" in title:
                 pass
         else:
@@ -4853,20 +4760,29 @@ def titlecheck(title):
 	oshow = title
 	cshow = title
 	cshow = title.replace("movie.","")
-	for video in plex.search(cshow):
-		xshow = video
-		if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
-			return xshow.title
-		elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
-			say = xshow.title
-			xsec = plex.library.sections()
-			for lib in xsec:
-				if lib.key == video.librarySectionID:
-					if lib.title == "Movies":
-						say = "movie." + say
-			return say
-	return ("ERROR: " + oshow + " NOT FOUND.\n")
-		
+	#for video in plex.search(cshow):
+	ssec = plex.library.sections()
+	for lib in ssec:
+		for video in lib.search(cshow):
+			xshow = video
+			if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
+				say = xshow.title
+				#return xshow.title
+			elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
+				try:
+					say
+				except Exception:
+					say = xshow.title
+					xsec = plex.library.sections()
+					for lib in xsec:
+						if lib.key == video.librarySectionID:
+							if lib.title == "Movies":
+								say = "movie." + say
+	try:
+		return say
+	except NameError:
+		return ("ERROR: " + oshow + " NOT FOUND.\n")
+	'''
 	title = title.replace("movie.","")
 	title = title.replace("'","''")
 	title = title.lower()
@@ -4914,6 +4830,7 @@ def titlecheck(title):
 			newt = title
 	newt = newt.strip()
 	return (newt)
+	'''
 
 def didyoumeanboth(title):
 	#title = titlecheck(title).strip()
@@ -5511,7 +5428,7 @@ def settonightsmovie(movie):
 	movie = titlecheck(movie)
 	if ("ERROR" in movie):
 		return movie
-	movie = mediachecker(movie)
+	movie = titlecheck(movie)
 	cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
 	sql.commit()
 	cur.execute("INSERT INTO States VALUES(?,?)",('TONIGHTSMOVIE',movie))
@@ -5523,7 +5440,7 @@ def settonightsshow(show):
 	show = titlecheck(show)
 	if ("ERROR" in show):
 		return show
-	show = mediachecker(show)
+	show = titlecheck(show)
 	cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSSHOW\"")
         sql.commit()
         cur.execute("INSERT INTO States VALUES(?,?)",('TONIGHTSSHOW', show))
@@ -5534,7 +5451,6 @@ def restartshow(show):
 	show = titlecheck(show)
 	if ("ERROR" in show):
 		return show
-	show = mediachecker(show)
 	show = show.strip()
 	sayme = "Restart " + show + "- Yes or No?"
 	checkme = input(sayme)
@@ -6765,7 +6681,6 @@ try:
 	elif ("titlecheck" in show):
 		show = str(sys.argv[2])
 		show = titlecheck(show)
-		show = mediachecker(show)
 		say = show
 
 	elif ("checkholidays" in show):
@@ -6788,8 +6703,6 @@ try:
                 try:
                         holiday = str(sys.argv[2])
                         title = str(sys.argv[3])
-			#title = titlecheck(title)
-			#title = mediachecker(title)
                         say = removefromholiday(holiday,title)
                 except IndexError:
                         say = "Error: You must supply both a holiday and a title to use this command"
@@ -7427,9 +7340,7 @@ try:
 		say = playblockpackage(play)
 	elif ("nextep" in show)and ("setnextep" not in show):
 		show = str(sys.argv[2])
-		how = titlecheck(show)
-		show = mediachecker(show)
-
+		show = titlecheck(show)
 		say = nextep(show)
 
 	elif ("getplaymode" in show):
@@ -7712,7 +7623,6 @@ try:
 			else:
 				oshow = show
 				show = titlecheck(show)
-				#show = mediachecker(show)
 				if "Error:" in show:
 					show = oshow
 			pstatus = checkpstatus()
