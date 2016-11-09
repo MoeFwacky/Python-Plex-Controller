@@ -213,47 +213,45 @@ def getmovies():
 
 def getgenres(show):
 	global TVGET
-	command = "SELECT setting FROM settings WHERE item LIKE \"TVGENREFIX\""
-	cur.execute(command)
-	if not cur.fetchone():
-		cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERIP\"")
-		wlink = cur.fetchone()[0]
-		cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERPORT\"")
-		wip = cur.fetchone()[0]
-		slink = "http://" + wlink + ":" + wip + "/library/sections/"
-		response = http.urlopen('GET', slink, preload_content=False).read()
-		response = str(response)
-		response = response.split("Directory allowSync=")
-		#print ("The Following Sections are available off your server.")
-		sctsn = []
-		for item in response:
-			try:
-				name = item
-				section = item
-				name = name.split("title=\"")
-				name = name[1]
-				name = name.split("\"")
-				name = name[0]
+	cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERIP\"")
+	wlink = cur.fetchone()[0]
+	cur.execute("SELECT setting FROM settings WHERE item LIKE \"PLEXSERVERPORT\"")
+	wip = cur.fetchone()[0]
+	slink = "http://" + wlink + ":" + wip + "/library/sections/"
+	response = http.urlopen('GET', slink, preload_content=False).read()
+	response = str(response)
+	response = response.split("allowSync=")
+	#print ("The Following Sections are available off your server.")
+	sctsn = []
+	for item in response:
+		try:
+			name = item
+			section = item
+			name = name.split("title=\"")
+			name = name[1]
+			name = name.split("\"")
+			name = name[0]
 
-				section = section.split("key=\"")
-				section = section[1]
-				section = section.split("\"")
-				section = section[0]
+			section = section.split("key=\"")
+			section = section[1]
+			section = section.split("\"")
+			section = section[0]
 
-				link = "http://" + wlink + ":" + wip + "/library/sections/" + section + "/all/"
-				sctsn.append(link)
-				if name == TVGET:
-					TVGENREFIX = link
-			except IndexError:
-				pass
-		print TVGENREFIX
-		if TVGENREFIX.strip() not in sctsn:
-			Print ("Error: Invalid Selection Choice. Alternate Method Will Fail!")
-		else:
-			cur.execute("INSERT INTO settings VALUES (?,?)",("TVGENREFIX",TVGENREFIX))
-			sql.commit()
+			link = "http://" + wlink + ":" + wip + "/library/sections/" + section + "/all/"
+			sctsn.append(link)
+			if name == TVGET:
+				TVGENREFIX = link
+		except IndexError:
+			pass
+	if TVGENREFIX.strip() not in sctsn:
+		Print ("Error: Invalid Selection Choice. Alternate Method Will Fail!")
+	'''
+	else:
+		cur.execute("INSERT INTO settings VALUES (?,?)",("TVGENREFIX",TVGENREFIX))
+		sql.commit()
 	cur.execute(command)
 	TVGENREFIX = cur.fetchone()[0]
+	'''
 	response = http.urlopen('GET', TVGENREFIX, preload_content=False).read()
 	response = str(response)
 	shows = response.split('<Directory ratingKey=')
@@ -389,6 +387,78 @@ def getshows():
 		del bgenre
 	clearprogress()
 
+def getshows_custom():
+	global TVGET
+        tcheck = "fail"
+	print ("Input the name of the custom section that is your alternate \"TV Shows\" section.")
+	foundsect = getsections()
+	TVGET = str(input('Enter Section Name: '))
+	TVGET = TVGET.strip()
+	if TVGET in foundsect:
+		print ("Using: " + TVGET.strip())
+	else:
+		print ("Error: " + TVGET + " not found as an available section in your library.")
+        plexlogin()
+        tlist = plex.library.section(TVGET)
+        tvlist = tlist.search("")
+        xnum = int(len(tvlist))-1
+        for show in tvlist:
+                name = str(show.title)
+                summary = show.summary
+                summary = str(summary.encode('ascii','ignore')).strip()
+                rating = str(show.contentRating)
+                rating = rating.replace("__NA__","NA")
+                duration =  int(show.duration)/60000
+                agenre = show.genres
+                try:
+                        agenre = str(agenre)
+                        if agenre == "__NA__":
+                                agenre = ""
+                                #print ("Genre Get Failed. Trying alternate method")
+                                agenre = getgenres(name)
+                except IndexError:
+                        print ("Genre Get Failed.")
+                        agenre = getgenres(name)
+                gcmd = "SELECT Genre FROM backshowlist WHERE TShow LIKE \"" + name + "\""
+                cur.execute(gcmd)
+                if not cur.fetchone():
+                        gcheck = []
+                else:
+                        cur.execute(gcmd)
+                        gcheck = cur.fetchone()[0]
+                        gcheck = gcheck.replace(";"," ")
+                        gcheck = gcheck.split(' ')
+                for item in agenre:
+			if ((item == " ") or (item == "")):
+                                pass
+                        elif (item not in gcheck):
+                                try:
+                                        bgenre = bgenre + " " + item
+                                except NameError:
+                                        bgenre = item
+                try:
+                        str(bgenre)
+                except NameError:
+                        bgenre = ""
+                for item in gcheck:
+                        if item == " ":
+                                pass
+                        elif (item not in bgenre):
+                                try:
+                                        bgenre = bgenre + " " + item.strip()
+                                except NameError:
+                                        bgenre = item.strip()
+                bgenre = bgenre.strip()
+                totalnum = int(show.leafCount)
+                cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE\"" + name + "\"")
+                if not cur.fetchone():
+                        cur.execute("INSERT INTO TVshowlist VALUES (?,?,?,?,?,?)",(name,summary,bgenre,rating,duration,totalnum))
+                        sql.commit()
+
+                progress(xnum)
+                del bgenre
+        clearprogress()
+
 def getcustom(section):
 	if ("preroll" in section.lower()):
 		cur.execute("CREATE TABLE IF NOT EXISTS prerolls(name TEXT, duration INT)")
@@ -516,11 +586,13 @@ def getcustom(section):
 
 def progress(num):
         num = int(num)
+	if num == 0:
+		num = 1
         global pcount
         try:
-		pcount
+			pcount
         except NameError:
-		pcount = 0 
+			pcount =1 
         perc = round((float(pcount) / float(num)) * 100, 1)
         sys.stdout.write("\r" + str(perc) + "%")
         sys.stdout.flush()
@@ -552,14 +624,17 @@ sql.commit()
 print ("Database update starting...\n")
 
 try:
+	#commands
 	if ("movie" in str(sys.argv)):
 		tpe = "movie"
 		startupactionmovie()
 		getmovies()
-	elif ("shows" in str(sys.argv)):
+	elif (("shows" in str(sys.argv)) and ("custom" not in str(sys.argv))):
 		tpe = "tv"
 		startupactiontv()
 		getshows()
+	elif ("custom_shows" in str(sys.argv)):
+		getshows_custom()
 	elif ("prerolls" in str(sys.argv)):
 		tpe = "prerolls"
 		getcustom("prerolls")

@@ -1765,6 +1765,9 @@ def reorderblock(block):
 	return (say)
 
 def mediachecker(title):
+	title = titlecheck(title)
+	return title
+	'''
 	otitle = title
 	title = title.strip().lower()
 	#title = title.replace("'","''")
@@ -1808,18 +1811,18 @@ def mediachecker(title):
                 check2 = "pass"
 		#return (title)
         if ((check1 == "fail") and (check2 == "fail")):
-		'''
-		if ("Fail" in externalcheck()):
-			addme = title
-		else:
-			addme = didyoumeanboth(title)
+		#if ("Fail" in externalcheck()):
+			#addme = title
+		#else:
+			#addme = didyoumeanboth(title)
+		say = titlecheck(title)
+		if ("ERROR:" in say):
+			return say
 		addme = didyoumeanboth(title)
                 if "Quit." in addme.strip():
                         return ("User Quit. No Action Taken.")
                 else:
-			title = addme
-		'''
-		pass
+                        title = addme
         elif ((check1 == "pass") and (check2 == "pass") and ("Fail" not in externalcheck())):
 		#print ("Title found in multiple librarys. Defaulting to TV show. If you want to use the movie put \"movie.\" in front of the title")
 		addme = title
@@ -1832,6 +1835,7 @@ def mediachecker(title):
                 title = newt
         #title = title.replace("'","''")
         return (title)
+	'''
 
 def playblockpackage(play):
 	oblock = play
@@ -1972,8 +1976,10 @@ def playblockpackage(play):
 				setplaymode("normal")
 				print ("Playmode has been set to normal.")
 			play = play.replace("Tonights movie has been set to ","")
-			#play = titlecheck(play)
-			play = mediachecker(play).strip()
+			play = titlecheck(play).strip()
+			if ("ERROR" in play):
+				return play
+			#play = mediachecker(play).strip()
 			rcheck = resumestatus()
 			if ("on" in rcheck.lower()):
 				say = playwhereleftoff(play,"none")
@@ -3011,6 +3017,8 @@ def getgenres(show, section):
                                 name = name.split("\"")
                                 name = name[0]
 				if name.lower() == TVGET.lower():
+					print ("FOUND1")
+
 					section = section.split("key=\"")
 					section = section[1]
 					section = section.split("\"")
@@ -3040,6 +3048,7 @@ def getgenres(show, section):
                 title = title.replace('/',' ')
                 title = title.replace("&#39;","'")
                 if (title.lower().strip() == show.lower().strip()):
+			print ("FOUND")
                         genres = genres.split("<Genre tag=\"")
                         try:
                                 genre = genres[1]
@@ -4870,7 +4879,21 @@ def externalcheck():
 		return ("Fail")
 
 def titlecheck(title):
+	plexlogin()
 	otitle = title
+	oshow = title
+	cshow = title
+	cshow = title.replace("movie.","")
+	for video in plex.search(cshow):
+		xshow = video
+		if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
+			print ("FOUND")
+			return xshow.title
+		elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
+			print ("FOUND")
+			return "movie." + xshow.title
+	return ("ERROR: " + oshow + " NOT FOUND.\n")
+		
 	title = title.replace("movie.","")
 	title = title.replace("'","''")
 	title = title.lower()
@@ -4893,7 +4916,6 @@ def titlecheck(title):
 	if title.lower() in tvxlist:
 		check = "pass"
 	if "fail" in check:	
-		'''
 		try:
 			d = enchant.Dict("en_US")
 			options = []
@@ -4912,8 +4934,6 @@ def titlecheck(title):
 				print ("Assuming you meant " + newt )
 		except Exception:
 			pass
-		'''
-		newt = title
 	else:
 		if "movie." in otitle:
 			newt = "movie." + title
@@ -5516,6 +5536,8 @@ def idtonightsmovie():
 def settonightsmovie(movie):
 	movie = movie.replace("movie.","")
 	movie = titlecheck(movie)
+	if ("ERROR" in movie):
+		return movie
 	movie = mediachecker(movie)
 	cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSMOVIE\"")
 	sql.commit()
@@ -5526,6 +5548,8 @@ def settonightsmovie(movie):
 
 def settonightsshow(show):
 	show = titlecheck(show)
+	if ("ERROR" in show):
+		return show
 	show = mediachecker(show)
 	cur.execute("DELETE FROM States WHERE Option LIKE \"TONIGHTSSHOW\"")
         sql.commit()
@@ -5535,6 +5559,8 @@ def settonightsshow(show):
 
 def restartshow(show):
 	show = titlecheck(show)
+	if ("ERROR" in show):
+		return show
 	show = mediachecker(show)
 	show = show.strip()
 	sayme = "Restart " + show + "- Yes or No?"
@@ -6605,7 +6631,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.01b"
+	version = "3.01c"
 	return version
 	
 
