@@ -178,7 +178,22 @@ def checkprecomm(show):
 def getcustomtable(table):
 	item = "CUSTOM_" + table.strip()
 	command = "SELECT name FROM "+ item
-	cur.execute(command)
+	try:
+		cur.execute(command)
+	except Exception:
+		try:
+                        plexlogin()
+                        ssec = plex.library.sections()
+                        for lib in ssec:
+                                if lib.title ==table:
+                                        stuff = lib.search("")
+                                        found = []
+                                        for item in stuff:
+                                                found.append(item.title)
+                        return found
+                except Exception:
+                        return ("Error: " + table + " not found.")
+
 	stuff = []
 	if not cur.fetchall():
 		return ("Error: " + table + " not found.")
@@ -1898,134 +1913,138 @@ def wlistcolumns(thearray):
 	if int(len(thearray)) > maxc:
 		thearray = thearray[0:maxc]	
 	exitc = ""
-	while "quit" not in exitc:
-		say = ""
-		maxsp = 30 
-		for item in thearray:
-			if item == "":
-				pass
-			else:
-				item = item.strip()
-				if int(len(item))-1 > 27:
-					item = item[0:25] + "..."
-				if ((count >=9) and (count <=99)):
-					addme = (maxsp - int(len(item)))
-					tab = " "
-				elif ((count >=99) and (count <=999)):
-                                        addme = (maxsp - int(len(item)+1))
-                                        tab = ""
-				else:
-					addme = (maxsp - (int(len(item))-1))
-					tab = " "
-				item = str(count+1) + ": " + item + (addme*" ")
-				if count >= max:
+	try:
+		while "quit" not in exitc:
+			say = ""
+			maxsp = 30 
+			for item in thearray:
+				if item == "":
 					pass
-				elif((count+1)%3 == 0):
-					say = say + item + "\n"
 				else:
-					say = say + item + tab
-				count = count + 1
-		starter = "The Following Items Were Found:\n\n"
-		ender = "\n\nEnter a number to return that item, type \"desc x,\" where x is a number above, \"letter x,\" where x is a letter to jump to that letter, or type \"quit\" to quit.\n"
-		say = starter + say + ender
-		cls()
-		print say
-		choice = (raw_input('Choice '))
-		if (isanint(choice) is True):
-			int (choice)
-			choice = int(choice) - 1
-			say = startarray[choice]
-			exitc = "quit"
-		else:
-			echeck = ['quit','exit','no']
-			if choice.lower() in echeck:
+					item = item.strip()
+					if int(len(item))-1 > 27:
+						item = item[0:25] + "..."
+					if ((count >=9) and (count <=99)):
+						addme = (maxsp - int(len(item)))
+						tab = " "
+					elif ((count >=99) and (count <=999)):
+						addme = (maxsp - int(len(item)+1))
+						tab = ""
+					else:
+						addme = (maxsp - (int(len(item))-1))
+						tab = " "
+					item = str(count+1) + ": " + item + (addme*" ")
+					if count >= max:
+						pass
+					elif((count+1)%3 == 0):
+						say = say + item + "\n"
+					else:
+						say = say + item + tab
+					count = count + 1
+			starter = "The Following Items Were Found:\n\n"
+			ender = "\n\nEnter a number to return that item, type \"desc x,\" where x is a number above, \"letter x,\" where x is a letter to jump to that letter, or type \"quit\" to quit.\n"
+			say = starter + say + ender
+			cls()
+			print say
+			choice = (raw_input('Choice '))
+			if (isanint(choice) is True):
+				int (choice)
+				choice = int(choice) - 1
+				say = startarray[choice]
 				exitc = "quit"
-				return choice	
-			elif ("yes" in choice.lower()):
-				if maxc == int(len(startarray))-1:
-					return ("Done.")
-				maxc = maxc + 30
-				if maxc > int(len(startarray)):
-					maxc = int(len(startarray))
-				thearray = startarray[count:maxc]
-		
-			elif ("letter" in choice.lower()):
-				find = choice.lower().split("letter ")
-				find = find[1][:1].strip()
-				print ("Starting at the letter " + find + ".\n")
-				lcount = 0
-				lcheck = "go"
-				try:
-					while "stop" not in lcheck:
-						lmcheck = startarray[lcount][:1].lower()
-						if find.lower() in lmcheck:
-							lcheck = "stop"
-						lcount = lcount + 1
-					print lcount
-					count = lcount -1
-					maxc = count + 30
+			else:
+				echeck = ['quit','exit','no']
+				if choice.lower() in echeck:
+					exitc = "quit"
+					return choice	
+				elif ("yes" in choice.lower()):
+					if maxc == int(len(startarray))-1:
+						return ("Done.")
+					maxc = maxc + 30
 					if maxc > int(len(startarray)):
 						maxc = int(len(startarray))
 					thearray = startarray[count:maxc]
-				except Exception:
-					Error = "No items found containing " + find + ".\n"
-
-			elif ("desc " in choice.lower()):
-				getme = choice.lower().split('desc ')
-				getme = getme[1].strip()
-				getme = int(getme)
-				titlecheck = startarray[getme-1]
-				media = titlecheck(titlecheck)
-				exitd = 'go'
-				if "movie." in media:
-					media = media.replace("movie.","")
-					sayme = moviedetails(media)
+			
+				elif ("letter" in choice.lower()):
+					find = choice.lower().split("letter ")
+					find = find[1][:1].strip()
+					print ("Starting at the letter " + find + ".\n")
+					lcount = 0
+					lcheck = "go"
+					try:
+						while "stop" not in lcheck:
+							lmcheck = startarray[lcount][:1].lower()
+							if find.lower() in lmcheck:
+								lcheck = "stop"
+							lcount = lcount + 1
+						print lcount
+						count = lcount -1
+						maxc = count + 30
+						if maxc > int(len(startarray)):
+							maxc = int(len(startarray))
+						thearray = startarray[count:maxc]
+					except Exception:
+						Error = "No items found containing " + find + ".\n"
+	
+				elif ("desc " in choice.lower()):
+					getme = choice.lower().split('desc ')
+					getme = getme[1].strip()
+					getme = int(getme)
+					tcheck = startarray[getme-1]
+					media = titlecheck(tcheck)
+					print media
+					exitd = 'go'
+					if "movie." in media:
+						media = media.replace("movie.","")
+						sayme = moviedetails(media)
+					else:
+						sayme = showdetails(media)
+					print (sayme + "\nReturn to previous menu?")
+					while 'yes' not in exitd:
+						exitd = str(raw_input("yes?"))
+					if count > 29:
+						count = count - 30
+						maxc = count + 30
+					else:
+						count = 0
+					if maxc > int(len(startarray)):
+						maxc = int(len(startarray))
+					thearray = startarray[count:maxc]
+	
+				elif ("setupnext" in choice.lower()):
+					media = choice.lower().split("setupnext ")
+					media = media[1].strip()
+					if (isanint(media) is True):
+						media = startarray[int(media)-1]
+					setupnext(media)
+					media = media.replace("movie.","The Movie ")
+					print (media + " will play next from the queue.")
+					exitc = "quit"
+					return ("Done.")
+	
+				elif ("queueadd" in choice.lower()):
+					media = choice.lower().split("queueadd ")
+					media = media[1].strip()
+					if (isanint(media) is True):
+						media = startarray[int(media)-1]
+					queueadd(media)
+					print (media + " has been added to the queue.")
+					exitc = "quit"
+					return ("Done.")
 				else:
-					sayme = showdetails(media)
-				print (sayme + "\nReturn to previous menu?")
-				while 'yes' not in exitd:
-					exitd = str(raw_input("yes?"))
-				if count > 29:
-					count = count - 30
-					maxc = count + 30
-				else:
-					count = 0
-                                if maxc > int(len(startarray)):
-                                        maxc = int(len(startarray))
-                                thearray = startarray[count:maxc]
-
-			elif ("setupnext" in choice.lower()):
-				media = choice.lower().split("setupnext ")
-				media = media[1].strip()
-				if (isanint(media) is True):
-					media = startarray[int(media)-1]
-				setupnext(media)
-				media = media.replace("movie.","The Movie ")
-				print (media + " will play next from the queue.")
-				exitc = "quit"
-				return ("Done.")
-
-			elif ("queueadd" in choice.lower()):
-				media = choice.lower().split("queueadd ")
-				media = media[1].strip()
-				if (isanint(media) is True):
-					media = startarray[int(media)-1]
-				queueadd(media)
-				print (media + " has been added to the queue.")
-				exitc = "quit"
-				return ("Done.")
-			else:
-				print ("Invalid Selection, please try again.")
-				if count > 29:
-                                        count = count - 30
-                                        maxc = count + 30
-                                else:
-                                        count = 0
-                                if maxc > int(len(startarray)):
-                                        maxc = int(len(startarray))
-                                thearray = startarray[count:maxc]
- 
-	return say
+					print ("Invalid Selection, please try again.")
+					if count > 29:
+						count = count - 30
+						maxc = count + 30
+					else:
+						count = 0
+					if maxc > int(len(startarray)):
+						maxc = int(len(startarray))
+					thearray = startarray[count:maxc]
+	 
+		return say
+	except KeyboardInterrupt:
+		return ("\n\nQuitting. No action taken.")
 
 def worklist(thearray):
 	if int(len(thearray) == 0):
@@ -2099,18 +2118,17 @@ def worklist(thearray):
 				getme = getme.lower().split('desc ')
 				getme = getme[1].strip()
 				getme = int(getme)
-				titlecheck = movies[getme-1]
-				media = titlecheck(titlecheck)
+				tcheck = movies[getme-1]
+				media = titlecheck(tcheck)
 				exitd = 'go'
 				if "movie." in media:
 					media = media.replace("movie.","")
 					sayme = moviedetails(media)
 				else:
 					sayme = showdetails(media)
-				print (sayme + "\nReturn to previous menu?")
-				while 'yes' not in exitd:
-					exitd = str(raw_input("yes?"))
-				mmin = mmin - 10
+				print (sayme)
+				exitc = "quit"
+				return "Done."
 			elif (isanint(getme) is True):
 				getme = int(getme)
 				name = movies[getme-1]
@@ -2424,6 +2442,92 @@ def moviedetails(movie):
 	leftoff = whereleftoff(mvname)
 	showplay = "Movie: " + mvname + "\nRated: " + str(mvrating) + "\nStarring: " + starring + " \nDirected By: " + director + "\nGenres: " + genres + "\nTagline: " + tagline + "\nSummary: " + summary + "\n\nResume from minute option: " + str(leftoff) + "."
 	return showplay
+
+def moviedbcheck(movie):
+	scheck = getsectiontitle(movie)
+	if scheck == "Movies":
+		movie = movie.replace("movie.","")
+		command = "SELECT * FROM Movies WHERE Movie LIKE \"" + movie + "\""
+		cur.execute(command)
+		if not cur.fetchone():
+			plexlogin()
+			movie = plex.library.section(scheck).get(movie)
+			mvname = movie.title
+			mvrating = movie.contentRating
+			astarring = movie.roles
+			for item in astarring:
+				try:
+					starring = starring + ", " + item.tag
+				except NameError:
+					starring = item.tag
+			adirector = movie.directors
+			for item in adirector:
+				try:
+					director = director + ", " + item.tag
+				except NameError:
+					director = item.tag
+			agenres = movie.genres
+			for item in agenres:
+				try:
+					genres = genres + ", " + item.tag
+				except NameError:
+					genres = item.tag
+			tagline = movie.tagline
+			summary = movie.summary
+			cur.execute("INSERT INTO Movies VALUES (?,?,?,?,?,?,?)",(mvname,summary,mvrating,tagline,genres,director,starring))
+			sql.commit()
+			print ("Successfully added " + mvname + " to the movies table.")
+	elif scheck == "Commercials":
+		movie = movie.replace("playcommercial.","")
+		cur.execute("CREATE TABLE IF NOT EXISTS commercials(name TEXT, duration INT)")
+		sql.commit()
+		command = "SELECT * FROM commercials WHERE Name LIKE \"" + movie + "\""
+		cur.execute(command)
+		if not cur.fetchone():
+			plexlogin()
+			movie = plex.library.section(scheck).get(movie)
+                        mvname = movie.title
+			duration = int(movie.duration)/60000
+			cur.execute("INSERT INTO commercials VALUES (?,?)",(mvname,duration))
+			sql.commit()
+			print ("Successfully added " + mvname + " to the commercials table.")
+	elif scheck == "Prerolls":
+                movie = movie.replace("preroll.","")
+                cur.execute("CREATE TABLE IF NOT EXISTS prerolls(name TEXT, duration INT)")
+                sql.commit()
+                command = "SELECT * FROM prerolls WHERE Name LIKE \"" + movie + "\""
+                cur.execute(command)
+                if not cur.fetchone():
+                        plexlogin()
+                        movie = plex.library.section(scheck).get(movie)
+                        mvname = movie.title
+                        duration = int(movie.duration)/60000
+                        cur.execute("INSERT INTO prerolls VALUES (?,?)",(mvname,duration))
+                        sql.commit()
+                        print ("Successfully added " + mvname + " to the prerolls table.")
+	elif scheck == "show":
+		pass
+	else:
+		tbl = "CUSTOM_" + scheck
+		tbl = tbl.replace(" ","_")
+		movie = movie.replace("CUSTOM.","")
+		#cur.execute("DROP TABLE " + tbl)
+		#sql.commit()
+		command = "CREATE TABLE IF NOT EXISTS " + tbl + "(name TEXT, duration INT, type TEXT)"
+		cur.execute(command)
+		sql.commit()
+		command = "SELECT * FROM " + tbl + " WHERE Name LIKE \"" + movie + "\""
+		cur.execute(command)
+		if not cur.fetchone():
+                        plexlogin()
+                        movie = plex.library.section(scheck).get(movie)
+                        mvname = movie.title
+                        duration = int(movie.duration)/60000
+                        cur.execute("INSERT INTO " + tbl + " VALUES (?,?,?)",(mvname,duration, scheck))
+                        sql.commit()
+                        print ("Successfully added " + mvname + " to the " + tbl + " table.")
+		
+		
 
 def showdetails(show):
 	show = show.replace("'","''")
@@ -2983,73 +3087,36 @@ def playshow(show):
 	global pcmd
 	kcheckshow = checkmode("show")
 	kcheckmovie = checkmode("movie")
+	sayshow = show
+	sayshow = sayshow.replace("movie.","The Movie ")
+	sayshow = sayshow.replace("preroll.","The Preroll: " )
+	sayshow = sayshow.replace("CUSTOM.","")
+	sayshow = sayshow.replace("playcommercial.","The Commercial: ")
+	print ("Trying to start: " + sayshow + "\n")
 	try:
 		plexlogin()
 		fchk = ""
-		cshow = show
+		cshow = show.strip()
 		cshow = cshow.replace("movie.","")
+		clib = plex.library.sections()
 		for video in plex.search(cshow):
 			if "stop" not in fchk:
 				xshow = video
-
-				if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
-					#print ("FOUND TV")
+				if ((xshow.type == "show") and ("movie." not in cshow) and (xshow.title.lower() == cshow.lower())):
+					dbtvcheck(video)
+					#getsection(xshow.title)
 					SECTION = video.librarySectionID
 					xsec = plex.library.sections()
 					for lib in xsec:
 						if lib.key == SECTION:
 							SECTION = lib.title
 							schecker = "found"
-					show = xshow.title
-					command = "SELECT * FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
-                                        cur.execute(command)
-                                        if not cur.fetchone():
-						name = str(show)
-						summary = xshow.summary
-						summary = str(summary.encode('ascii','ignore')).strip()
-						rating = str(xshow.contentRating)
-						rating = rating.replace("__NA__","NA")
-						duration = int(xshow.duration)/60000
-						agenre = xshow.genres
-						try:
-							agenre = str(agenre)
-							if agenre == "__NA__":
-								agenre = ""
-								print ("Genre Get Failed. Trying alternate method")
-								agenre = getgenres(name, SECTION)
-						except IndexError:
-							print ("Genre Get Failed.")
-							agenre = getgenres(name, SECTION)
-
-						bgenre = ""
-							
-						for item in agenre:
-							if ((item == " ") or(item == "")):
-								pass
-							elif (item not in bgenre):
-								try:
-									bgenre = bgenre + " " + item.strip()
-								except NameError:
-									bgenre = item.strip()
-						bgenre = bgenre.strip()
-						totalnum = int(xshow.leafCount)
-						'''
-						print (name)
-						print (summary)
-						print (bgenre)
-						print (totalnum)
-						print (rating)
-						print (duration)
-						'''
-
-						cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE\"" + name + "\"")
-						if not cur.fetchone():
-							cur.execute("INSERT INTO TVshowlist VALUES (?,?,?,?,?,?)",(name,summary,bgenre,rating,duration,totalnum))
-							sql.commit()
-							print ("\nFound and Successfully added " + name + " to the TVshowlist table.\n")
-					
-					fchk = "stop"
+							show = video.title
+							if ("All episodes" in show):
+								show = cshow
+							fchk = "stop"
 				elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower()) and ("stop" not in fchk)):
+					moviedbcheck(video.title)
 					SECTION = video.librarySectionID
 					xsec = plex.library.sections()
 					show = video.title
@@ -3105,6 +3172,7 @@ def playshow(show):
 			thecount = 1
 		
 		thecount = thecount - 1
+		#SECTION = getsection(show)
 		shows = plex.library.section(SECTION)
 		theshow = shows.get(show).episodes()
 		xshow = theshow[thecount].title
@@ -4754,6 +4822,111 @@ def externalcheck():
 	else:
 		return ("Fail")
 
+def dbtvcheck(video):
+	plexlogin()
+	libs = plex.library.sections()
+	for lib in libs:
+		if ((lib.key == video.librarySectionID) and (video.type == "show")):
+			SECTION = lib.title
+	try:
+		xshow = video
+		show = video.title
+		command = "SELECT * FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
+		cur.execute(command)
+		if not cur.fetchone():
+			name = str(show)
+			summary = xshow.summary
+			summary = str(summary.encode('ascii','ignore')).strip()
+			rating = str(xshow.contentRating)
+			rating = rating.replace("__NA__","NA")
+			duration = int(xshow.duration)/60000
+			agenre = xshow.genres
+			try:
+				agenre = str(agenre)
+				if agenre == "__NA__":
+					agenre = ""
+					agenre = getgenres(name, SECTION)
+			except IndexError:
+				agenre = getgenres(name, SECTION)
+
+			bgenre = ""
+
+			for item in agenre:
+				if ((item == " ") or(item == "")):
+					pass
+				elif (item not in bgenre):
+					try:
+						bgenre = bgenre + " " + item.strip()
+					except NameError:
+						bgenre = item.strip()
+			bgenre = bgenre.strip()
+			totalnum = int(xshow.leafCount)
+			cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE\"" + name + "\"")
+			if not cur.fetchone():
+				cur.execute("INSERT INTO TVshowlist VALUES (?,?,?,?,?,?)",(name,summary,bgenre,rating,duration,totalnum))
+				sql.commit()
+				print ("\nFound and Successfully added " + name + " to the TVshowlist table.\n")
+	except NameError:
+		pass
+
+def getsection(title):
+	plexlogin()
+	otitle = title
+        oshow = title
+        cshow = title
+        cshow = title.replace("movie.","")
+        #for video in plex.search(cshow):
+        ssec = plex.library.sections()
+        for lib in ssec:
+                for video in lib.search(cshow):
+                        xshow = video
+                        if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
+				show = video.title
+				xsec = plex.library.sections()
+				for lib in xsec:
+					if lib.key == video.librarySectionID:
+						say = lib.type
+                                #return xshow.title
+                        elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
+                                try:
+                                        say
+                                except Exception:
+                                        xsec = plex.library.sections()
+                                        for lib in xsec:
+                                                if lib.key == video.librarySectionID:
+							say = lib.type
+        try:
+                return say
+        except NameError:
+                return ("ERROR: " + oshow + " NOT FOUND.\n")
+
+def getsectiontitle(title):
+	plexlogin()
+        oshow = title
+        cshow = title
+        cshow = title.replace("movie.","")
+        #for video in plex.search(cshow):
+        ssec = plex.library.sections()
+        for lib in ssec:
+                for video in lib.search(cshow):
+                        xshow = video
+                        if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
+                                show = video.title
+                                xsec = plex.library.sections()
+                                for lib in xsec:
+                                        if lib.key == video.librarySectionID:
+                                                say = lib.type
+                                #return xshow.title
+                        elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
+                                try:
+                                        say
+                                except Exception:
+                                        xsec = plex.library.sections()
+                                        for lib in xsec:
+                                                if lib.key == video.librarySectionID:
+                                                        say = lib.title
+	return say
+
 def titlecheck(title):
 	plexlogin()
 	otitle = title
@@ -5193,13 +5366,19 @@ def whatupnext():
 			if ("The preroll: " not in upnext):
 				upnext = "A random preroll"
 		else:
+			bcheck = block
+			bcheck = bcheck.replace("movie.","")
+			SECTION = getsection(bcheck)
 			if ("movie." in block):
 				episode = block.split("movie.")
 				episode = episode[1].rstrip()
 				episode = "The Movie " + episode
 			else:
-				episode = nextep(block)
-				block = playmode.replace("block.","")
+				if "show" in SECTION:
+					episode = nextep(block)
+					block = playmode.replace("block.","")
+				else:
+					episode = block
 			#upnext = upnext.replace("''","'")
 			upnext = "Up next we have " + episode
 			upnext = upnext.replace("For the show ", "")
@@ -6520,7 +6699,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.01c"
+	version = "3.01e"
 	return version
 	
 
@@ -6630,7 +6809,9 @@ try:
 	elif ("getcustomtable" in show):
 		table = str(sys.argv[2])
 		say = getcustomtable(table)
-		if ((int(len(say)) <= 10) or ("-l" in sys.argv)):
+		if ("Error:" in say):
+			pass
+		elif ((int(len(say)) <= 10) or ("-l" in sys.argv)):
 			say = worklist(say)
 		else:
 			say = wlistcolumns(say)
@@ -6681,7 +6862,8 @@ try:
 	elif ("titlecheck" in show):
 		show = str(sys.argv[2])
 		show = titlecheck(show)
-		say = show
+		sect = getsection(show)
+		say = show + ", Section: " + sect
 
 	elif ("checkholidays" in show):
 		checkholidays()
