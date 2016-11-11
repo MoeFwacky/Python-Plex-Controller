@@ -377,7 +377,11 @@ def getshows():
 				except NameError:
 					bgenre = item.strip()
 		bgenre = bgenre.strip()
-		totalnum = int(show.leafCount)
+		try:
+			totalnum = int(show.leafCount)
+		except Exception:
+			print ("\nProblems getting episode count for: " + name + ". Check this item in your plex db. Setting to 1 for now and moving on.\n")
+			totalnum = 1
 		cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE\"" + name + "\"")
 		if not cur.fetchone():
 			cur.execute("INSERT INTO TVshowlist VALUES (?,?,?,?,?,?)",(name,summary,bgenre,rating,duration,totalnum))
@@ -449,7 +453,11 @@ def getshows_custom():
                                 except NameError:
                                         bgenre = item.strip()
                 bgenre = bgenre.strip()
-                totalnum = int(show.leafCount)
+		try:
+                	totalnum = int(show.leafCount)
+		except Exception:
+			print ("\nProblems getting episode count for: " + name + ". Check this item in your plex db. Setting to 1 for now and moving on.\n")
+			totalnum = 1
                 cur.execute("SELECT * FROM TVshowlist WHERE TShow LIKE\"" + name + "\"")
                 if not cur.fetchone():
                         cur.execute("INSERT INTO TVshowlist VALUES (?,?,?,?,?,?)",(name,summary,bgenre,rating,duration,totalnum))
