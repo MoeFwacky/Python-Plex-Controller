@@ -4098,9 +4098,11 @@ def queuefix():
 
 def queuefill():
 	playme = randint(1,9)
+	playme = 4
 	#random TV show
 	showmode = checkmode("show")
 	moviemode = checkmode("movie")
+	moviemode = "Kids"
 	if playme == 8:
 		try:
 			block = getrandomblock()
@@ -4144,36 +4146,98 @@ def queuefill():
 		if ((playme == 1) and (showmode == "Off")):
 			command = "SELECT TShow FROM TVshowlist"
 			cur.execute(command)
+			if not cur.fetchall():
+				plexlogin()
+				SECTION = "TV Shows"
+				tlist = plex.library.section(SECTION).search("")
+				tvlist = []
+				for item in tlist:
+					if item.title not in tvlist:
+						tvlist.append(item.title)	
+			else:
+				cur.execute(command)
+				tvlist = cur.fetchall()
+				
 		elif (showmode == "Kids"):
 			print ("Finding a kid friendly show now.")
 			command = "SELECT TShow FROM TVshowlist WHERE Rating IN (\"TV-Y\",\"TV-Y7\", \"TV-G\")"
 			cur.execute(command)
+			if not cur.fetchall():
+                                        plexlogin()
+                                        SECTION = "TV Shows"
+					GEN = ['TV-Y','TV-Y7','TV-G']
+                                        tlist = plex.library.section(SECTION).search(None,contentRating=GEN)
+					print tlist
+					tvlist = []
+					for item in tlist:
+						if item.title not in tvlist:
+							tvlist.append(item.title)
+
+			else:
+				cur.execute(command)
+				tvlist = cur.fetchall()
+
 		else:
 			command = "SELECT TShow FROM TVshowlist WHERE Genre LIKE \'%Favorite%\'"
 			cur.execute(command)
 			lcheck = cur.fetchall()
 			if (int(len(lcheck)) <25):
 				command = "SELECT TShow FROM TVshowlist"
-			#else:
-				#print ("Using a favorite TV Show.")
-			cur.execute(command)
-		tvlist = cur.fetchall()
-		tlist = []
-		for shw in tvlist:
-			tlist.append(shw[0])
-		shuffle(tlist)
-		max = int(len(tlist))-1
+				cur.execute(command)
+				if not cur.fetchall():
+					plexlogin()
+					SECTION = "TV Shows"
+					tlist = plex.library.section(SECTION).search("")
+					tvlist = []
+					for item in tlist:
+						if item.title not in tvlist:
+							tvlist.append(item.title)
+					
+				else:
+					cur.execute(command)
+					tvlist = cur.fetchall()
+			else:
+				cur.execute(command)
+		shuffle(tvlist)
+		max = int(len(tvlist))-1
 		min = 0
 		playc = randint(min,max)
-		addme = tlist[playc]
+		addme = tvlist[playc]
 	#random Movie
 	if ((playme == 2) or (playme ==4) or (playme == 6)):
 		if ((playme == 4) and (moviemode == "Off")):
 			command = "SELECT Movie FROM Movies"
-		elif (showmode == "Kids"):
+			cur.execute(command)
+			if not cur.fetchall():
+				plexlogin()
+				SECTION = "Movies"
+				tlist = plex.library.section(SECTION).search("")
+				mvlist = []
+				for item in tlist:
+					if item.title not in mvlist:
+						mvlist.append(item.title)
+
+			else:
+				cur.execute(command)
+				mvlist = cur.fetchall()
+	
+		elif (moviemode == "Kids"):
                         print ("Finding a kid friendly movie now.")
                         command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\", \"PG\")"
                         cur.execute(command)
+			if not cur.fetchall():
+                                        plexlogin()
+                                        SECTION = "Movies"
+                                        GEN = ['G','TV-PG']
+                                        tlist = plex.library.section(SECTION).search(None,contentRating=GEN)
+                                        mvlist = []
+                                        for item in tlist:
+                                                if item.title not in mvlist:
+                                                        mvlist.append(item.title)
+
+                        else:
+                                cur.execute(command)
+                                mvlist = cur.fetchall()
 		else:
 			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\""
 			cur.execute(command)
@@ -4182,16 +4246,11 @@ def queuefill():
 				command = "SELECT Movie FROM Movies"
 			#else:
 				#print ("Using a favorite movie.")
-                cur.execute(command)
-		mvlist = cur.fetchall()
-		mlist = []
-		for mve in mvlist:
-			mlist.append(mve[0])
-		shuffle(mlist)
-		max = int(len(mlist))-1
+		shuffle(mvlist)
+		max = int(len(mvlist))-1
 		min = 0
 		playc = randint(min,max)
-		play = mlist[playc]
+		play = mvlist[playc]
 		addme = "movie." + play
 	if (playme == 3):
 		if (showmode == "Kids"):
@@ -6699,7 +6758,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.01e"
+	version = "3.02a"
 	return version
 	
 
