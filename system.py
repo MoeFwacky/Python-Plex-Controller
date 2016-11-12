@@ -3092,6 +3092,8 @@ def playshow(show):
 	sayshow = sayshow.replace("preroll.","The Preroll: " )
 	sayshow = sayshow.replace("CUSTOM.","")
 	sayshow = sayshow.replace("playcommercial.","The Commercial: ")
+	if ("ERROR:" in sayshow):
+		return sayshow
 	print ("Trying to start: " + sayshow + "\n")
 	try:
 		plexlogin()
@@ -4308,7 +4310,11 @@ def queuefill():
 			cur.execute("SELECT setting FROM settings WHERE item LIKE \"WILDCARD\"")
 			addme = cur.fetchone()
 			addme = addme[0]
-	return queueadd(addme)
+	try:
+		return queueadd(addme)
+	except UnboundLocalError:
+		print ("FAILURE DETECTED:\nOption Tried: " + playme + "\nRETRYING!")
+		return queuefill()
 
 def queueremove(item):
 	name = "queue"
@@ -6801,7 +6807,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.02b"
+	version = "3.02d"
 	return version
 	
 
