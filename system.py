@@ -3644,6 +3644,22 @@ def commercialcheck():
         check = cur.fetchone()[1]
 	return check
 
+def setcommercialbreakcount(number):
+	cur.execute("SELECT * FROM commercials")
+	if not cur.fetchall():
+		return ("Error: not enough commercials in the commercials table to use that setting.")
+	else:
+		cur.execute("SELECT * FROM commercials")
+		found = cur.fetchall()
+		if ((int(len(found))-1) < int(number)):
+			return ("Error: not enough commercials in the commercials table to use that setting.")
+	command = "DELETE FROM States WHERE OPTION LIKE \"COMMERCIALBREAK\""
+	cur.execute(command)
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("COMMERCIALBREAK",int(number)))
+	sql.commit()
+	return ("COMMERCIALBREAKCOUNT has been set to: " + str(number))
+
 def commercialbreak():
 	cur.execute("SELECT State FROM States WHERE Option LIKE \"COMMERCIALBREAK\"")
 	if not cur.fetchone():
@@ -6778,7 +6794,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.02b"
+	version = "3.02c"
 	return version
 	
 
@@ -7059,9 +7075,16 @@ try:
 			comm = "none"
 		playcommercial(comm)
 		say = "Done."
-	elif ("commercialbreak" in show):
+	elif (("commercialbreak" in show) and ("setcommercialbreakcount" not in show)):
 		commercialbreak()
 		say = "Done."
+	elif ("setcommercialbreakcount" in show):
+		try:
+			number = int(sys.argv[2])
+			say = setcommercialbreakcount(number)
+		except Exception:
+			say = "Error: You must provide a number to use this command."
+			
 	elif ("playpreroll" in show):
 		try:
 			comm = str(sys.argv[2])
@@ -7856,15 +7879,6 @@ try:
 			
 		except IndexError:
 			say = "Error."
-	elif ("updatedb" in show):
-		try:
-			type = str(sys.argv[2])
-			command = "python " + homedir + "upddatedb_pi.py " + type.strip()
-			print ("Warning- This command may take several minutes to complete depending on the size of your library.\n")
-			result = subprocess.check_output(command, shell=True)
-			say = result
-		except Exception:
-			say = "Error. Invalid Syntax. Use 'updatemovies' or 'updateshows' or 'updateall' as a flag for this command. Please try again."
 	elif ("versioncheck" in show):
 		say = versioncheck()
 	else:

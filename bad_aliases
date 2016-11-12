@@ -1,0 +1,1 @@
+alias updatedb='python /home/pi/hasyste/upddatedb_pi.py'
