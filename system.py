@@ -3985,7 +3985,9 @@ def playwhereleftoff(show, nvalue):
 
 
 def queueadd(addme):
-        title = addme.strip()
+        title = addme
+	if type(title) is tuple:
+		title = title[0]
 	title = title.replace("custom.","")
 	title = checkcustomtables(title)
         if type(title) is tuple:
@@ -3996,7 +3998,7 @@ def queueadd(addme):
 		name = verifyblock(title)
 		name = "block." + name
 		
-	if ("CUSTOM." not in title):
+	elif ("CUSTOM." not in title):
 		if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 			title = titlecheck(title).strip()
 			title = title.replace("'","")
@@ -4213,6 +4215,13 @@ def queuefill():
 					tvlist = cur.fetchall()
 			else:
 				cur.execute(command)
+				tvlist = cur.fetchall()
+		if type(tvlist) is tuple:
+			tlist = []
+			for item in tvlist:
+				if item[0] not in tlist:
+					tlist.append(item[0])
+			tvlist = tlist
 		shuffle(tvlist)
 		max = int(len(tvlist))-1
 		min = 0
@@ -4221,16 +4230,33 @@ def queuefill():
 	#random Movie
 	if ((playme == 2) or (playme ==4) or (playme == 6)):
 		mvlist = []
-		if ((playme == 4) and (moviemode == "Off")):
+		if (moviemode == "Kids"):
+                        print ("Finding a kid friendly movie now.")
+                        command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\", \"PG\")"
+                        cur.execute(command)
+                        if not cur.fetchall():
+                                        plexlogin()
+                                        SECTION = "Movies"
+                                        GEN = ['G','TV-PG']
+                                        tlist = plex.library.section(SECTION).search(None,contentRating=GEN)
+                                        for item in tlist:
+                                                if item.title not in mvlist:
+                                                        mvlist.append(item.title)
+
+                        else:
+                                cur.execute(command)
+                                mlist = cur.fetchall()
+                                for item in mlist:
+                                        if item[0] not in mvlist:
+                                                mvlist.append(item[0])
+		
+		elif ((playme == 4) and (moviemode == "Off")):
 			command = "SELECT Movie FROM Movies"
 			cur.execute(command)
-			print 11
 			if ((not cur.fetchall()) or (len(cur.fetchall())<25)):
-				print 2
 				plexlogin()
 				SECTION = "Movies"
 				tlist = plex.library.section(SECTION).search("")
-				mvlist = []
 				for item in tlist:
 					if item.title not in mvlist:
 						mvlist.append(item.title)
@@ -4242,43 +4268,24 @@ def queuefill():
 					if item[0] not in mvlist:
 						mvlist.append(item[0])
 	
-		elif (moviemode == "Kids"):
-                        print ("Finding a kid friendly movie now.")
-                        command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\", \"PG\")"
-                        cur.execute(command)
-			if not cur.fetchall():
-                                        plexlogin()
-                                        SECTION = "Movies"
-                                        GEN = ['G','TV-PG']
-                                        tlist = plex.library.section(SECTION).search(None,contentRating=GEN)
-                                        mvlist = []
-                                        for item in tlist:
-                                                if item.title not in mvlist:
-                                                        mvlist.append(item.title)
-
-                        else:
-                                cur.execute(command)
-                                mlist = cur.fetchall()
-				for item in mlist:
-					if item[0] not in mvlist:
-						mvlist.append(item[0])
 		else:
 			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\""
 			try:
 				cur.execute(command)
 				lcheck = cur.fetchall()
 				if (int(len(lcheck))<25):
+					print ("FAIL")
 					command = "SELECT Movie FROM Movies"
+				else:
 					cur.execute(command)
-					mvlist = cur.fetchall()
+					mlist = cur.fetchall()
 					for item in mlist:
 						if item[0] not in mvlist:
 							mvlist.append(item[0])
-			except Exception:
+			except TypeError:
 				plexlogin()
                                 SECTION = "Movies"
                                 tlist = plex.library.section(SECTION).search("")
-                                mvlist = []
                                 for item in tlist:
                                         if item.title not in mvlist:
                                                 mvlist.append(item.title)
@@ -6794,7 +6801,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.02c"
+	version = "3.02b"
 	return version
 	
 
