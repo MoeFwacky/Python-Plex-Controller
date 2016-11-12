@@ -3931,7 +3931,7 @@ def playwhereleftoff(show, nvalue):
 
 		command = "DELETE FROM TVCounts WHERE Show LIKE \"" + show + "\""
 		cur.execute(command)
-		cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecountx))
+		cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thexcount))
 		sql.commit()
 		shows = plex.library.section('TV Shows')
 		the_show = shows.get(show)
