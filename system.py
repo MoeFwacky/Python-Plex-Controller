@@ -4018,7 +4018,8 @@ def queueadd(addme):
 		sql.commit()	
 		xname = xname.replace("movie.","")
 		xname = xname.replace(";","")
-		say = ("The Movie " + xname.rstrip() + " has been added to the queue.")
+		#say = ("The Movie " + xname.rstrip() + " has been added to the queue.")
+		say = xname.strip()
 		return say	
 		
 	else:
@@ -4098,22 +4099,20 @@ def queuefix():
 
 def queuefill():
 	playme = randint(1,9)
-	playme = 4
 	#random TV show
 	showmode = checkmode("show")
 	moviemode = checkmode("movie")
-	moviemode = "Kids"
 	if playme == 8:
 		try:
 			block = getrandomblock()
+			if "Error:" not in block:
+				if ("on" in checkblockrandom()):
+					say = setplaymode(block)
+					playme = randint(1,7)
+				else:
+					playme = randint(1,7)
 		except Exception:
 			playme = randint(1,7)
-		if "Error:" not in block:
-			if ("on" in checkblockrandom()):
-				say = setplaymode(block)
-				playme = randint(1,7)
-			else:
-				playme = randint(1,7)
 	if playme == 9:
 		if ("on" not in checkcustomrandom()):
 			playme = randint(1,7)
@@ -4146,7 +4145,7 @@ def queuefill():
 		if ((playme == 1) and (showmode == "Off")):
 			command = "SELECT TShow FROM TVshowlist"
 			cur.execute(command)
-			if not cur.fetchall():
+			if ((not cur.fetchall()) or (len(cur.fetchall())<25)):
 				plexlogin()
 				SECTION = "TV Shows"
 				tlist = plex.library.section(SECTION).search("")
@@ -4205,10 +4204,13 @@ def queuefill():
 		addme = tvlist[playc]
 	#random Movie
 	if ((playme == 2) or (playme ==4) or (playme == 6)):
+		mvlist = []
 		if ((playme == 4) and (moviemode == "Off")):
 			command = "SELECT Movie FROM Movies"
 			cur.execute(command)
-			if not cur.fetchall():
+			print 11
+			if ((not cur.fetchall()) or (len(cur.fetchall())<25)):
+				print 2
 				plexlogin()
 				SECTION = "Movies"
 				tlist = plex.library.section(SECTION).search("")
@@ -4219,7 +4221,10 @@ def queuefill():
 
 			else:
 				cur.execute(command)
-				mvlist = cur.fetchall()
+				mlist = cur.fetchall()
+				for item in mlist:
+					if item[0] not in mvlist:
+						mvlist.append(item[0])
 	
 		elif (moviemode == "Kids"):
                         print ("Finding a kid friendly movie now.")
@@ -4237,15 +4242,30 @@ def queuefill():
 
                         else:
                                 cur.execute(command)
-                                mvlist = cur.fetchall()
+                                mlist = cur.fetchall()
+				for item in mlist:
+					if item[0] not in mvlist:
+						mvlist.append(item[0])
 		else:
 			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\""
-			cur.execute(command)
-			lcheck = cur.fetchall()
-			if (int(len(lcheck))<25):
-				command = "SELECT Movie FROM Movies"
-			#else:
-				#print ("Using a favorite movie.")
+			try:
+				cur.execute(command)
+				lcheck = cur.fetchall()
+				if (int(len(lcheck))<25):
+					command = "SELECT Movie FROM Movies"
+					cur.execute(command)
+					mvlist = cur.fetchall()
+					for item in mlist:
+						if item[0] not in mvlist:
+							mvlist.append(item[0])
+			except Exception:
+				plexlogin()
+                                SECTION = "Movies"
+                                tlist = plex.library.section(SECTION).search("")
+                                mvlist = []
+                                for item in tlist:
+                                        if item.title not in mvlist:
+                                                mvlist.append(item.title)
 		shuffle(mvlist)
 		max = int(len(mvlist))-1
 		min = 0
@@ -6758,7 +6778,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.02a"
+	version = "3.02b"
 	return version
 	
 
@@ -7162,7 +7182,7 @@ try:
 	elif ("queueadd" in show):
 		addme = str(sys.argv[2])
 		say = queueadd(addme)
-		#sayx = say + " has been added to the queue."
+		say = say + " has been added to the queue."
 		#saythat(say)
 	elif ("whereat" in show):
 		plexlogin()
