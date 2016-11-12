@@ -108,8 +108,10 @@ if "Linux" in ostype:
 			try:
 				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_bash.py"
 				newfile = http.request('GET', url, preload_content=False)
+				newfile = writemehome + str(newfile.data)
+				print newfile
 				with open(file0, 'wb') as file:
-					file.write(newfile.data)
+					file.write(newfile)
 				file.close()
 				print ("File successfully moved to the necessary directory.")
 			except IOError:
@@ -152,8 +154,9 @@ if "Linux" in ostype:
 			try:
 				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_cron.py"
 				newfile = http.request('GET', url, preload_content=False)
+				newfile = writemehome + str(newfile.data)
 				with open(file00, 'wb') as file:
-					file.write(newfile.data)
+					file.write(newfile)
 				file.close()
 				print ("File successfully moved to the necessary directory.")
 			except IOError:
@@ -496,6 +499,15 @@ cur.execute('INSERT INTO States VALUES(?,?)', ('Nowplaying','Stopped'))
 sql.commit()
 
 cur.execute('CREATE TABLE IF NOT EXISTS Movies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
+sql.commit()
+
+cur.execute('CREATE TABLE IF NOT EXISTS backupmovies(Movie TEXT, Summary TEXT, Rating TEXT, Tagline TEXT, Genre TEXT, Director TEXT, Actors TEXT)')
+sql.commit()
+
+cur.execute("CREATE TABLE IF NOT EXISTS TVshowlist(TShow TEXT, Summary TEXT, Genre TEXT, Rating TEXT, Duration INT, Totalnum INT)")
+sql.commit()
+
+cur.execute("CREATE TABLE IF NOT EXISTS backshowlist(TShow TEXT, Summary TEXT, Genre TEXT, Rating TEXT, Duration INT, Totalnum INT)")
 sql.commit()
 
 cur.execute('CREATE TABLE IF NOT EXISTS TVCounts(Show TEXT, Number INT)')
