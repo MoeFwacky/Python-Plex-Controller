@@ -4279,6 +4279,7 @@ def queuefill():
 	#random Movie
 	if ((playme == 2) or (playme ==4) or (playme == 6)):
 		mvlist = []
+		print (playme)
 		if (moviemode == "Kids"):
                         print ("Finding a kid friendly movie now.")
                         command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\", \"PG\")"
@@ -4321,17 +4322,20 @@ def queuefill():
 			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\""
 			try:
 				cur.execute(command)
-				lcheck = cur.fetchall()
-				if (int(len(lcheck))<25):
-					print ("FAIL")
-					command = "SELECT Movie FROM Movies"
+				if not cur.fetchall():
+					lcheck = []
 				else:
 					cur.execute(command)
-					mlist = cur.fetchall()
-					for item in mlist:
-						if item[0] not in mvlist:
-							mvlist.append(item[0])
-			except TypeError:
+					lcheck = cur.fetchall()
+				if (int(len(lcheck))<25):
+					print ("FAIL: Not Enough Favorites.")
+					command = "SELECT Movie FROM Movies"
+				cur.execute(command)
+				mlist = cur.fetchall()
+				for item in mlist:
+					if item[0] not in mvlist:
+						mvlist.append(item[0])
+			except Exception:
 				plexlogin()
                                 SECTION = "Movies"
                                 tlist = plex.library.section(SECTION).search("")
@@ -6854,7 +6858,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.02e"
+	version = "3.02f"
 	return version
 	
 
