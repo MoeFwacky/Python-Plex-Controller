@@ -3,7 +3,7 @@ import sys
 user = str(sys.argv[1])
 
 workd = "/etc/crontab"
-writeme = "@reboot " + user + " python /home/" + user + "/hasystem/piplaystate.py > /dev/null 2>&1 &"
+writeme = "* * * * * * " + user + " python /home/ " + user + "/hasystem/tbn_schedule.py\n@reboot " + user + " python /home/" + user + "/hasystem/piplaystate.py > /dev/null 2>&1 &"
 
 with open(workd, "r") as file:
 	checkme1 = file.read()
