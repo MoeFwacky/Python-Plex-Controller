@@ -74,3 +74,5 @@ backupmoviedb,Backs up the movie tables,backupmoviedb
 restoretvdb,Restors the TV tables from backup,restoretvdb
 restoremoviedb,restores the movies tables from backup, restoremoviedb
 moviechoice,Gives a choice of 3 items from the specified genre/rating/actor,moviechoice genre.favorite
+addschedule,Schedule an action to happen at a specified time. Note: Time must be formatted \"HH:MM AM/PM\". When using \"today\" that entry will be removed once executed. When using a day of the week the action will repeat weekly on the specified day/time., addschedule "setplaymode normal" "11:27 PM" today.
+viewschedules,Lists the scheduled actions.,viewschedules
