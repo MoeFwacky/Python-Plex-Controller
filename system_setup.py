@@ -117,6 +117,24 @@ if "Linux" in ostype:
 			except IOError:
 				print ("warning add_to_bash.py does not exist. Alias commands will not work.")
 		try:
+			filex1 = homedir + "tbn_schedule.py"
+			with open (filex1, "r") as file:
+				readme = file.read()
+			file.close()
+			print ("check pass.  tbn_schedule.py exists.")
+		except IOError:
+			try:
+				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/tbn_schedule.py"
+				newfile = http.request('GET', url, preload_content=False)
+				newfile = writemehome + str(newfile.data)
+				print newfile
+				with open(filex1, 'wb') as file:
+					file.write(newfile)
+				file.close()
+				print ("File successfully moved to the necessary directory.")
+			except IOError:
+				print ("warning tbn_schedule.py does not exist. Scheduling will not work.")
+		try:
                         file10 = homedir + "aliases"
                         with open (file10, "r") as file:
                                 readme = file.read()
