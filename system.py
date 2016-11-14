@@ -256,6 +256,53 @@ def maxaudio():
         plexlogin()
         client.setVolume(100, 'Video')
 
+def addschedule(action, time, day):
+	try:
+		cur.execute("SELECT * FROM SCHEDULES")
+	except sqlite3.OperationalError:
+		cur.execute("CREATE TABLE IF NOT EXISTS SCHEDULES(action TEXT, time TEXT, day TEXT)")
+		sql.commit()
+	command = "SELECT * FROM SCHEDULES WHERE time LIKE \"" + time + "\" AND day LIKE \"" + day + "\""
+	cur.execute(command)
+	if not cur.fetchall():
+		addme = []
+		addme.append(action)
+	else:
+		cur.execute(command)
+		addme = cur.fethall()[0]
+		addme = addme.append(action)
+		cur.execute("DELETE FROM SCHEDULES WHERE time LIKE \"" + time + "\" AND day LIKE \"" + day + "\"")
+		sql.commit()
+	for item in addme:
+		try:
+			adme = adme + item + ";"
+		except NameError:
+			adme = item + ";"
+	print adme
+	print time
+	print day
+	cur.execute("INSERT INTO SCHEDULES VALUES(?,?,?)",(adme, time, day))
+	sql.commit()
+	return ("Successfully added item to schedule.")
+
+def viewschedules():
+	try:
+                cur.execute("SELECT * FROM SCHEDULES")
+        except sqlite3.OperationalError:
+                cur.execute("CREATE TABLE IF NOT EXISTS SCHEDULES(action TEXT, time TEXT, day TEXT)")
+                sql.commit()
+        command = "SELECT * FROM SCHEDULES"
+	cur.execute(command)
+	if not cur.fetchall():
+		return ("Nothing is currently scheduled.")
+	cur.execute(command)
+	sched = cur.fetchall()
+	for item in sched:
+		print ("Action: " + item[0])
+		print ("Time: " + item[1])
+		print ("Day: " + item[2] + "\n")
+	return ("Done.")
+
 def holidaycheck(title):
 	title=title.lower().strip()
 	cur.execute("SELECT * FROM Holidays WHERE name LIKE \"" + title + "\"")
@@ -6807,7 +6854,7 @@ def statuscheck():
 
 
 def versioncheck():
-	version = "3.02d"
+	version = "3.02e"
 	return version
 	
 
@@ -6828,6 +6875,16 @@ try:
 	elif ("swhere" in show):
 		num = sys.argv[2]
 		say = swhere(num)
+	elif ("addschedule" in show):
+		try:
+			action = str(sys.argv[2])
+			time = str(sys.argv[3])
+			day = str(sys.argv[4])
+			say = addschedule(action, time, day)
+		except IndexError:
+			say = "Error: You must suppily an \"action,\" \"time,\" and \"day\" to use this command."
+	elif ("viewschedules" in show):
+		say = viewschedules()
 	elif ("deleteshow" in show):
 		show = sys.argv[2]
 		say = deleteshow(show)
