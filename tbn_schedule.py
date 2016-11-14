@@ -29,6 +29,9 @@ else:
 	found = cur.fetchall()
 	for item in found:
 		if item[1] == thetime:
+			if (thetime == "11:59 PM"):
+				cur.execute("DELETE FROM SCHEDULES WHERE day LIKE \"today\"")
+				sql.commit()
 			actn = []
 			actions = item[0]
 			actions = actions.split(";")
@@ -43,6 +46,8 @@ else:
 					action = "python " + DEFAULTDIR + "system.py \"" + whatsit + "\""
 					#print ("Executing: " + action)
 					os.system(action)
+					
+
 
 #cur.execute("DELETE FROM SCHEDULES")
 #sql.commit()
