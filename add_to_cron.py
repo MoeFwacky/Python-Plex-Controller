@@ -21,7 +21,7 @@ else:
 	except Exception:
 		print ("Failed to add cron entry for piplaystate.py.")
 if writeme2 not in checkme1:
-		try:
+	try:
 		with open(workd, "a") as file:
 			file.write(writeme2)
 		file.close()
