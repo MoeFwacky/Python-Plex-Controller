@@ -76,3 +76,49 @@ restoremoviedb,restores the movies tables from backup, restoremoviedb
 moviechoice,Gives a choice of 3 items from the specified genre/rating/actor,moviechoice genre.favorite
 addschedule,Schedule an action to happen at a specified time. Note: Time must be formatted \"HH:MM AM/PM\". When using \"today\" that entry will be removed once executed. When using a day of the week the action will repeat weekly on the specified day/time., addschedule "setplaymode normal" "11:27 PM" today.
 viewschedules,Lists the scheduled actions.,viewschedules
+tvchoice,Gives a choice of 3 items from the specified genre/rating/duration, tvchoice genre.action
+restartshow,Restarts the given shows episode count to episode 1,restartshow Psych
+changeplexpw,Change the plex PW stored by TBN-Plex,changeplexpw blah
+enablecommercials,Enables Commercials Between Programs,enablecommercials
+disablecommercials,Disables Commercials Between Programs,disablecommercials
+listcommercials,Lists the available Commercials stored in the TBN-Plex DB,listcommercials
+listprerolls,Lists the available Prerolls stored in the TBN-Plex DB,listprerolls
+playcommercial,Plays a specific commercial,playcommercial "deadwood mr wu"
+commercialbreak,Interuppts the current program with a commercial break,commercialbreak
+setcommercialbreakcount,Sets the number of commercils in a commercial break.,setcommercialbreakcount 2
+showrejected,Lists items in the kids mode rejected list.,showrejected
+showapproved,Lists titlses in the kids mode approved list.,showapproved
+addrejected,Adds a title to the rejected list,addrejected Jaws
+addapproved,Adds a title to the approved list.,addapproved Predator
+addholiday,Adds/associates a given title with a holiday,addholiday xmas "die hard"
+checkholidays,Lists the saved holidays with associations,checkholidays
+removefromholiday,removes an item from being associated with the given holiday,removefromholiday xmas "die hard"
+updatedb,Updates the TBN-Plex database.,updatedb shows
+resumestatus,Shows resumestatus state,resumestatus
+versioncheck,Lists the version of the system file.,versioncheck
+replacestatus,Lists replaces status for the given title,replacestatus psych
+replaceshowinblock,Sets the given title to be replaced in the given block when its epiosde list resets,replaceshowinblock Psych Test1
+checkblockrandom,Lists status of blockrandom mode,checkblockrandom
+setblockrandom,Sets blockrandom to on/off,setblockrandom on
+statuscheck,Lists status of various options,statuscheck
+hitok,Hits OK on onscreen popups,hitok
+getcustomtable,Lists stored entries for the given custom table,getcustomtable Fights
+listcustomtables,Lists the available custom tables in the TBN-Plex db.,listcustomtables
+enablekidsmode,Enables Kids Mode,enablekidsmode
+disablekidsmode,Disables Kids Mode,disablekidsmode
+pausemusic,Pauses/Resumes Music,pausemusic
+stopmusic,Stops playback on music client,stopmusic
+setmusicclient,Changes the current music client,setmusicclient
+playmusic,Plays the given artist/track,playmusic "Willie Nelson"
+musicstartnext,Starts the next music track,musicstartnext
+playplaylist,Plays the given playlist,playplaylist "Half-Nelson"
+getalbums,Lists the albums for the given artist,getalbums "Willie Nelson"
+listplexplaylists,Lists the playlists stored on the Plex Server,listplexplaylists
+blocktoplist,Convers the given block to a plex playlist,blocktoplist Monday_Block
+queuetoplaylist,Converts the TBN queue to a plex playlist,queuetoplaylist
+setqueuetoplex,Enable/Disable the automatic plex playlist feature.,setqueuetoplex on/off
+backuptvcounts,Backs up the tv count entries,backuptvcounts
+restoretvcounts,Restores the tv count entires.Note: tvcounts must be in your /hasystem directory.,restoretvcounts
+addschedule,Adds item to the schedule,addschedule "setplaymode normal" 6:00 PM" today
+viewschedules,Lists currently scheduled items,viewschedules
+
