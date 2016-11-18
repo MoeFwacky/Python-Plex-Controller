@@ -269,7 +269,7 @@ def addschedule(action, time, day):
 		addme.append(action)
 	else:
 		cur.execute(command)
-		addme = cur.fethall()[0]
+		addme = cur.fetchall()[0]
 		addme = addme.append(action)
 		cur.execute("DELETE FROM SCHEDULES WHERE time LIKE \"" + time + "\" AND day LIKE \"" + day + "\"")
 		sql.commit()
