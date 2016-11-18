@@ -26,7 +26,7 @@ global play
 global pcmd
 global pcount
 
-SLEEPTIME = 15 
+SLEEPTIME = 20 
 try:
 	input = raw_input
 except NameError:
@@ -4279,7 +4279,6 @@ def queuefill():
 	#random Movie
 	if ((playme == 2) or (playme ==4) or (playme == 6)):
 		mvlist = []
-		print (playme)
 		if (moviemode == "Kids"):
                         print ("Finding a kid friendly movie now.")
                         command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\", \"PG\")"
@@ -4322,20 +4321,17 @@ def queuefill():
 			command = "SELECT Movie FROM Movies WHERE Genre LIKE \"%favorite%\""
 			try:
 				cur.execute(command)
-				if not cur.fetchall():
-					lcheck = []
+				lcheck = cur.fetchall()
+				if (int(len(lcheck))<25):
+					print ("FAIL")
+					command = "SELECT Movie FROM Movies"
 				else:
 					cur.execute(command)
-					lcheck = cur.fetchall()
-				if (int(len(lcheck))<25):
-					print ("FAIL: Not Enough Favorites.")
-					command = "SELECT Movie FROM Movies"
-				cur.execute(command)
-				mlist = cur.fetchall()
-				for item in mlist:
-					if item[0] not in mvlist:
-						mvlist.append(item[0])
-			except Exception:
+					mlist = cur.fetchall()
+					for item in mlist:
+						if item[0] not in mvlist:
+							mvlist.append(item[0])
+			except TypeError:
 				plexlogin()
                                 SECTION = "Movies"
                                 tlist = plex.library.section(SECTION).search("")
@@ -4468,6 +4464,8 @@ def upnext():
 		show = getcustomtitle(playmode)
 		playme = show
 	elif ("minithon." in playmode):
+		playme = playmode
+	elif ("commercialmode" in playmode):
 		playme = playmode
 
 	return playme
@@ -4621,7 +4619,7 @@ def setplaymode(mode):
                 sql.commit()
 		cur.execute("DELETE FROM States WHERE Option LIKE \"MINITHONCNT\"")
                 sql.commit()
-	checks = ['normal','block.','marathon.','binge.', 'minithon.', 'holiday.', 'custom.']
+	checks = ['normal','block.','marathon.','binge.', 'minithon.', 'holiday.', 'custom.', 'commercialmode']
 	setcheck = "fail"
 	for item in checks:
 		if item in mode:
@@ -5543,7 +5541,7 @@ def whatupnext():
 			upnext = upnext.replace("For the show ", "")
 			upnext = upnext.replace("Up next is ", "")
 			upnext = upnext.replace(" we have the", ",")
-	elif ("playcommercial" in playmode):
+	elif (("playcommercial" in playmode) or ("commercialmode" in playmode)):
 		upnext = playmode 
 		upnext = upnext.replace("playcommercial.","The commercial: ")
 		if ("The commercial: " not in upnext):
@@ -6686,6 +6684,9 @@ def startnextprogram():
 		say = playshow(show)
 	if (("block." or "binge.") not in show):
 		skipthat()
+	if ("commercialmode" in show):
+		playcommercial('none')
+		say = "Done."
 	say = say + "\n"
 	if "On" in pstatus:
 		time.sleep(SLEEPTIME)
