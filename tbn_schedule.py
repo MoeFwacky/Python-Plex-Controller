@@ -4,6 +4,7 @@ import sqlite3
 from time import localtime, strftime
 from datetime import date
 import calendar
+import time
 
 user = getpass.getuser()
 
@@ -15,7 +16,11 @@ cur = sql.cursor()
 dte = date.today()
 TODAY = str(calendar.day_name[dte.weekday()]).lower()
 
+WEEKDAYS = ['monday','tuesday','wednesday','thursday','friday']
+WEEKENDS = ['saturday','sunday']
+
 thetime = strftime("%-I:%M %p", localtime())
+#thetime = "4:46 PM"
 
 command = "SELECT * FROM SCHEDULES"
 
@@ -35,21 +40,21 @@ else:
 			actn = []
 			actions = item[0]
 			actions = actions.split(";")
-			if ((item[2].lower() == "today") or (item[2].lower() == "everyday") or (item[2].lower() == TODAY)):
-				if item[2].lower() == "today":
-					cur.execute("DELETE FROM SCHEDULES WHERE time LIKE \"" + str(thetime).strip() + "\" AND day LIKE \"today\"")
-					sql.commit()
+			dcheck = item[2].lower()
+			if (((dcheck == "weekdays") and (TODAY in WEEKDAYS)) or ((dcheck == "weekends") and (TODAY in WEEKENDS))):
+				dcheck = TODAY
+			print dcheck
+			if ((dcheck == "today") or (dcheck == "everyday") or (dcheck == TODAY)):
 				for thing in actions:
 					if thing != "":
 						actn.append(thing)
 				for whatsit in actn:
-					action = "python " + DEFAULTDIR + "system.py \"" + whatsit + "\""
-					#print ("Executing: " + action)
-					os.system(action)
-					
-
-
-#cur.execute("DELETE FROM SCHEDULES")
-#sql.commit()
-
-
+					if "wait " in whatsit:
+						num = whatsit.replace("wait ","")
+						num = int(num.strip())
+						#print ("sleeping " + str(num) + " seconds.")
+						time.sleep(num)
+					else:
+						action = "python " + DEFAULTDIR + "system.py \"" + whatsit + "\""
+						print ("Executing: " + action)
+						os.system(action)

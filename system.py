@@ -1,6 +1,7 @@
 import os
 import getpass
 import time
+import calendar
 import sys
 import requests
 import sqlite3
@@ -269,18 +270,19 @@ def addschedule(action, time, day):
 		addme.append(action)
 	else:
 		cur.execute(command)
-		addme = cur.fetchall()[0]
-		addme = addme.append(action)
+		addme = cur.fetchall()[0][0]
+		addme = addme.split(";")
+		addme.append(action)
 		cur.execute("DELETE FROM SCHEDULES WHERE time LIKE \"" + time + "\" AND day LIKE \"" + day + "\"")
 		sql.commit()
 	for item in addme:
-		try:
-			adme = adme + item + ";"
-		except NameError:
-			adme = item + ";"
-	print adme
-	print time
-	print day
+		if item == "":
+			pass
+		else:
+			try:
+				adme = adme + item + ";"
+			except NameError:
+				adme = item + ";"
 	cur.execute("INSERT INTO SCHEDULES VALUES(?,?,?)",(adme, time, day))
 	sql.commit()
 	return ("Successfully added item to schedule.")
@@ -302,6 +304,12 @@ def viewschedules():
 		print ("Time: " + item[1])
 		print ("Day: " + item[2] + "\n")
 	return ("Done.")
+
+def clearschedules():
+	cur.execute("DELETE FROM SCHEDULES")
+	sql.commit()
+	return ("Done.")
+
 
 def holidaycheck(title):
 	title=title.lower().strip()
@@ -6857,9 +6865,64 @@ def statuscheck():
 	queuetpl = qtpl()
 	print ("Queue To Playlist is: " + queuetpl)
 
+def wait(number):
+	try:
+		counter = 0
+		if ("Pass" in externalcheck()):
+			while counter <= number:
+				progress(number)
+				counter = counter + 1
+				time.sleep(1)
+			clearprogress()
+		else:
+			time.sleep(number)
+	except KeyboardInterrupt:
+		pass
+
+def timechecker(thing):
+	thing = thing.lower()
+	thing = thing.replace("now + ","now+")
+	if ("now+" in thing):
+		import datetime
+		thing = thing.replace("now+","")
+		if ("m" in thing):
+		
+                        thing = thing.replace("m","")
+                        thing = int(thing)
+                        now = datetime.datetime.now()
+                        thing = str(now + datetime.timedelta(minutes = thing))
+		elif ("h" in thing):
+			thing = thing.replace("h","")
+			thing = int(thing)
+			now = datetime.datetime.now()
+			thing = str(now + datetime.timedelta(hours = thing))
+
+		thing = thing.split(" ")
+		thing = thing[1]
+		thing = thing.split(":")
+		hr = thing[0]
+		min = thing[1]
+		thing = hr + ":" + min
+		
+	if (" am" in thing):
+		thing = thing.replace(" am"," AM")
+	if (" pm" in thing):
+		thing = thing.replace(" pm"," PM")
+	cck = thing
+	cck = thing.split(":")
+	cck = thing[0]
+	if ((cck > 0) and ("am" not in thing.lower()) and ("pm" not in thing.lower())):
+		#print ("Given 24hr time. Converting...")
+		from datetime import datetime
+		d = datetime.strptime(thing, "%H:%M")
+		thedate = d.strftime("%-I:%M %p")
+	else:
+		thedate = thing
+	return thedate
+
 
 def versioncheck():
-	version = "3.02f"
+	version = "3.02g"
 	return version
 	
 
@@ -6880,16 +6943,29 @@ try:
 	elif ("swhere" in show):
 		num = sys.argv[2]
 		say = swhere(num)
+	elif ("timechecker" in show):
+		ttime = sys.argv[2]
+		say = timechecker(ttime)
+	elif ("wait" in show):
+		try:
+			num = int(sys.argv[2])
+			wait(num)
+			say = "" 
+		except NameError:
+			say = "Error: You must supply an intiger to use this action."
 	elif ("addschedule" in show):
 		try:
 			action = str(sys.argv[2])
 			time = str(sys.argv[3])
+			time = timechecker(time)
 			day = str(sys.argv[4])
 			say = addschedule(action, time, day)
 		except IndexError:
 			say = "Error: You must suppily an \"action,\" \"time,\" and \"day\" to use this command."
 	elif ("viewschedules" in show):
 		say = viewschedules()
+	elif ("clearschedule" in show):
+		say = clearschedules()
 	elif ("deleteshow" in show):
 		show = sys.argv[2]
 		say = deleteshow(show)
