@@ -471,6 +471,8 @@ def getcustom(section):
 	if ("preroll" in section.lower()):
 		cur.execute("CREATE TABLE IF NOT EXISTS prerolls(name TEXT, duration INT)")
 		sql.commit()
+		cur.execute("DELETE FROM prerolls")
+		sql.commit()
 		mcheck = "fail"
 		command = "SELECT setting FROM settings WHERE item LIKE \"PREROLLPART\""
 		cur.execute(command)
@@ -501,6 +503,8 @@ def getcustom(section):
 		USETABLE = "prerolls"
 	elif ("commercial" in section.lower()):
 		cur.execute("CREATE TABLE IF NOT EXISTS commercials(name TEXT, duration INT)")
+		sql.commit()
+		cur.execute("DELETE FROM commercials")
 		sql.commit()
 		mcheck = "fail"
 		command = "SELECT setting FROM settings WHERE item LIKE \"COMPART\""
@@ -535,6 +539,8 @@ def getcustom(section):
 		section = section.replace("custom.","").strip()
 		item = "CUSTOM_" + section
 		cur.execute("CREATE TABLE IF NOT EXISTS " + item + "(name TEXT, duration INT, type TEXT)")
+		sql.commit()
+		cur.execute("DELETE FROM " + item)
 		sql.commit()
 		command = "SELECT setting FROM settings WHERE item LIKE \"" + item + "\""
 		mcheck = "fail"
