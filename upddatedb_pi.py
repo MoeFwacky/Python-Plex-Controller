@@ -331,7 +331,12 @@ def getshows():
 	tvlist = tlist.search("")
 	xnum = int(len(tvlist))-1
 	for show in tvlist:
-		name = str(show.title)
+		 try:
+                        name = str(show.title)
+                except Exception:
+                        name = show.title
+                        name = name.encode("utf8")
+                        name = str(name)
 		summary = show.summary
 		summary = str(summary.encode('ascii','ignore')).strip()
 		rating = str(show.contentRating)
