@@ -22,9 +22,11 @@ WEEKENDS = ['saturday','sunday']
 thetime = strftime("%-I:%M %p", localtime())
 #thetime = "4:46 PM"
 
-command = "SELECT * FROM SCHEDULES"
+if (thetime == "11:59 PM"):
+	cur.execute("DELETE FROM SCHEDULES WHERE day LIKE \"today\"")
+	sql.commit()
 
-#command = "SELECT * FROM SCHEDULES WHERE time LIKE \"" + str(thetime).strip() + "\""
+command = "SELECT * FROM SCHEDULES"
 
 cur.execute(command)
 if not cur.fetchall():
@@ -34,9 +36,6 @@ else:
 	found = cur.fetchall()
 	for item in found:
 		if item[1] == thetime:
-			if (thetime == "11:59 PM"):
-				cur.execute("DELETE FROM SCHEDULES WHERE day LIKE \"today\"")
-				sql.commit()
 			actn = []
 			actions = item[0]
 			actions = actions.split(";")
