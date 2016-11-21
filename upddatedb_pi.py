@@ -331,7 +331,7 @@ def getshows():
 	tvlist = tlist.search("")
 	xnum = int(len(tvlist))-1
 	for show in tvlist:
-		 try:
+		try:
                         name = str(show.title)
                 except Exception:
                         name = show.title
