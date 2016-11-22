@@ -1,5 +1,4 @@
-# TBN-Plex
-***TheBaconNation Plex Controller***
+##TheBaconNation Plex Controller##
 
 * [The demo setup video.](https://youtu.be/YMEXIZOcpDM)
 * [A link to a demo of the controller in action.](https://youtu.be/HRJbNHRQO6I)
@@ -12,7 +11,7 @@
 
 TheBaconNation Plex Controller Help Document
 
-**Important Note:**
+##Important Note:##
 Since server version 1.1.4xxx you will need to add the ip or subnect for your TBN-Plex controller device to the autorized IP list in your Plex Server Settings. Look for "allowed without authorization." If not added you may run into issues updating your TBN-Plex DB.
 Before You Begin-
 
@@ -20,7 +19,7 @@ The following librarys are needed:
 enchant. You can use "pip install pyenchant" to get it.
 The python plex api. User "pip install plexapi"
 
-How To Install:
+##How To Install:##
 Get the most recent version of the system_setup.py file. Place it in your home directory and run it as your preferred user.
 Example:
 curl "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system_setup.py" -o "system_setup.py"
@@ -62,7 +61,7 @@ If the system_setup.py script succeeded in adding commands to your bash shell, a
 
 Note- If the option you are giving contains a space(" ") you will need to put quotes ("" or '') around that option. 
 
-**Syntax:**
+##Syntax:##
 Command (options, if any, don't use the parenthesis)/ Example Usage / Description
 
 * playme (tvshow/movie) / playme "The Big Bang Theory" OR playme "movie.The Matrix" / plays the next episode from the specified show or the specified movie.
@@ -177,5 +176,5 @@ Command (options, if any, don't use the parenthesis)/ Example Usage / Descriptio
 * blocktoplist / blocktoplist cop_drama_block / converts the specified block into a plex playlist named TBNqueue.
 * queuetoplaylist / queuetoplaylist / converts your TBN-Plex queue to a plex playlist named TBNqueue.
 * setqueuetoplex (on/off) / setqueuetoplex on / enables or disables the automatic queue to plex function. Note: impacts performance when enabled.
-***Using the crappy UI:***
+###Using the crappy UI:###
 There are 3 .php files and a jpg that can be used in the event you desire a UI and are worse than I at making such things. Drop them in your apache web directory and have at it. I've setup the TBN scripts and its DB such that others should be able to easily interact with them and make a custom UI, voice controller, mobile app,... whatever that makes use of them as one sees fit. 
