@@ -1,6 +1,7 @@
 # TBN-Plex
-TheBaconNation Plex Controller
-[The demo setup video.](https://youtu.be/YMEXIZOcpDM_
+***TheBaconNation Plex Controller***
+
+[The demo setup video.](https://youtu.be/YMEXIZOcpDM)
 [A link to a demo of the controller in action.](https://youtu.be/HRJbNHRQO6I)
 [How To Create a Block Package.](https://youtu.be/a5lOLjzunMQ)
 [Our Homepage.](http://thebaconnation.com)
