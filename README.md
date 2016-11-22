@@ -13,55 +13,91 @@ TheBaconNation Plex Controller Help Document
 
 ##Important Note:##
 Since server version 1.1.4xxx you will need to add the ip or subnect for your TBN-Plex controller device to the autorized IP list in your Plex Server Settings. Look for "allowed without authorization." If not added you may run into issues updating your TBN-Plex DB.
-Before You Begin-
 
+##Before You Begin:##
 The following librarys are needed:
-enchant. You can use "pip install pyenchant" to get it.
 The python plex api. User "pip install plexapi"
 
-##How To Install:##
+The following library is optional:
+enchant. You can use "pip install pyenchant" to get it. Spell checking will be turned back on in a future update. When that happens, if you do not have this library you will be warned. 
+
+###How To Install:###
 Get the most recent version of the system_setup.py file. Place it in your home directory and run it as your preferred user.
 Example:
 curl "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system_setup.py" -o "system_setup.py"
 python system_setup.py
 
-Do to some recent changes, it is recommended you remove the following files, rerun the new system_setup script, and let it refresh your library. Files to remove: aliases, system.py. If you have not updated in a while, also replace the setup_system.py and upddated_db.py files.
+##Update Note:##
+The easiest way to update is remove all files in your HA system directory except your myplex.db file, as well as any other backup files you want to retain. Rerun system_setup.py. If a more recent setup file is available, get that first. 
+Note: When running system_setup.py, you may be prompted for your server, client, and wild card show again. 
+
 3 scripts are necessary to use the TBN Plex Controller:
-system.py - this is the main script used by the controller.
-upddatedb_pi.py - this is the script used to update the controllers database. 
-system_setup.py - this script creates the necessary files, database, and prompts the user for the information the controller needs to do its job. 
+* system.py - this is the main script used by the controller.
+* upddatedb_pi.py - this is the script used to update the controllers database. 
+* system_setup.py - this script creates the necessary files, database, and prompts the user for the information the controller needs to do its job. 
 
-There is one optional script- piplaystate.py. This script uses the API access to check the playback status of the client you are using at a regular interval. When the mode is "On," when a program stopps the system will automatically launch a new progarm, and continue to do so untill it is in eithr "Off" or "Sleep" mode. While this option used to only be supported by a Raspberry Pi running raslplex, it should ideally work for most/all clients that support api access and report their timeline. 
+There is one optional script- piplaystate.py. This script uses the API access to check the playback status of the client you are using at a regular interval. When the mode is "On," when a program stopps the system will automatically launch a new progarm, and continue to do so untill it is in eithr "Off" or "Sleep" mode. You will need to add to code to the sleep mode actions to have this action do more than just stop playchecking at the end of a program.
 
-piplaystate.py - Gets the playback state from your client.
-playstatus.py - Runs in the background. When enabled uses piplaystate.py to get the status of your client. 
+##Other Script Descriptions:##
 
-Currently the TBN Plex Controller is currently designed to work on a linux based OS, however, it can also run on a windows environment without modification, though you may not be able to use the aliases.
+* piplaystate.py - Gets the playback state from your client.
+* playstatus.py - Runs in the background. When enabled uses piplaystate.py to get the status of your client. 
+* getshows.py - Updates DB entries for a single specified show.
+* tbn_scedule.py - On linux systems, is run once a minute by cron to trigger scheduled TBN-Plex actions.
+* add_to_bash.py - On linux systems, updates bash shortcut entries. Note: Needs to be run as sudo, and username specified as an argument.
+* add_to_cron.py - On linux systems, updates entries in etc/crontab
 
+
+##Supported Operating Systems:##
+These scripts should theoretically run on any system capable of running python, however, the system_setup.py script only currently supports Linux and Windows based installs. How to do a manual install will be added as a help doc at a later date. 
+
+#Installing TBN Plex:##
 To install the TBN Plex Controller, place the system_setup.py script files in your home directory. The system_setup.py script will make a directory in your home folder, "hasystem/", or prompt your for a directory, depending on your OS, which it will store its necessary files and database in.
 
-Install the TBN Plex Controller by running "python system_setup.py" The system setup script will ask you a few questions to get the data it needs to proceed. Once it is ready it will ask you if you want to update your database. You need to update your database before the system will find and choose media. 
+Install the TBN Plex Controller by running "python system_setup.py" The system setup script will ask you a few questions to get the data it needs to proceed. Once it is ready it will ask you if you want to update your database. Updating the TBN-Plex database is now optional, but recommended. The automated playback options, suggest, moviechoice, and random_movie/tv, etc options will function much better when the TBN-Plex database is updated. 
 
 NOTE: If you enter an incorrect value during setup, which prevents some element from either getting data or working, you can run "python system_setup.py reset" and it will delete the previously stored data and prompt you for it again.  
 
 Regarding Database Updates:
 The upddatedb_pi.py script will update your TBN Plex DB. The TBN Plex Controller uses a separate database so you do not need to worry about corrupting your existing Plex Database. 
 
-<p>You can update your database independent of the system_setup.py script by running "python upddatedb_pi.py updatetv/updatemovies/all" The script accepts one of three options. You can update all, just your movies, or just your TV shows. This is to allow you to save time when you only need to update one side of your library. Larger libraries will take more time to scan versus smaller libraries.</p>
-<p>For the times when you only need to get entires for a single show a second update script has been added: getshows.py. Usage is as follows: python getshows.py "Name of show here." This script will check your plex server for the specified show, and any new entries are added to the TBN-Plex DB. Note: does not update existing entires. </p>
+You can update your database independent of the system_setup.py script by running "python upddatedb_pi.py movie/shows/custom_shows/prerolls/commercials/custom." Larger libraries will take more time to scan versus smaller libraries.
+Notes:
+* movie - scans your Movie section
+* shows - scans your TV Show section
+* custom_shows - scans alternate TV Show sections
+* prerolls - scans your prerolls section
+* commercials - scans your commercials section
+* custom. - scans alternate library types, ie- fights, music_videos, comedy. usage ex- "python upddatedb_py.py custom.fights"
 
-After Install Notes:
+For the times when you only need to get entires for a single show a second update script has been added: getshows.py. Usage is as follows: python getshows.py "Name of show here." This script will check your plex server for the specified show, and any new entries are added to the TBN-Plex DB.
+Note: does not update existing entires.
+2nd note: Is pretty much obsolete now that the scrip automatically updates add entires when found on the server. 
+
+##After Install Notes:##
+It is recommended you run "python system.py updatehelp" to populdate you help table with the most recent help entries. 99% of the commands now support the "-h" argument, which will give a description and useage details for the given command. 
+
 Before you can use the block package commands, or block package playback, you first need to create a block package. You can use the "addblock" modifier to create a block package. 
 
 When you run system_setup.py the playmode is set/reset to normal, and your queue is set to " ". It is recommended you do a "whatupnext" after you run the system_setup.py script. From there your queue should never be empty. The controller is designed so something will always be up next. 
 
 
-Available Commands:
+##Available Playmodes:##
+* normal - plays items from the queue. Will find content when the queue is exhaused.
+* block.blockname - plays through the specified block, onces finished reverts to normal mode.
+* marathon.show - plays the specified show until user changes mode.
+* holiday.usercreatedholiday - plays items from the user created holiday list.
+* commercialmode - plays random items from the tbn-plex commercials table unless user plays something else/changes playmode.
+* custom.customsectionname - plays items from a custom.table user added using upddateddb.py custom.insertablenamehere. 
+
+###Available Commands:###
 If the system_setup.py script succeeded in adding commands to your bash shell, and after you have restarted it, you should be able to use the following commands without having "python system.py " in front of them. If that failed, or if say you do not use the bash shell, you will need to add "python system.py " in front of the following commands. Similarly, if you want to use this script in concert with something like a webserver or voice control agent, you can use "python system.py actionshere" to use any one of the following commands. 
 
-Note- If the option you are giving contains a space(" ") you will need to put quotes ("" or '') around that option. 
+Note- If the option you are giving contains a space(" ") you will need to put quotes ("" or '') around that option.
 
-##Syntax:##
+2nd Note- Commands that return a list of items, like "findmovie," support the "-l" argument. When not included, if more than 30 items are retuned you get a column list of 30 items with longer titles shortened. When more than 30 items are returned and the "-l" argument is included, you will get the list in 10s, with no titles shortened.
+
+##Command Syntax:##
 Command (options, if any, don't use the parenthesis)/ Example Usage / Description
 
 * playme (tvshow/movie) / playme "The Big Bang Theory" OR playme "movie.The Matrix" / plays the next episode from the specified show or the specified movie.
@@ -176,5 +212,7 @@ Command (options, if any, don't use the parenthesis)/ Example Usage / Descriptio
 * blocktoplist / blocktoplist cop_drama_block / converts the specified block into a plex playlist named TBNqueue.
 * queuetoplaylist / queuetoplaylist / converts your TBN-Plex queue to a plex playlist named TBNqueue.
 * setqueuetoplex (on/off) / setqueuetoplex on / enables or disables the automatic queue to plex function. Note: impacts performance when enabled.
+
+
 ###Using the crappy UI:###
 There are 3 .php files and a jpg that can be used in the event you desire a UI and are worse than I at making such things. Drop them in your apache web directory and have at it. I've setup the TBN scripts and its DB such that others should be able to easily interact with them and make a custom UI, voice controller, mobile app,... whatever that makes use of them as one sees fit. 
