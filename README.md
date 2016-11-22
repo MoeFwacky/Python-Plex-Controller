@@ -2,7 +2,7 @@
 TheBaconNation Plex Controller
 (The demo setup video.)[https://youtu.be/YMEXIZOcpDM]
 (A link to a demo of the controller in action.)[https://youtu.be/HRJbNHRQO6I]
-](How To Create a Block Package.)[https://youtu.be/a5lOLjzunMQ
+(How To Create a Block Package.)[https://youtu.be/a5lOLjzunMQ]
 (Our Homepage.)[http://thebaconnation.com]
 (The Beginnings of a bad web ui.)[https://youtu.be/u0ur4koeDFM]
 (How to use replaceshowinblock feature.)[https://youtu.be/oMDl-6GRK30]
