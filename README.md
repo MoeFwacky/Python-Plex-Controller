@@ -1,13 +1,13 @@
 # TBN-Plex
 TheBaconNation Plex Controller
-(The demo setup video.)[https://youtu.be/YMEXIZOcpDM]
-(A link to a demo of the controller in action.)[https://youtu.be/HRJbNHRQO6I]
-(How To Create a Block Package.)[https://youtu.be/a5lOLjzunMQ]
-(Our Homepage.)[http://thebaconnation.com]
-(The Beginnings of a bad web ui.)[https://youtu.be/u0ur4koeDFM]
-(How to use replaceshowinblock feature.)[https://youtu.be/oMDl-6GRK30]
+[The demo setup video.](https://youtu.be/YMEXIZOcpDM_
+[A link to a demo of the controller in action.](https://youtu.be/HRJbNHRQO6I)
+[How To Create a Block Package.](https://youtu.be/a5lOLjzunMQ)
+[Our Homepage.](http://thebaconnation.com)
+[The Beginnings of a bad web ui.](https://youtu.be/u0ur4koeDFM)
+[How to use replaceshowinblock feature.](https://youtu.be/oMDl-6GRK30)
 
-[https://discordapp.com/channels/206249843209797632/206249843209797632]The TBN-Plex Discord Channel.
+[https://discordapp.com/channels/206249843209797632/206249843209797632](The TBN-Plex Discord Channel.)
 
 TheBaconNation Plex Controller Help Document
 
