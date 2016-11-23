@@ -205,8 +205,13 @@ else:
 			hcheck = "goon"
 			
 	print ("Pass")
-	homedir = homedir + "hasystem\\"
-	writeme = "homedir = \'" + homedir + "\\'\n"
+	#/Users/username/Desktop/projects/TBN-Plex/
+	if "darwin" in ostype:
+		homedir = homedir + "hasystem/"
+		writeme = homedir + "hassytem/"
+	else:
+		homedir = homedir + "hasystem\\"
+		writeme = "homedir = \'" + homedir + "\\'\n"
 	writemehome = writeme
 	
 
