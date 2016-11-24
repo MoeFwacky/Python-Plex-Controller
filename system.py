@@ -5408,12 +5408,12 @@ def whatupnext():
 	if (("normal" in playmode) or ("binge." in playmode)):
 		queue = openqueue()
 		if queue == " ":
+			updatehelp()
+                        cls()
+			print ("Successfully updated help file.")
 			print ("First run situation detected. Taking approprate action.\n")
 			queuefix()
 			queue = openqueue()
-			updatehelp()
-			cls()
-			print ("Successfully Updated Help File.\n")
 		queue = queue.split(';')
 		upnext = queue[0]
 		upnext = upnext.replace(";", "")
