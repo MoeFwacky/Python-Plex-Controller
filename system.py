@@ -26,6 +26,9 @@ global show
 global play
 global pcmd
 global pcount
+global ttlchk
+
+ttlchk = ""
 
 SLEEPTIME = 20 
 try:
@@ -92,7 +95,7 @@ def plexlogin():
 				from plexapi.server import PlexServer
 				baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
 				plex = PlexServer(baseurl)
-			except Exception:
+			except IndexError:
 				print ("Local Fail. Trying cloud access.")
 				user = MyPlexAccount.signin(PLEXUN,PLEXPW)
 	
@@ -5149,82 +5152,38 @@ def getsectiontitle(title):
 	return say
 
 def titlecheck(title):
-	plexlogin()
-	otitle = title
-	oshow = title
-	cshow = title
-	cshow = title.replace("movie.","")
-	#for video in plex.search(cshow):
-	ssec = plex.library.sections()
-	for lib in ssec:
-		for video in lib.search(cshow):
-			xshow = video
-			if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
-				say = xshow.title
-				#return xshow.title
-			elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
-				try:
-					say
-				except Exception:
+	global ttlchk
+	if "yes" not in ttlchk:
+		plexlogin()
+		otitle = title
+		oshow = title
+		cshow = title
+		cshow = title.replace("movie.","")
+		#for video in plex.search(cshow):
+		ssec = plex.library.sections()
+		for lib in ssec:
+			for video in lib.search(cshow):
+				xshow = video
+				if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
 					say = xshow.title
-					xsec = plex.library.sections()
-					for lib in xsec:
-						if lib.key == video.librarySectionID:
-							if lib.title == "Movies":
-								say = "movie." + say
-	try:
-		return say
-	except NameError:
-		return ("ERROR: " + oshow + " NOT FOUND.\n")
-	'''
-	title = title.replace("movie.","")
-	title = title.replace("'","''")
-	title = title.lower()
-	check = "fail"
-	cur.execute("SELECT Movie FROM Movies")
-	mlist = cur.fetchall()
-	mvlist = []
-	for item in mlist:
-		#mvlist.append(str(item[0].lower()))
-		if title in item[0].lower():
-			check = "pass"
-	#if title in mvlist:
-		#check = "pass"
-	
-	cur.execute("SELECT TShow FROM TVshowlist")
-	tvlist = cur.fetchall()
-	tvxlist = []
-	for item in tvlist:
-		tvxlist.append(str(item[0].lower()))
-	if title.lower() in tvxlist:
-		check = "pass"
-	if "fail" in check:	
+					#return xshow.title
+				elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
+					try:
+						say
+					except Exception:
+						say = xshow.title
+						xsec = plex.library.sections()
+						for lib in xsec:
+							if lib.key == video.librarySectionID:
+								if lib.title == "Movies":
+									say = "movie." + say
 		try:
-			d = enchant.Dict("en_US")
-			options = []
-			newt = ""
-			ccount = 0
-			fail = "no"
-			for word in title.split(" "):
-				if d.check(word) is True:
-					newt = newt + word + " "
-				else:
-					clist = d.suggest(word)
-					word = clist[ccount]
-					newt = newt + word + " "
-					fail = "yes"
-			if "yes" in fail:
-				print ("Assuming you meant " + newt )
-		except Exception:
-			pass
+			ttlchk = "yes"
+			return say
+		except NameError:
+			return ("ERROR: " + oshow + " NOT FOUND.\n")
 	else:
-		if "movie." in otitle:
-			newt = "movie." + title
-		else:
-			newt = title
-	newt = newt.strip()
-	return (newt)
-	'''
+		return title
 
 def didyoumeanboth(title):
 	#title = titlecheck(title).strip()
@@ -5452,6 +5411,9 @@ def whatupnext():
 			print ("First run situation detected. Taking approprate action.\n")
 			queuefix()
 			queue = openqueue()
+			updatehelp()
+			cls()
+			print ("Successfully Updated Help File.\n")
 		queue = queue.split(';')
 		upnext = queue[0]
 		upnext = upnext.replace(";", "")
@@ -7053,7 +7015,7 @@ def timechecker(thing):
 
 
 def versioncheck():
-	version = "3.03b"
+	version = "3.03d"
 	return version
 	
 
@@ -7066,7 +7028,13 @@ try:
                         if ((argv == "-h") or ("system.py" in argv)):
                                 pass
                         else:
-                                say = helpme(argv)
+				try:
+					say = helpme(argv)
+				except sqlite3.OperationalError:
+					updatehelp()
+					cls()
+					print ("Successfully Updated Help Files.")
+					say = helpme(argv)
                 try:
                         say
                 except NameError:
