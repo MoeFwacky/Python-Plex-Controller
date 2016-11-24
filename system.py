@@ -319,7 +319,7 @@ def holidaycheck(title):
 		return ("Error: " + title + " does not exist as a holiday.")
 	return title
 
-def checkholidays():
+def checkholidays(holiday):
 	try:
 		command = "SELECT * FROM Holidays"
 		cur.execute(command)	
@@ -327,22 +327,33 @@ def checkholidays():
 		cur.execute("CREATE TABLE IF NOT EXISTS Holidays(name TEXT, items TEXT)")
 		sql.commit()
 	cur.execute(command)
-	test = cur.fetchall()
-	if not test:
-		print ("No Holidays are currently saved.")
+	if not cur.fetchall():
+		return ("Error: No Holidays are currently saved.")
 	else:
+		if holiday == "none":
+			command = "SELECT * FROM Holidays"
+		else:
+			command = "SELECT * FROM Holidays WHERE name LIKE \"" + holiday + "\""
+		cur.execute(command)
+		test = cur.fetchall()
+		if not test:
+			return ("Error: " + holiday + " not found in Holidays Table. Check and try again.")
 		for thing in test:
 			name = thing[0]
 			titles = thing[1]
 			titles = titles.split(";")
-			print (name + ":")
-			for ttl in titles:
-				if ttl == "":
-					pass
-				else:
-					ttl = ttl.replace("movie.","the movie ")
-					print (ttl)
-			print ("---")
+			if ("none" in holiday):
+				print (name)
+			else:
+				print (name + ":")
+				for ttl in titles:
+					if ttl == "":
+						pass
+					else:
+						ttl = ttl.replace("movie.","the movie ")
+						print (ttl)
+				print ("---")
+	return ("\nDone.")
 
 def removeholiday(holiday):
 	print ("Warning: This will remove the " + holiday + " and all associations. Are you sure you want to proceed?")
@@ -419,7 +430,7 @@ def addholiday(holiday, title):
 			tcheck
 		except NameError:
 			return ("Error: " + title + " not found to add.")
-		title = title + ":" + ssn + ":" + ep
+		title = title + ":" + ssn + ":" + epn
 	cur.execute("SELECT * FROM Holidays WHERE name LIKE \"" + holiday.strip() + "\"")
 	hcheck = cur.fetchone()
 	if not hcheck:
@@ -431,6 +442,24 @@ def addholiday(holiday, title):
 		if title in items:
 			return ("Error: " + title + " is already associated with the following holiday: " + holiday + ".")
 		items = items + title + ";"
+	cur.execute("DELETE FROM Holidays WHERE name LIKE \"" + holiday + "\"")
+	sql.commit()
+	cur.execute("INSERT INTO Holidays VALUES(?,?)",(holiday,items))
+	sql.commit()
+	return (title + " has been associated with the " + holiday + " holiday.")
+
+def addholiauto(holiday,title):
+	cur.execute("SELECT * FROM Holidays WHERE name LIKE \"" + holiday.strip() + "\"")
+	hcheck = cur.fetchone()
+	if not hcheck:
+			name = holiday.strip()
+			items = title + ";"
+	else:
+			name = hcheck[0]
+			items = hcheck[1]
+			if title in items:
+					return ("Error: " + title + " is already associated with the following holiday: " + holiday + ".")
+			items = items + title + ";"
 	cur.execute("DELETE FROM Holidays WHERE name LIKE \"" + holiday + "\"")
 	sql.commit()
 	cur.execute("INSERT INTO Holidays VALUES(?,?)",(holiday,items))
@@ -1062,6 +1091,7 @@ def listwildcard():
 	cur.execute("SELECT setting FROM settings WHERE item LIKE \"WILDCARD\"")
 	wildcard = cur.fetchone()
 	wildcard = wildcard[0]
+
 	return wildcard
 
 def changewildcard(show):
@@ -2388,7 +2418,7 @@ def listepisodes(show):
 		getme = ""
 		while "quit" not in getme.lower():
 			cls()
-			print ("Showing Items " + str(count) + " - " + str(mmax+1) + " out of " + str(max-1) + "\n")
+			print ("Showing Items " + str(count) + " - " + str(mmax) + " out of " + str(max+1) + "\n")
 			while (count + 1) <= mmax+1:
 				print (str(count) + ": " + the_show[count-1].title)
 				count = count + 1
@@ -2397,7 +2427,7 @@ def listepisodes(show):
 			if getme == "yes":
 				mmax = mmax + 10
 				if mmax > max:
-					mmax = max
+					mmax = max+1
 			else:
 				try:
 					getme = int(getme)
@@ -2927,6 +2957,21 @@ def replacestatus(show):
 
 def replacecheck(show):
 	theshow = show
+	command = "SELECT State FROM States WHERE Option LIKE \"REPLACEWILDCARD\""
+	cur.execute(command)
+	if not cur.fetchone():
+		pass
+	else:
+		cur.execute(command)
+		news = cur.fetchone()[0]
+		wcs = listwildcard()
+		print (wcs)
+		if wcs == show:
+			#print ("WC FOUND.")
+			cur.execute("DELETE FROM States WHERE Option LIKE \"REPLACEWILDCARD\"")
+			sql.commit()
+			changewildcard(news)
+			#return ("done")
 	try:
 		command = "SELECT item, block, played FROM replaceinblock WHERE name LIKE \"" + show.strip() + "\""
 		cur.execute(command)
@@ -2965,6 +3010,17 @@ def replacecheck(show):
                         sql.commit()
 	say = "done"	
 	return say
+
+def replacewildcard(name):
+	show = titlecheck(name)
+	if ("ERROR:" in show):
+		return show
+	cur.execute("DELETE FROM States WHERE Option LIKE \"REPLACEWILDCARD\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("REPLACEWILDCARD",show))
+	sql.commit()
+	return ("The next wild card show will be: " + show )
+	
 
 def replaceshowinblock(show, nshow, block, playflag):
 	tshow = show
@@ -3159,7 +3215,7 @@ def playshow(show):
 		for video in plex.search(cshow):
 			if "stop" not in fchk:
 				xshow = video
-				if ((xshow.type == "show") and ("movie." not in cshow) and (xshow.title.lower() == cshow.lower())):
+				if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == cshow.lower())):
 					dbtvcheck(video)
 					#getsection(xshow.title)
 					SECTION = video.librarySectionID
@@ -6865,6 +6921,74 @@ def statuscheck():
 	queuetpl = qtpl()
 	print ("Queue To Playlist is: " + queuetpl)
 
+def smartplist(thetext):
+	print ("\nWarning: This action may take a moment depending on the size of your library.\n")
+	plist = []
+	plname = "TBNSmartPlayList"
+	pcnt = 0
+	plexlogin()
+	try:
+		dlist = plex.playlist(plname)
+		dlist.delete()
+	except Exception:
+		pass
+	ssec = plex.library.sections()
+	for lib in ssec:
+		if lib.type == "artist":
+			pass
+		elif (lib.type == "movie"):
+			print ("Scanning " + lib.title + " now.")
+			for video in lib.search(""):
+				if thetext.lower() in video.summary.lower():
+					if "-p" not in sys.argv:
+						plist.append(video.title)
+					else:
+						movie = plex.library.section(lib.title).get(video.title)
+						plist.append(movie)
+			if (("-p" in sys.argv) and (len(plist)>0)):
+				if pcnt == 0:
+					plex.createPlaylist(plname,plist)
+				else:
+					playlist = plex.playlist(plname)
+					playlist.addItems(plist)
+				pcnt = pcnt + 1
+							
+		else:
+			print ("Scanning " + lib.title + " now.")
+			for video in lib.search(""):
+				sname = video.title
+				eps = video.episodes()
+				for ep in eps:
+					if thetext.lower() in ep.summary.lower():
+						if "-p" not in sys.argv:
+							addme = sname.strip() + ":" + str(ep.seasonNumber) + ":" + str(ep.index)
+							addme = str(addme)
+							plist.append(addme)
+							del addme
+						else:
+							shows = plex.library.section(lib.title)
+							movie = shows.get(video.title).get(ep.title)
+							plist.append(movie)
+			if (("-p" in sys.argv) and (len(plist)>0)):
+				if pcnt == 0:
+					plex.createPlaylist(plname,plist)
+				else:
+					playlist = plex.playlist(plname)
+					playlist.addItems(plist)
+				pcnt = pcnt + 1
+	if len(plist) >0:
+		if ("-p" not in sys.argv):
+			print ("Scan Finished. Creating Holiday mode smartplaylist now.")
+			cur.execute("DELETE FROM Holidays WHERE name LIKE \"smartplist\"")
+			sql.commit()
+			for item in plist:
+				#print ("Adding: " + item)
+				say = addholiauto("smartplist",item)
+			checkholidays("smartplist")
+		return ("\nDone.")
+	else:
+		return ("Error: No items found to generate smartplaylist.")
+
 def wait(number):
 	try:
 		counter = 0
@@ -6922,7 +7046,7 @@ def timechecker(thing):
 
 
 def versioncheck():
-	version = "3.02g"
+	version = "3.03a"
 	return version
 	
 
@@ -6940,6 +7064,10 @@ try:
                         say
                 except NameError:
                         say = "Sorry, but that entry was not found in the help table. Run \"updatehelp\" and try again if you have not updated recently."
+	elif ("smartplist" in show):
+		thetext = sys.argv[2]
+		smartplist(thetext)
+		say = "\nDone"
 	elif ("swhere" in show):
 		num = sys.argv[2]
 		say = swhere(num)
@@ -7112,8 +7240,11 @@ try:
 		say = show + ", Section: " + sect
 
 	elif ("checkholidays" in show):
-		checkholidays()
-		say = "Done."
+		try:
+			holiday = str(sys.argv[2])
+		except IndexError:
+			holiday = "none"
+		say = checkholidays(holiday)
 	elif ("addholiday" in show):
 		try:
 			holiday = str(sys.argv[2])
@@ -7365,12 +7496,26 @@ try:
 		say = "For " + nowp + "- " + say 
 	elif ("listwildcard" in show):
 		say = listwildcard()
+		say = "The Current Wild Card Show is: " + say
+		cur.execute("SELECT State FROM States WHERE Option LIKE \"REPLACEWILDCARD\"")
+		if not cur.fetchone():
+			pass
+		else:
+			cur.execute("SELECT State FROM States WHERE Option LIKE \"REPLACEWILDCARD\"")
+			newwc = cur.fetchone()[0]
+			say = say + "\nThe Next Wild Card Show is: " + newwc + "."
 	elif ("changewildcard" in show):
 		try:
 			show = str(sys.argv[2])
 		except Exception:
 			show = "none"
 		say = changewildcard(show)
+	elif ("replacewildcard" in show):
+		try:
+			show = str(sys.argv[2])
+			say = replacewildcard(show)
+		except Exception:
+			say = "Error: You must specify a show name to use this command."
 	elif ("idtonightsmovie" in show):
 		say = idtonightsmovie()
 		say = say.replace("movie.", "The Movie ")
