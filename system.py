@@ -1228,11 +1228,14 @@ def updatehelp():
 		stuff = file.readlines()
 	file.close()
 	for line in stuff:
-		line = line.split(",")
-		cur.execute("SELECT * FROM help WHERE name LIKE \"" + line[0] + "\"")
-		if not cur.fetchone():
-			cur.execute("INSERT INTO help VALUES (?,?,?)",(line[0],line[1],line[2]))
-			sql.commit()
+		try:
+			line = line.split(",")
+			cur.execute("SELECT * FROM help WHERE name LIKE \"" + line[0] + "\"")
+			if not cur.fetchone():
+				cur.execute("INSERT INTO help VALUES (?,?,?)",(line[0],line[1],line[2]))
+				sql.commit()
+		except Exception:
+			pass
 	print ("Help Table Built.")
 	os.system("rm -rf " + hfile)
 	print ("Help file removed now that DB populated.")
@@ -7015,7 +7018,7 @@ def timechecker(thing):
 
 
 def versioncheck():
-	version = "3.03d"
+	version = "3.03e"
 	return version
 	
 
