@@ -3296,7 +3296,7 @@ def playshow(show):
 		theshow = shows.get(show).episodes()
 		xshow = theshow[thecount].title
 		if (int(thecount)+1 > int(len(theshow))-1):
-			rcheck = replacecheck(show)	
+			rcheck = replacecheck(show.lower())	
 			thecountx = 1
 		else:
 			thecountx = thecount + 2
@@ -4393,21 +4393,28 @@ def queuefill():
 				cur.execute(command)
 				lcheck = cur.fetchall()
 				if (int(len(lcheck))<25):
-					print ("FAIL")
 					command = "SELECT Movie FROM Movies"
+				cur.execute(command)
+				if not cur.fetchall():
+					plexlogin()
+					SECTION = "Movies"
+					tlist = plex.library.section(SECTION).search("")
+					for item in tlist:
+						if item.title not in mvlist:
+							mvlist.append(item.title)       
 				else:
 					cur.execute(command)
 					mlist = cur.fetchall()
 					for item in mlist:
 						if item[0] not in mvlist:
 							mvlist.append(item[0])
-			except TypeError:
+			except Exception:
 				plexlogin()
-                                SECTION = "Movies"
-                                tlist = plex.library.section(SECTION).search("")
-                                for item in tlist:
-                                        if item.title not in mvlist:
-                                                mvlist.append(item.title)
+				SECTION = "Movies"
+				tlist = plex.library.section(SECTION).search("")
+				for item in tlist:
+					if item.title not in mvlist:
+						mvlist.append(item.title)
 		shuffle(mvlist)
 		max = int(len(mvlist))-1
 		min = 0
@@ -7018,7 +7025,7 @@ def timechecker(thing):
 
 
 def versioncheck():
-	version = "3.03e"
+	version = "3.03f"
 	return version
 	
 
