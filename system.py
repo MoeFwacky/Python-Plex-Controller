@@ -6922,7 +6922,7 @@ def statuscheck():
 	print ("Queue To Playlist is: " + queuetpl)
 
 def smartplist(thetext):
-	print ("\nWarning: This action may take a moment depending on the size of your library.\n")
+	print ("\nWarning: This action may take a few minutes depending on the size of your library.\n")
 	plist = []
 	plname = "TBNSmartPlayList"
 	pcnt = 0
@@ -6933,61 +6933,68 @@ def smartplist(thetext):
 	except Exception:
 		pass
 	ssec = plex.library.sections()
-	for lib in ssec:
-		if lib.type == "artist":
-			pass
-		elif (lib.type == "movie"):
-			print ("Scanning " + lib.title + " now.")
-			for video in lib.search(""):
-				if thetext.lower() in video.summary.lower():
-					if "-p" not in sys.argv:
-						plist.append(video.title)
-					else:
-						movie = plex.library.section(lib.title).get(video.title)
-						plist.append(movie)
-			if (("-p" in sys.argv) and (len(plist)>0)):
-				if pcnt == 0:
-					plex.createPlaylist(plname,plist)
-				else:
-					playlist = plex.playlist(plname)
-					playlist.addItems(plist)
-				pcnt = pcnt + 1
-							
-		else:
-			print ("Scanning " + lib.title + " now.")
-			for video in lib.search(""):
-				sname = video.title
-				eps = video.episodes()
-				for ep in eps:
-					if thetext.lower() in ep.summary.lower():
+	try:
+		for lib in ssec:
+			if lib.type == "artist":
+				pass
+			elif (lib.type == "movie"):
+				print ("Scanning " + lib.title + " now.")
+				for video in lib.search(""):
+					if thetext.lower() in video.summary.lower():
 						if "-p" not in sys.argv:
-							addme = sname.strip() + ":" + str(ep.seasonNumber) + ":" + str(ep.index)
-							addme = str(addme)
-							plist.append(addme)
-							del addme
+							plist.append(video.title)
 						else:
-							shows = plex.library.section(lib.title)
-							movie = shows.get(video.title).get(ep.title)
+							movie = plex.library.section(lib.title).get(video.title)
 							plist.append(movie)
-			if (("-p" in sys.argv) and (len(plist)>0)):
-				if pcnt == 0:
-					plex.createPlaylist(plname,plist)
-				else:
-					playlist = plex.playlist(plname)
-					playlist.addItems(plist)
-				pcnt = pcnt + 1
-	if len(plist) >0:
-		if ("-p" not in sys.argv):
-			print ("Scan Finished. Creating Holiday mode smartplaylist now.")
-			cur.execute("DELETE FROM Holidays WHERE name LIKE \"smartplist\"")
-			sql.commit()
-			for item in plist:
-				#print ("Adding: " + item)
-				say = addholiauto("smartplist",item)
-			checkholidays("smartplist")
-		return ("\nDone.")
-	else:
-		return ("Error: No items found to generate smartplaylist.")
+				if (("-p" in sys.argv) and (len(plist)>0)):
+					if pcnt == 0:
+						plex.createPlaylist(plname,plist)
+					else:
+						playlist = plex.playlist(plname)
+						playlist.addItems(plist)
+					pcnt = pcnt + 1
+								
+			else:
+				print ("Scanning " + lib.title + " now.")
+				for video in lib.search(""):
+					sname = video.title
+					eps = video.episodes()
+					for ep in eps:
+						if thetext.lower() in ep.summary.lower():
+							if "-p" not in sys.argv:
+								addme = sname.strip() + ":" + str(ep.seasonNumber) + ":" + str(ep.index)
+								addme = str(addme)
+								plist.append(addme)
+								del addme
+							else:
+								shows = plex.library.section(lib.title)
+								movie = shows.get(video.title).get(ep.title)
+								plist.append(movie)
+				if (("-p" in sys.argv) and (len(plist)>0)):
+					if pcnt == 0:
+						plex.createPlaylist(plname,plist)
+					else:
+						playlist = plex.playlist(plname)
+						playlist.addItems(plist)
+					pcnt = pcnt + 1
+		if len(plist) >0:
+			if ("-p" not in sys.argv):
+				print ("Scan Finished. Creating Holiday mode smartplaylist now.")
+				try:
+					cur.execute("DELETE FROM Holidays WHERE name LIKE \"smartplist\"")
+					sql.commit()
+				except sqlite3.OperationalError:
+					cur.execute("CREATE TABLE IF NOT EXISTS Holidays(name TEXT, items TEXT)")
+					sql.commit()
+				for item in plist:
+					#print ("Adding: " + item)
+					say = addholiauto("smartplist",item)
+				checkholidays("smartplist")
+			return ("\nDone.")
+		else:
+			return ("Error: No items found to generate smartplaylist.")
+	except KeyboardInterrupt:
+		return ("\nUser Cancelled.")
 
 def wait(number):
 	try:
@@ -7046,7 +7053,7 @@ def timechecker(thing):
 
 
 def versioncheck():
-	version = "3.03a"
+	version = "3.03b"
 	return version
 	
 
@@ -7066,8 +7073,7 @@ try:
                         say = "Sorry, but that entry was not found in the help table. Run \"updatehelp\" and try again if you have not updated recently."
 	elif ("smartplist" in show):
 		thetext = sys.argv[2]
-		smartplist(thetext)
-		say = "\nDone"
+		say = smartplist(thetext)
 	elif ("swhere" in show):
 		num = sys.argv[2]
 		say = swhere(num)
