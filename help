@@ -53,6 +53,7 @@ listclients,Lists the available clients,listclients
 changeclient,Changes the video client to the chosen client.Note: Client list is querryed from server and returned for choise.,changeclient
 listwildcard,Lists the current wild card show,listwildcard
 changewildcard,Changes the current wild card show to the specified show.,changewildcard "my name is earl"
+replacewildcard,designates the current wild card show to be replaced by the specified show once the current show plays through its episode list.,replacewildcard Psych
 settonightsmovie,Sets tonights movie to the specified movie. Note: used for random movie items in blocks., settongitsmovie "tremors"
 skipback,Skips back in the current feature 30 seconds.,skipback
 skipahead,Skips ahead in the current feature 30 seconds.,skipahead
@@ -121,4 +122,5 @@ backuptvcounts,Backs up the tv count entries,backuptvcounts
 restoretvcounts,Restores the tv count entires.Note: tvcounts must be in your /hasystem directory.,restoretvcounts
 addschedule,Adds item to the schedule,addschedule "setplaymode normal" 6:00 PM" today
 viewschedules,Lists currently scheduled items,viewschedules
-
+removeschedule,Removes the scheduled item at the specified day/date and time,removeschedule "7:00AM" sunday
+smartplist,Generates a playlist on your plex server (add \"-p\" flag) or a holidaymode playlist (no \"-p\" flag) using the specified words.,smartplist christmas
