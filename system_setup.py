@@ -433,15 +433,19 @@ else:
 
 cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
 if not cur.fetchone():
-	PLEXPW = str(input('Plex Password: '))
-	cur.execute('INSERT INTO settings VALUES(?,?)', ('PLEXPW',PLEXPW))
-	sql.commit()
+	pass
 else:
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-	PLEXPW = cur.fetchone()[0]
+	cur.execute('DELETE setting FROM settings WHERE item LIKE \'PLEXPW\'')
+	sql.commit()
+	print("Found Old stored password. Scrubbing from DB. You will be prompted for it, when needed, like now.\n")
+
+print ("Your Plex Password is needed to proceed. Note: This password is not stored, and if needed in the future you will be prompted for it.")
+PLEXPW = str(getpass.getpass('Plex Password: '))
 
 from plexapi.myplex import MyPlexAccount
 user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+
+print("\rSuccessfully Logged In.\n")
 
 resces = user.resources()
 servers = []
