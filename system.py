@@ -24,7 +24,7 @@ http = urllib3.PoolManager()
 global file
 global show
 global play
-global pcmd
+global pcmd/
 global pcount
 global ttlchk
 
@@ -360,7 +360,7 @@ def viewschedules():
                                 if itm not in flist:
                                         flist.append(itm)
 
-                        if len(flist) > 1:
+                        if len(flist) > 0:
                                 print ("The Following Times have items scheduled:\n")
                                 for item in flist:
                                         print (item)
@@ -388,7 +388,7 @@ def viewschedules():
                                 if itm not in flist:
                                         flist.append(itm)
 
-                        if len(flist) > 1:
+                        if len(flist) > 0:
                                 print ("The Following Actions are scheduled:\n")
                                 for item in flist:
                                         print (item)
@@ -416,7 +416,7 @@ def viewschedules():
 				if itm not in flist:
 					flist.append(itm)
 			
-			if len(flist) > 1:
+			if len(flist) > 0:
 				print ("The Following Days have items scheduled:\n")
 				for item in flist:
 					print (item)	
