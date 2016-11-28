@@ -435,7 +435,7 @@ cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
 if not cur.fetchone():
 	pass
 else:
-	cur.execute('DELETE setting FROM settings WHERE item LIKE \'PLEXPW\'')
+	cur.execute('DELETE FROM settings WHERE item LIKE \'PLEXPW\'')
 	sql.commit()
 	print("Found Old stored password. Scrubbing from DB. You will be prompted for it, when needed, like now.\n")
 
