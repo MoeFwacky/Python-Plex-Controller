@@ -7391,7 +7391,8 @@ try:
 			password = str(sys.argv[2])
 			say = changeplexpw(password)
 		except IndexError:
-			say = "Error: No Password supplied. No action taken."
+			password = getpass.getpass("Password: ")
+			say = changeplexpw(password)
 	elif ("changeplexip" in show):
 		changeplexip()
 		say = "Done."
