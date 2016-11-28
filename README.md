@@ -215,4 +215,13 @@ Command (options, if any, don't use the parenthesis)/ Example Usage / Descriptio
 
 
 ###Using the crappy UI:###
-There are 3 .php files and a jpg that can be used in the event you desire a UI and are worse than I at making such things. Drop them in your apache web directory and have at it. I've setup the TBN scripts and its DB such that others should be able to easily interact with them and make a custom UI, voice controller, mobile app,... whatever that makes use of them as one sees fit. 
+There are 3 .php files and a jpg that can be used in the event you desire a UI and are worse than I at making such things. Drop them in your apache web directory and have at it. I've setup the TBN scripts and its DB such that others should be able to easily interact with them and make a custom UI, voice controller, mobile app,... whatever that makes use of them as one sees fit. This should be considered an unsupported feature. No bug/feature requests for UI please. 
+
+
+#FAQ and TROUBLESHOOTING#
+
+###Schedules not running, and/or playchecking not automatically starting on reboot:###
+Verify you have a single entry for each in your etc/crontab. Also make sure the formatting is correct. They should look like this:
+
+\* \*     \* \* \*   pi      python /home/pi/hasystem/tbn_schedule.py >/dev/null 2>&1<br>
+@reboot pi python /home/pi/hasystem/piplaystate.py >/dev/null 2>&1<br>
