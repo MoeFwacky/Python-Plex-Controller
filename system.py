@@ -96,7 +96,7 @@ def plexlogin():
 					PLEXPW = str(base64.b64decode(PLEXPW))
 				except Exception:
 					print ("Your Plex Password is temporarly needed to proceed:\n")
-					PLEXPW = str(input("Password: "))
+					PLEXPW = str(getpass.getpass("Password: "))
 				user = MyPlexAccount.signin(PLEXUN,PLEXPW)
 				print ("\rSuccessfully logged into Plex cloud.\n")
 	
