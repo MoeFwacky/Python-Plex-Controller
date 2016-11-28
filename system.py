@@ -82,7 +82,7 @@ def plexlogin():
 				from plexapi.server import PlexServer
 				baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
 				plex = PlexServer(baseurl)
-			except IndexError:
+			except Exception:
 				from plexapi.myplex import MyPlexAccount
 				print ("Local Fail. Trying cloud access.")
 				cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
