@@ -40,7 +40,6 @@ MYDB = homedir + "myplex.db"
 sql = sqlite3.connect(MYDB)
 cur = sql.cursor()
 
-global PLEXUN
 global PLEXSVR
 global PLEXCLIENT
 global plex
@@ -48,21 +47,12 @@ global client
 
 
 def plexlogin():
-	global PLEXUN
 	global PLEXSVR
 	global PLEXCLIENT
 	global plex
 	global client
 	global LOGGEDIN
 	try:
-
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
-		PLEXUN = cur.fetchone()
-		PLEXUN = PLEXUN[0]
-
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-		PLEXPW = cur.fetchone()
-		PLEXPW = PLEXPW[0]
 
 		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 		PLEXSVR = cur.fetchone()
@@ -84,9 +74,6 @@ def plexlogin():
 		except Exception:
 			print ("Local Variables not set. Run setup to use local access.")
 
-		from plexapi.myplex import MyPlexAccount
-		#user = MyPlexAccount.signin(PLEXUN,PLEXPW)
-
 		try:
 			LOGGEDIN
 		except Exception:
@@ -96,8 +83,22 @@ def plexlogin():
 				baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
 				plex = PlexServer(baseurl)
 			except IndexError:
+				from plexapi.myplex import MyPlexAccount
 				print ("Local Fail. Trying cloud access.")
+				cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+				PLEXUN = cur.fetchone()
+				PLEXUN = PLEXUN[0]
+				try:	
+					cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+					PLEXPW = cur.fetchone()
+					PLEXPW = PLEXPW[0]
+					import base64
+					PLEXPW = str(base64.b64decode(PLEXPW))
+				except Exception:
+					print ("Your Plex Password is temporarly needed to proceed:\n")
+					PLEXPW = str(input("Password: "))
 				user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+				print ("\rSuccessfully logged into Plex cloud.\n")
 	
 				plex = user.resource(PLEXSVR).connect()
 			client = plex.client(PLEXCLIENT)
@@ -125,9 +126,10 @@ def changeplexpw(password):
 	password = password.strip()
 	cur.execute("DELETE FROM settings WHERE item LIKE \'PLEXPW\'")
 	sql.commit()
+	password = str(password.encode('base64','strict'))
 	cur.execute("INSERT INTO settings VALUES(?,?)",('PLEXPW',password))
 	sql.commit()
-	return ("The Plex PW has been changed to: " + password)
+	return ("The Plex PW has been changed.")
 
 def cls():
 	os.system('cls' if os.name=='nt' else 'clear')
@@ -290,23 +292,148 @@ def addschedule(action, time, day):
 	sql.commit()
 	return ("Successfully added item to schedule.")
 
+def removeschedule(time, day):
+	command = "SELECT * FROM SCHEDULES WHERE time LIKE \"" + time + "\" AND day LIKE \"" + day + "\""
+        cur.execute(command)
+        if not cur.fetchall():
+		return("Error: no schedules found for " + time + " on " + day + " found.")
+	cur.execute(command)
+	fnd = cur.fetchone()
+	print ("Found:\n" + fnd[0] + "\n" + fnd[1] + "\n" + fnd[2] + "\n\nRemoving Now.\n")
+	cur.execute("DELETE FROM SCHEDULES WHERE time LIKE \"" + time + "\" AND day LIKE \"" + day + "\"")
+	sql.commit()
+	return ("\nSuccessfully removed schedule for " + time + " on " + day + ".")
+
+def argprocessor(thearg):
+	try:
+		xshow = show
+	except Exception:
+		sch = []
+		for thing in sys.argv:
+			if "system.py" in thing:
+				pass
+			elif thearg in thing:
+				pass
+			else:
+				sch.append(thing)
+		if len(sch) == 1:
+			xshow = sch[0]
+		else:
+			print ("\nARGUMENT ERROR: TAKING A BEST GUESS!!\n")
+			xshow = sch[0]
+		return xshow
+	for thing in sys.argv:
+		if "system.py" in thing:
+			pass
+		elif thearg in thing:
+			pass
+		elif xshow in thing:
+			pass
+		else:
+			return thing
+
 def viewschedules():
 	try:
                 cur.execute("SELECT * FROM SCHEDULES")
         except sqlite3.OperationalError:
                 cur.execute("CREATE TABLE IF NOT EXISTS SCHEDULES(action TEXT, time TEXT, day TEXT)")
                 sql.commit()
-        command = "SELECT * FROM SCHEDULES"
-	cur.execute(command)
-	if not cur.fetchall():
-		return ("Nothing is currently scheduled.")
-	cur.execute(command)
-	sched = cur.fetchall()
-	for item in sched:
-		print ("Action: " + item[0])
-		print ("Time: " + item[1])
-		print ("Day: " + item[2] + "\n")
-	return ("Done.")
+	if (("-d" not in sys.argv) and ("-t" not in sys.argv) and ("-a" not in sys.argv)):
+		command = "SELECT * FROM SCHEDULES"
+		cur.execute(command)
+		if not cur.fetchall():
+			return ("Nothing is currently scheduled.")
+		cur.execute(command)
+		sched = cur.fetchall()
+		for item in sched:
+			print ("Action: " + item[0])
+			print ("Time: " + item[1])
+			print ("Day: " + item[2] + "\n")
+	elif ("-t" in sys.argv):
+		if len(sys.argv) == 3:
+                        command = "SELECT time FROM SCHEDULES"
+                        cur.execute(command)
+                        list = cur.fetchall()
+                        flist = []
+                        for item in list:
+                                itm = item[0]
+                                if itm not in flist:
+                                        flist.append(itm)
+
+                        if len(flist) > 1:
+                                print ("The Following Times have items scheduled:\n")
+                                for item in flist:
+                                        print (item)
+                else:
+                        argv = argprocessor("-t")
+			argv = timechecker(argv)
+			command = "SELECT * FROM SCHEDULES WHERE time LIKE \"" + argv + "\""
+                        cur.execute(command)
+                        if not cur.fetchall():
+                                return ("Error: No scheduled items found for time: " + argv)
+                        cur.execute(command)
+			flist = cur.fetchall()
+                        print ("The following items were found for time " + argv + ":\n")
+                        for item in flist:
+                                print ("Action: " + item[0])
+                                print ("Day: " + item[2] + "\n")
+	elif ("-a" in sys.argv):
+                if len(sys.argv) == 3:
+                        command = "SELECT action FROM SCHEDULES"
+                        cur.execute(command)
+                        list = cur.fetchall()
+                        flist = []
+                        for item in list:
+                                itm = item[0]
+                                if itm not in flist:
+                                        flist.append(itm)
+
+                        if len(flist) > 1:
+                                print ("The Following Actions are scheduled:\n")
+                                for item in flist:
+                                        print (item)
+                else:
+                        argv = argprocessor("-a")
+                        command = "SELECT * FROM SCHEDULES WHERE action LIKE \"%" + argv + "%\""
+                        cur.execute(command)
+                        if not cur.fetchall():
+                                return ("Error: No scheduled items found for action: " + argv)
+                        cur.execute(command)
+                        flist = cur.fetchall()
+                        print ("The following items were found for action " + argv + ":\n")
+                        for item in flist:
+                                print ("Action: " + item[0])
+				print ("Time: " + item[1])
+                                print ("Day: " + item[2] + "\n")
+	else:
+		if len(sys.argv) == 3:
+			command = "SELECT day FROM SCHEDULES"
+			cur.execute(command)
+			list = cur.fetchall()
+			flist = []
+			for item in list:
+				itm = item[0]
+				if itm not in flist:
+					flist.append(itm)
+			
+			if len(flist) > 1:
+				print ("The Following Days have items scheduled:\n")
+				for item in flist:
+					print (item)	
+		else:
+			argv = argprocessor("-d")
+			command = "SELECT * FROM SCHEDULES WHERE day LIKE \"" + argv + "\""
+			cur.execute(command)
+			if not cur.fetchall():
+				return ("Error: No scheduled items found for day: " + argv)
+			cur.execute(command)
+			flist = cur.fetchall()
+			print ("The following items were found for day " + argv + ":\n")
+			for item in flist:
+				print ("Action: " + item[0])
+				print ("Time: " + item[1] + "\n")
+				
+	return ("\nDone.")
 
 def clearschedules():
 	cur.execute("DELETE FROM SCHEDULES")
@@ -757,7 +884,7 @@ def kidscheck(option, title):
 		return ("fail")
 def setkidspassword(option):
 	checkpw = getkidspw()
-	checkme = input('Current Password: ')
+	checkme = getpass.getpass('Current Password: ')
 	if checkpw.strip() != checkme.strip():
 		return ("Error: Password Missmatch. No action taken.")
 	option = option.strip()
@@ -766,7 +893,7 @@ def setkidspassword(option):
 	sql.commit()
 	cur.execute("INSERT INTO States VALUES (?,?)",("KIDSPW",option))
 	sql.commit()
-	return ("The KIDSPW has been set to : " + option + ".")
+	return ("The KIDSPW has been set.")
 
 def getkidspw():
 	command = "SELECT State FROM States WHERE Option LIKE \"KIDSPW\""
@@ -1099,18 +1226,26 @@ def listwildcard():
 
 def changewildcard(show):
 	show = show.replace("'","''")
-	currentw = listwildcard()
-	print ("The Current Wild Card is: " + currentw + ".\n")
 	if "none" in show:
+		currentw = listwildcard()
+		print ("The Current Wild Card is: " + currentw + ".\n")
 		print ("What do you want to replace it with?")
 		newwild = str(input('Show: '))
 	else:
 		newwild = show
+	'''
 	command = "SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + newwild + "\""
 	cur.execute(command)
 	if not cur.fetchall():
 		return ("Error. " + str(newwild) + " Not found in Library to set as wildcard.")
 	else:
+	'''
+	#NEW STUFF HERE - TESTING -
+	newwild = titlecheck(newwild)
+	if ("ERROR:" in newwild):
+		return newwild
+	else:
+		#END NEW STUFF	
 		cur.execute("DELETE FROM settings WHERE item LIKE \"WILDCARD\"")
 		sql.commit()
 		cur.execute("INSERT INTO settings VALUES(?,?)", ('WILDCARD', newwild))
@@ -2664,7 +2799,9 @@ def movietlgame_gettagline():
 	for tags in tgs:
 		taglines.append(tags)
 	max = int(len(taglines)-1)
-	shuffle(taglines)
+	sck = randint(0,1)
+	if sck == 0:
+		shuffle(taglines)
 	getme = randint(0,max)
 	found = taglines[getme]
 	return (found[0])
@@ -2971,8 +3108,8 @@ def replacecheck(show):
 		cur.execute(command)
 		news = cur.fetchone()[0]
 		wcs = listwildcard()
-		print (wcs)
-		if wcs == show:
+		#print (wcs)
+		if wcs.lower() == show.lower():
 			#print ("WC FOUND.")
 			cur.execute("DELETE FROM States WHERE Option LIKE \"REPLACEWILDCARD\"")
 			sql.commit()
@@ -4341,7 +4478,9 @@ def queuefill():
 				if item[0] not in tlist:
 					tlist.append(item[0])
 			tvlist = tlist
-		shuffle(tvlist)
+		sck = randint(0,1)
+		if sck == 0:
+			shuffle(tvlist)
 		max = int(len(tvlist))-1
 		min = 0
 		playc = randint(min,max)
@@ -4415,7 +4554,9 @@ def queuefill():
 				for item in tlist:
 					if item.title not in mvlist:
 						mvlist.append(item.title)
-		shuffle(mvlist)
+		sck = randint(0,1)
+                if sck == 0:
+			shuffle(mvlist)
 		max = int(len(mvlist))-1
 		min = 0
 		playc = randint(min,max)
@@ -4825,34 +4966,6 @@ def setupnext(title):
 	elif ("Error: " in title):
 		return (title)
 
-	if ("movie." in title):
-		ctitle = title.replace("movie.","")
-		command = "SELECT Movie FROM Movies WHERE Movie LIKE \"" + ctitle + "\""
-		cur.execute(command)
-		if not cur.fetchone():
-			return ("Error. Title not found to add to play queue.")
-	elif ("CUSTOM." in title):
-		pass
-	else:
-		command = "SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + title + "\""
-		cur.execute(command)
-		if not cur.fetchone():
-			say = didyoumeanshow(title)
-			if ("Quit" in say):
-				return ("Done")
-			elif ("Error" in say):
-				try:
-					say = verifyblock(otitle)
-					if "Error." in say:
-						return ("Error. Title not found to add to play queue.")
-					say = setplaymode(say)
-					print ("Block found: " + otitle + ". Changing play mode.")
-					return (say)
-				except Exception:
-					return ("Error. Title not found to add to play queue.")
-			else:
-				say = setupnext(say)
-				return (say)
 
 	command = 'SELECT State FROM States WHERE Option LIKE \'Queue\''
 	cur.execute(command)
@@ -7025,13 +7138,20 @@ def timechecker(thing):
 
 
 def versioncheck():
-	version = "3.03f"
+	version = "3.03g"
 	return version
 	
 
 #commandsgohere
 try:	
-	show = str(sys.argv[1])
+	if (("-h" in sys.argv) or ("-l" in sys.argv)):
+		if ("-h" in sys.argv):
+			show = argprocessor("-h")
+		else:
+			show = argprocessor("-l")
+	else:
+		
+		show = str(sys.argv[1])
 	show = show.replace("+"," ")
 	if ("-h" in sys.argv):
                 for argv in sys.argv:
@@ -7074,6 +7194,13 @@ try:
 			say = addschedule(action, time, day)
 		except IndexError:
 			say = "Error: You must suppily an \"action,\" \"time,\" and \"day\" to use this command."
+	elif ("removeschedule" in show):
+		try:
+			time = sys.argv[2]
+			day = sys.argv[3]
+			say = removeschedule(time,day)
+		except IndexError:
+			say = "Error: You must provde a time and a day/date to use this command."
 	elif ("viewschedules" in show):
 		say = viewschedules()
 	elif ("clearschedule" in show):
@@ -7290,7 +7417,8 @@ try:
 			pw = str(sys.argv[2])
 			say = setkidspassword(pw)
 		except Exception:
-			say = "Error: You must provide a new password to use this command."
+			pw = getpass.getpass("New Password: ")
+			say = setkidspassword(pw)
 	elif ("restartshow" in show):
 		try:
 			show = str(sys.argv[2])

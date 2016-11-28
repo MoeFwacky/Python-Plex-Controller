@@ -37,9 +37,14 @@ else:
 	for item in found:
 		if item[1] == thetime:
 			actn = []
+			print (item[0])
 			actions = item[0]
 			actions = actions.split(";")
 			dcheck = item[2].lower()
+			if ("-x" in dcheck):
+				cur.execute("DELETE FROM SCHEDULES WHERE time LIKE \"" + thetime + "\" AND action LIKE \"" + str(item[0].strip()) + "\"")
+				sql.commit()
+				dcheck = dcheck.replace(" -x","")
 			if (((dcheck == "weekdays") and (TODAY in WEEKDAYS)) or ((dcheck == "weekends") and (TODAY in WEEKENDS))):
 				dcheck = TODAY
 			print dcheck
@@ -54,6 +59,6 @@ else:
 						#print ("sleeping " + str(num) + " seconds.")
 						time.sleep(num)
 					else:
-						action = "python " + DEFAULTDIR + "system.py \"" + whatsit + "\""
+						action = "python " + DEFAULTDIR + "system.py " + whatsit + ""
 						print ("Executing: " + action)
 						os.system(action)
