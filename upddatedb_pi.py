@@ -40,12 +40,7 @@ def plexlogin():
 	global client
 	global LOGGEDIN
 	try:
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
-		PLEXUN = cur.fetchone()
-		PLEXUN = PLEXUN[0]
-		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-		PLEXPW = cur.fetchone()
-		PLEXPW = PLEXPW[0]
+		
 		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 		PLEXSVR = cur.fetchone()
 		PLEXSVR = PLEXSVR[0]
@@ -71,6 +66,18 @@ def plexlogin():
 				plex = PlexServer(baseurl)
 			except Exception:
 				print ("Local Fail. Trying cloud access.")
+				cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+				PLEXUN = cur.fetchone()
+				PLEXUN = PLEXUN[0]
+				cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+				if not cur.fetchone():
+					PLEXPW = getpass.getpass("Plex Password: ")
+				else:
+					cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+					PLEXPW = cur.fetchone()
+					PLEXPW = PLEXPW[0]
+					import base64
+					PLEXPW = str(base65.b64decode(PLEXPW))
 				user = MyPlexAccount.signin(PLEXUN,PLEXPW)
 				plex = user.resource(PLEXSVR).connect()
 			client = plex.client(PLEXCLIENT)
