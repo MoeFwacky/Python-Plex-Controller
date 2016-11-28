@@ -24,7 +24,7 @@ http = urllib3.PoolManager()
 global file
 global show
 global play
-global pcmd/
+global pcmd
 global pcount
 global ttlchk
 
