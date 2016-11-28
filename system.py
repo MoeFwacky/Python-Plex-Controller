@@ -7138,7 +7138,7 @@ def timechecker(thing):
 
 
 def versioncheck():
-	version = "3.03g"
+	version = "3.05a"
 	return version
 	
 
