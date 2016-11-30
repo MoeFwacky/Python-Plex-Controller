@@ -7081,6 +7081,168 @@ def smartplist(thetext):
 	except KeyboardInterrupt:
 		return ("\nUser Cancelled.")
 
+def getlikemovie(xmovie):
+	print ("Finding Similar Movies.")
+	global ttlchk
+	found = []
+	import tmdbsimple as tmdb
+        tmdb.API_KEY = "ff44b56e7ea4641918abc6cf46d19a1c"
+        search = tmdb.Search()
+        response = search.movie(query=xmovie)
+	for s in search.results:
+		if s['title'].lower() == xmovie.lower():
+			mid = s['id']
+			movie = tmdb.Movies(mid)
+			response = movie.similar_movies()
+			response = response['results']
+			for item in response:
+				if item['title'] not in found:
+					found.append(item['title'])
+	if len(found) > 0:
+		print ("Successfully Acquired Like Movies. Comparing to your library now. WARNING: This may take a moment.")
+		cfound = []
+		ccnt = 0
+		max = int(len(found))-1
+		while ccnt <= max:
+			itm = found[ccnt]
+			try:
+				itm = titlecheck(itm)
+			except Exception:
+				print (itm)
+				itm = "ERROR"
+			ttlchk = "no"
+			if (("ERROR" not in itm) and (itm not in cfound)):
+				itm = itm.replace("movie.","The Movie ")
+				cfound.append(itm)
+			ccnt = ccnt + 1
+		if len(cfound) > 0:
+			print ("The following similar movies were located in your library:\n")
+			for ite in cfound:
+				print ite
+		else:
+			print ("No similar items found in your library. Here are the similar movies found that are not in your library:\n")
+			for thy in found:
+				print thy
+		return ("\nDone.")
+	else:
+		return ("Error: Nothing similar found to: " + xmovie + ".")
+
+def getcollection(xmovie):
+	collection = []
+	collectionx = []
+	import tmdbsimple as tmdb
+	tmdb.API_KEY = "ff44b56e7ea4641918abc6cf46d19a1c"
+	search = tmdb.Search()
+	response = search.movie(query=xmovie)
+	sset = "no"
+	for s in search.results:
+		if ((s['title'] in xmovie) and (sset == "no")):
+			try:
+				mid = s['id']
+				movie = tmdb.Movies(mid)
+				response = movie.info()
+				cid = response['belongs_to_collection']
+				#print cid['id']
+				sset = "yes"
+			except Exception:
+				#print ("fail")
+				pass
+
+	try:
+		movie = tmdb.Movies(mid)
+	except Exception:
+		return ("Error:" + xmovie + " not found. Please try again.")
+	response = movie.info()
+	cid = response['belongs_to_collection']
+	if not cid:
+                return ("Error: " + xmovie + " is not associated with a collection.")
+	cid = cid['id']
+	coll = tmdb.Collections(cid)
+	colld = coll.info()
+	for item in colld['parts']:
+		writeme = item['original_title'] + "," + item['release_date']
+		collection.append(writeme)
+		collectionx.append(item['original_title'])
+	if ("-p" in sys.argv):
+		ocoll = collection
+		collection = []
+		ccnt = 0
+		for item in ocoll:
+			item = item.split(",")
+			date = item[1].strip()
+			title = item[0]
+			date = date.split("-")
+			date = date[0]
+			if ccnt == 0:
+				ylidy = title.strip() + ","
+			else:
+				cdate = ocoll[ccnt-1]
+				cdate = cdate.split(",")
+				cdate = cdate[1].strip()
+				cdate = cdate.split("-")
+				cdate = cdate[0].strip()
+				#print date
+				#print cdate
+				if cdate > date:
+					ylidy = title.strip() + "," + ylidy
+				else:
+					ylidy = ylidy + "," + title.strip()
+			ccnt = ccnt + 1
+		#print ylidy
+		collection = ylidy.split(",")
+		#print collection
+		collectionplist(collection)
+		print ("Successfully added the following to the TBNSmartPlist:\n")
+	return collectionx
+
+def collectiontitlecheck(title):
+	global ttlchk
+	if "yes" not in ttlchk:
+		plexlogin()
+		otitle = title
+		oshow = title
+		try:
+			cshow = str(title)
+		except Exception:
+			cshow = title
+		cshow = title.replace("movie.","")
+		#for video in plex.search(cshow):
+		ssec = plex.library.sections()
+		for lib in ssec:
+			try:
+				for video in lib.search(cshow):
+					xshow = video
+					if ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
+							say = xshow
+			except Exception:
+				return ("Error: " + title + " not found.")
+		try:
+			return say
+		except Exception:
+			return ("Error: " + title + " not found.")
+
+def collectionplist(array):
+	collection = array
+	plist = []
+	for item in collection:
+		ttl = collectiontitlecheck(item)
+		try:
+			if ("Error" in ttl):
+				pass
+		except Exception:
+			plist.append(ttl)
+	plname = "TBNSmartPlayList"
+	pcnt = 0
+	plexlogin()
+	try:
+		dlist = plex.playlist(plname)
+		dlist.delete()
+	except Exception:
+		pass
+	if (("-p" in sys.argv) and (len(plist)>0)):
+		plex.createPlaylist(plname,plist)
+	
+
 def wait(number):
 	try:
 		counter = 0
@@ -7138,7 +7300,7 @@ def timechecker(thing):
 
 
 def versioncheck():
-	version = "3.05a"
+	version = "3.05exp"
 	return version
 	
 
@@ -7169,6 +7331,21 @@ try:
                         say
                 except NameError:
                         say = "Sorry, but that entry was not found in the help table. Run \"updatehelp\" and try again if you have not updated recently."
+	elif ("getcollection" in show):
+		movie = str(sys.argv[2])
+		sme = getcollection(movie)
+		if ("Error" in sme):
+			say = sme
+		else:
+			try:
+				for item in sme:
+					print item
+			except Exception:
+				pass
+			say = "\nDone."
+	elif ("getlikemovie" in show):
+		movie = str(sys.argv[2])
+		say = getlikemovie(movie)
 	elif ("smartplist" in show):
 		thetext = sys.argv[2]
 		say = smartplist(thetext)
