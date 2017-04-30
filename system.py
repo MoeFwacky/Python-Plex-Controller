@@ -1453,13 +1453,13 @@ def updatehelp():
 		os.remove(hfile)
 	except Exception:
 		pass
-	url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/help"
+	url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/help"
 	newfile = http.request('GET', url, preload_content=False)
 	newfile = homedir + "\n" + str(newfile.data)
 	with open(hfile, "w") as file:
 		file.write(newfile)
 	file.close()
-	#cmd = "wget -O \"" + hfile + "\" \"https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/help\""
+	#cmd = "wget -O \"" + hfile + "\" \"https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/help\""
 	#os.system(cmd)
 	print ("Help File Acquired. Updating DB Now.")
 	with open (hfile, "r") as file:
@@ -1515,7 +1515,7 @@ def setautoupdate(val):
 def updatechecker():
 	curver = versioncheck()
 	print ("System Version: " + curver)
-	getme = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system.py"
+	getme = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/system.py"
 	response = http.urlopen('GET', getme, preload_content=False).read()
 	response = str(response)
 	postver = response.split("version = \"")
@@ -1539,7 +1539,7 @@ def updatechecker():
 				os.remove(ufile)
 			except Exception:
 				pass
-			cmd = "wget -O \"" + ufile + "\" \"https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/tbn_updater.py\""
+			cmd = "wget -O \"" + ufile + "\" \"https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/tbn_updater.py\""
 			os.system(cmd)
 			print ("Successfully acquired update script.")
 			cmd = "python " + ufile
@@ -10076,4 +10076,3 @@ try:
 	print (say)
 except IndexError:
 	show = "We're Sorry, but either that command wasn't recognized, or no input was received. Please try again."  
- 
