@@ -23,7 +23,7 @@ If you're running Linux, the system_setup.py script will create a subdirectory i
 
 The system setup script will prompt you for information in order to get the data it needs to proceed. Once installation is complete, it will prompt you to update the database. Updating the database is optional, but recommended. The Plex controller functions best when the database is up-to-date.
 
-**Note:** If you enter an incorrect value during setup, which prevents the Plex controller from working properly, you can run `python system_setup.py reset`from your home directory and it will delete the previously stored data and prompt you to re-enter it.
+**Note:** If you enter an incorrect value during setup, which prevents the Plex controller from working properly, you can run `python system_setup.py reset` from your home directory and it will delete the previously stored data and prompt you to re-enter it.
 
 ## Database Updates: ##
 **upddatedb_pi.py**
@@ -60,8 +60,8 @@ When you run system_setup.py the playmode is set/reset to normal, and your queue
 **Note: Always back up your hasystem folder before initiating an update**
 
 There are two ways to update. The easiest is to use the updatechecker. You will need to turn auto-update on first.
-```setautoupdate on
-updatechecker```
+`setautoupdate on
+updatechecker`
 If your version is a lower version number than the latest version, the updater will download and install the new files.
 
 If the autoupdate isn't working or if you would like to install a different version, then you can manually install. First, remove all files except myplex.db (and any other files you might wish to retain) from the hasystem directory. Then, download the latest system_setup.py file and run it from your home directory. 
