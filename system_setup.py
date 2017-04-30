@@ -106,7 +106,7 @@ if "Linux" in ostype:
 			print ("check pass.  add_to_bash.py exists.")
 		except IOError:
 			try:
-				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_bash.py"
+				url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/add_to_bash.py"
 				newfile = http.request('GET', url, preload_content=False)
 				newfile = writemehome + str(newfile.data)
 				print newfile
@@ -124,7 +124,7 @@ if "Linux" in ostype:
 			print ("check pass.  tbn_schedule.py exists.")
 		except IOError:
 			try:
-				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/tbn_schedule.py"
+				url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/tbn_schedule.py"
 				newfile = http.request('GET', url, preload_content=False)
 				newfile = writemehome + str(newfile.data)
 				print newfile
@@ -142,7 +142,7 @@ if "Linux" in ostype:
                         print ("check pass.  aliases exists.")
                 except IOError:
                         try:
-                                url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/aliases"
+                                url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/aliases"
                                 newfile = http.request('GET', url, preload_content=False)
                                 #print (newfile)
                                 with open(file10, 'wb') as file:
@@ -170,7 +170,7 @@ if "Linux" in ostype:
 			print ("check pass.  add_to_cron.py exists.")
 		except IOError:
 			try:
-				url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_cron.py"
+				url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/add_to_cron.py"
 				newfile = http.request('GET', url, preload_content=False)
 				newfile = writemehome + str(newfile.data)
 				with open(file00, 'wb') as file:
@@ -276,7 +276,7 @@ try:
 	print ("check pass. system.py exists.")
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system.py"
+		url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/system.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		#print (newfile)
@@ -301,7 +301,7 @@ try:
 	print ("check pass. piplaystate.py exists.")
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/piplaystate.py"
+		url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/piplaystate.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		with open(file6, 'wb') as file:
@@ -325,7 +325,7 @@ try:
 	print ("check pass. playstatus.py exists.")
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/playstatus.py"
+		url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/playstatus.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		with open(file7, 'wb') as file:
@@ -350,7 +350,7 @@ try:
 	updatecheck = "pass"
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/upddatedb_pi.py"
+		url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/upddatedb_pi.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		#print (newfile)
@@ -382,7 +382,7 @@ try:
 	updatecheck = "pass"
 except IOError:
 	try:
-		url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/getshow.py"
+		url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/getshow.py"
 		newfile = http.request('GET', url, preload_content=False)
 		newfile = newfile.data
 		#print (newfile)
