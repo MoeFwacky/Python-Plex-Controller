@@ -16,8 +16,8 @@ Install the following python libraries
 ### Installation ###
 Download the most recent version of the system_setup.py file. Place it in your home directory and run it as your preferred user.
 Example:
-```$ curl "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/system_setup.py" -o "system_setup.py"
-$ python system_setup.py```
+`$ curl "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/system_setup.py" -o "system_setup.py"
+$ python system_setup.py`
 
 If you're running Linux, the system_setup.py script will create a subdirectory in your home directory, "hasystem/". If you're running Windows, it will prompt you for a directory, depending on your OS, which it will store its necessary files and database in.
 
@@ -41,7 +41,7 @@ You can update the database `python upddatedb_pi.py movie|shows|custom_shows|pre
 
 **getshows.py**
 To upddate a single show, instead of whole sections of the database, use getshows.py. 
-```$ python getshows.py "Name of Show```
+`$ python getshows.py "Name of Show`
 
 This script will check your plex server for the specified show, and any new entries are added to the database.
 
@@ -65,7 +65,7 @@ updatechecker```
 If your version is a lower version number than the latest version, the updater will download and install the new files.
 
 If the autoupdate isn't working or if you would like to install a different version, then you can manually install. First, remove all files except myplex.db (and any other files you might wish to retain) from the hasystem directory. Then, download the latest system_setup.py file and run it from your home directory. 
-```python system_setup.py```
+`python system_setup.py`
 
 **Note: When running system_setup.py, you may be prompted for your server, client, and wild card show again.**
 
