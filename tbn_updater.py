@@ -1,3 +1,5 @@
+homedir = '/home/pi/hasystem/'
+
 import os
 import sys
 import getpass
@@ -112,7 +114,7 @@ if "Linux" in ostype:
 			pass
 		print ("Successfully removed add_to_bash.py. Getting latest file.")
 		try:
-			url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_bash.py"
+			url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/add_to_bash.py"
 			newfile = http.request('GET', url, preload_content=False)
 			newfile = writemehome + str(newfile.data)
 			#print newfile
@@ -131,7 +133,7 @@ if "Linux" in ostype:
 			pass
 		print ("Successfully removed aliases. Getting latest file.")
 		try:
-			url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/aliases"
+			url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/aliases"
 			newfile = http.request('GET', url, preload_content=False)
 			#print (newfile)
 			with open(file10, 'wb') as file:
@@ -159,7 +161,7 @@ if "Linux" in ostype:
 			pass
 		print ("Successfully removed add_to_cron.py. Getting latest file.")
 		try:
-			url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/add_to_cron.py"
+			url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/add_to_cron.py"
 			newfile = http.request('GET', url, preload_content=False)
 			newfile = writemehome + str(newfile.data)
 			with open(file00, 'wb') as file:
@@ -182,7 +184,7 @@ if "Linux" in ostype:
 		except Exception:
 			pass
 		try:
-			url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/tbn_schedule.py"
+			url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/tbn_schedule.py"
 			newfile = http.request('GET', url, preload_content=False)
 			newfile = writemehome + str(newfile.data)
 			#print newfile
@@ -221,7 +223,7 @@ except Exception:
 	pass
 
 try:
-	url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system.py"
+	url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/system.py"
 	newfile = http.request('GET', url, preload_content=False)
 	newfile = newfile.data
 	#print (newfile)
@@ -246,7 +248,7 @@ except Exception:
 	pass
 
 try:
-	url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/piplaystate.py"
+	url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/piplaystate.py"
 	newfile = http.request('GET', url, preload_content=False)
 	newfile = newfile.data
 	with open(file6, 'wb') as file:
@@ -270,7 +272,7 @@ except Exception:
 	pass
 	
 try:
-	url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/playstatus.py"
+	url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/playstatus.py"
 	newfile = http.request('GET', url, preload_content=False)
 	newfile = newfile.data
 	with open(file7, 'wb') as file:
@@ -295,7 +297,7 @@ except Exception:
 	pass
 	
 try:
-	url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/upddatedb_pi.py"
+	url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/upddatedb_pi.py"
 	newfile = http.request('GET', url, preload_content=False)
 	newfile = newfile.data
 	with open(file8, "wb") as file:
@@ -323,7 +325,7 @@ except Exception:
 	pass
 	
 try:
-	url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/tbn_webhook_service.py"
+	url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/tbn_webhook_service.py"
 	newfile = http.request('GET', url, preload_content=False)
 	newfile = newfile.data
 	with open(file9, "wb") as file:
@@ -351,7 +353,7 @@ except Exception:
 	pass
 	
 try:
-	url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/webhookstatus.py"
+	url = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/webhookstatus.py"
 	newfile = http.request('GET', url, preload_content=False)
 	newfile = newfile.data
 	with open(file10, "wb") as file:

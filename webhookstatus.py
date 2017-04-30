@@ -1,3 +1,5 @@
+homedir = '/home/pi/hasystem/'
+
 import os
 import subprocess
 import time

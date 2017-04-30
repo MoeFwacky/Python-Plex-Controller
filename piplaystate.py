@@ -1,3 +1,5 @@
+homedir = '/home/pi/hasystem/'
+
 import time
 import os
 import sqlite3

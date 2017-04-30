@@ -1,3 +1,5 @@
+homedir = '/home/pi/hasystem/'
+
 import sys
 
 user = str(sys.argv[1])

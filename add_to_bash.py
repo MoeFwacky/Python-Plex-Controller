@@ -1,3 +1,5 @@
+homedir = '/home/pi/hasystem/'
+
 import os
 import sys
 import getpass
@@ -13,7 +15,7 @@ try:
 		removeme = file.readlines()
 	file.close()
 except Exception:
-	cmd = "wget -O \"" + badfix + "\" \"https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/bad_aliases\""
+	cmd = "wget -O \"" + badfix + "\" \"https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/bad_aliases\""
         os.system(cmd)
 	print ("Bad Aliases File Acquired.")
 	with open (badfix, "r") as file:

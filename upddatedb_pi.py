@@ -1,3 +1,5 @@
+homedir = '/home/pi/hasystem/'
+
 import urllib3
 import subprocess
 import requests

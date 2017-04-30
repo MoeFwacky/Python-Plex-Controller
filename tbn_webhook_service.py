@@ -1,3 +1,5 @@
+homedir = '/home/pi/hasystem/'
+
 import web
 import time
 import os
@@ -55,17 +57,41 @@ class hooks:
 			if (("media.pause" in action) and (PLEXCLIENT == client)):
 				#PAUSED ACTIONS GO BELOW HERE... COMMMENT OUT THE pass TO USE
 				pass
-			elif (("media.resume" in action) and (PLEXCLIENT == client)):
+			#elif (("media.resume" in action) and (PLEXCLIENT == client)):
 				#RESUME ACTIONS GO BELOW HERE... COMMMENT OUT THE pass TO USE
-				pass
+			#	pass
 			elif (("media.stop" in action) and (PLEXCLIENT == client)):
 				#stopped ACTIONS GO BETWEEN HERE and the time.sleep()...
-				time.sleep(5)
+                                time.sleep(2)
 				cmd1 = "python " + homedir + "system.py startnextprogram"
-				os.system(cmd1)
+                                os.system(cmd1)
+				#WSTATUS = "ON"
+				#print ("Stopped")
+				#WSTATUS = "Pending"
+				#command = "python " + homedir + "system.py startnextprogram"
+				#print ("Starting Next Program")
+				#os.system(command)
 			elif (("media.play" in action) and (PLEXCLIENT == client)):
 				#PLAY ACTIONS GO BELOW HERE... COMMMENT OUT THE pass TO USE
 				pass
+		elif WSTATUS == "PENDING":
+                        if (("media.pause" in action) and (PLEXCLIENT == client)):
+                                #PAUSED ACTIONS GO BELOW HERE... COMMMENT OUT THE pass TO USE
+                                pass
+                        elif (("media.resume" in action) and (PLEXCLIENT == client)):
+                                #RESUME ACTIONS GO BELOW HERE... COMMMENT OUT THE pass TO USE
+                                pass
+#			elif (("media.stop" in action) and (PLEXCLIENT == client)):
+#                               time.sleep(2)
+#                               cmd1 = "python " + homedir + "system.py startnextprogram"
+#                               os.system(cmd1)
+#				print ("Duplicate Request, Dropping.")
+			elif (("media.play" in action) and (PLEXCLIENT == client)):
+				#print ("Media Playing, Resetting Status.")
+				time.sleep(5)
+				WSTATUS = "ON"
+				cmd1 = "python " + homedir + "system.py setwebhookstatus on"
+				os.system(cmd1)
 		elif WSTATUS == "SLEEP":
 			if (("media.pause" in action) and (PLEXCLIENT == client)):
 				#PAUSED ACTIONS GO BELOW HERE... COMMMENT OUT THE pass TO USE
@@ -77,9 +103,12 @@ class hooks:
 				cmd1 = "python /home/pi/hasystem/system.py setwebhookstatus off"
 				os.system(cmd1)
 				#stopped ACTIONS GO BETWEEN HERE 
+				#pass
 			elif (("media.play" in action) and (PLEXCLIENT == client)):
 				#PLAY ACTIONS GO BELOW HERE... COMMMENT OUT THE pass TO USE
 				pass
+
+
 		return 'OK'
 
 if __name__ == '__main__':
