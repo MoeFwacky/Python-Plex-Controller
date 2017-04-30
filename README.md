@@ -48,12 +48,12 @@ This script will check your plex server for the specified show, and any new entr
 **Note:** does not update existing entires
 **2nd note:** Is pretty much obsolete now that the script automatically updates add entires when found on the server. 
 
-##After Install Notes:##
-It is recommended you run "python system.py updatehelp" to populdate you help table with the most recent help entries. 99% of the commands now support the "-h" argument, which will give a description and useage details for the given command. 
+### After Install Notes ###
+It is recommended you run `python system.py updatehelp` to populdate you help table with the most recent help entries. 99% of the commands now support the `-h` argument, which will give a description and useage details for the given command. 
 
-Before you can use the block package commands, or block package playback, you first need to create a block package. You can use the "addblock" modifier to create a block package. 
+Before you can use the block package commands, or block package playback, you first need to create a block package. You can use the `addblock` modifier to create a block package. 
 
-When you run system_setup.py the playmode is set/reset to normal, and your queue is set to " ". It is recommended you do a "whatupnext" after you run the system_setup.py script. From there your queue should never be empty. The controller is designed so something will always be up next. 
+When you run system_setup.py the playmode is set/reset to normal, and your queue is set to " ". It is recommended you do a `whatupnext` after you run the system_setup.py script. From there your queue should never be empty. The controller is designed so something will always be up next. 
 
 ### Updating ###
 
