@@ -1,78 +1,52 @@
-##TheBaconNation Plex Controller##
+# Python Plex Controller #
 
-* [The demo setup video.](https://youtu.be/YMEXIZOcpDM)
-* [A link to a demo of the controller in action.](https://youtu.be/HRJbNHRQO6I)
-* [How To Create a Block Package.](https://youtu.be/a5lOLjzunMQ)
-* [Our Homepage.](http://thebaconnation.com)
-* [The Beginnings of a bad web ui.](https://youtu.be/u0ur4koeDFM)
-* [How to use replaceshowinblock feature.](https://youtu.be/oMDl-6GRK30)
+This is a fork of the discontinued TBN Plex Controller script by amazingr4b
 
-* [The TBN-Plex Discord Channel.](https://discord.gg/Q3cBvK9)
-
-TheBaconNation Plex Controller Help Document
-
-##Important Note:##
-Since server version 1.1.4xxx you will need to add the ip or subnect for your TBN-Plex controller device to the autorized IP list in your Plex Server Settings. Look for "allowed without authorization." If not added you may run into issues updating your TBN-Plex DB.
-
-##Before You Begin:##
-The following librarys are needed:
-The python plex api. User "pip install plexapi"
-
-The following library is optional:
-enchant. You can use "pip install pyenchant" to get it. Spell checking will be turned back on in a future update. When that happens, if you do not have this library you will be warned. 
-
-###How To Install:###
-Get the most recent version of the system_setup.py file. Place it in your home directory and run it as your preferred user.
-Example:
-curl "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system_setup.py" -o "system_setup.py"
-python system_setup.py
-
-##Update Note:##
-The easiest way to update is remove all files in your HA system directory except your myplex.db file, as well as any other backup files you want to retain. Rerun system_setup.py. If a more recent setup file is available, get that first. 
-Note: When running system_setup.py, you may be prompted for your server, client, and wild card show again. 
-
-3 scripts are necessary to use the TBN Plex Controller:
-* system.py - this is the main script used by the controller.
-* upddatedb_pi.py - this is the script used to update the controllers database. 
-* system_setup.py - this script creates the necessary files, database, and prompts the user for the information the controller needs to do its job. 
-
-There is one optional script- piplaystate.py. This script uses the API access to check the playback status of the client you are using at a regular interval. When the mode is "On," when a program stopps the system will automatically launch a new progarm, and continue to do so untill it is in eithr "Off" or "Sleep" mode. You will need to add to code to the sleep mode actions to have this action do more than just stop playchecking at the end of a program.
-
-##Other Script Descriptions:##
-
-* piplaystate.py - Gets the playback state from your client.
-* playstatus.py - Runs in the background. When enabled uses piplaystate.py to get the status of your client. 
-* getshows.py - Updates DB entries for a single specified show.
-* tbn_scedule.py - On linux systems, is run once a minute by cron to trigger scheduled TBN-Plex actions.
-* add_to_bash.py - On linux systems, updates bash shortcut entries. Note: Needs to be run as sudo, and username specified as an argument.
-* add_to_cron.py - On linux systems, updates entries in etc/crontab
-
-
-##Supported Operating Systems:##
+## Supported Operating Systems: ##
 These scripts should theoretically run on any system capable of running python, however, the system_setup.py script only currently supports Linux and Windows based installs. How to do a manual install will be added as a help doc at a later date. 
 
-#Installing TBN Plex:##
-To install the TBN Plex Controller, place the system_setup.py script files in your home directory. The system_setup.py script will make a directory in your home folder, "hasystem/", or prompt your for a directory, depending on your OS, which it will store its necessary files and database in.
+## Before You Begin: ##
+Install the following python libraries
+**The Python Plex API** `pip install plexapi`
+**Enchant** `pip install pyenchant`
+**web.py for Webhooks integration** `pip install web.py`
 
-Install the TBN Plex Controller by running "python system_setup.py" The system setup script will ask you a few questions to get the data it needs to proceed. Once it is ready it will ask you if you want to update your database. Updating the TBN-Plex database is now optional, but recommended. The automated playback options, suggest, moviechoice, and random_movie/tv, etc options will function much better when the TBN-Plex database is updated. 
+**Important Note:** You will need to add the IP or subnet for your Plex controller device to the autorized IP list in your Plex Server Settings. Look for "allowed without authorization." If not added you may run into issues updating your Plex Controller database.
 
-NOTE: If you enter an incorrect value during setup, which prevents some element from either getting data or working, you can run "python system_setup.py reset" and it will delete the previously stored data and prompt you for it again.  
+### Installation ###
+Download the most recent version of the system_setup.py file. Place it in your home directory and run it as your preferred user.
+Example:
+```$ curl "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/system_setup.py" -o "system_setup.py"
+$ python system_setup.py```
 
-Regarding Database Updates:
-The upddatedb_pi.py script will update your TBN Plex DB. The TBN Plex Controller uses a separate database so you do not need to worry about corrupting your existing Plex Database. 
+If you're running Linux, the system_setup.py script will create a subdirectory in your home directory, "hasystem/". If you're running Windows, it will prompt you for a directory, depending on your OS, which it will store its necessary files and database in.
 
-You can update your database independent of the system_setup.py script by running "python upddatedb_pi.py movie/shows/custom_shows/prerolls/commercials/custom." Larger libraries will take more time to scan versus smaller libraries.
-Notes:
+The system setup script will prompt you for information in order to get the data it needs to proceed. Once installation is complete, it will prompt you to update the database. Updating the database is optional, but recommended. The Plex controller functions best when the database is up-to-date.
+
+**Note:** If you enter an incorrect value during setup, which prevents the Plex controller from working properly, you can run `python system_setup.py reset`from your home directory and it will delete the previously stored data and prompt you to re-enter it.
+
+## Database Updates: ##
+**upddatedb_pi.py**
+The upddatedb_pi.py script will update your Plex controller database. The Plex controller uses a separate database so as to avoid corrupting the existing Plex database.
+
+You can update the database `python upddatedb_pi.py movie|shows|custom_shows|prerolls|commercials|custom|all` Larger libraries will take more time to scan versus smaller libraries.
+
 * movie - scans your Movie section
 * shows - scans your TV Show section
 * custom_shows - scans alternate TV Show sections
 * prerolls - scans your prerolls section
 * commercials - scans your commercials section
 * custom. - scans alternate library types, ie- fights, music_videos, comedy. usage ex- "python upddatedb_py.py custom.fights"
+* all - scans the TV Show and Movie sections
 
-For the times when you only need to get entires for a single show a second update script has been added: getshows.py. Usage is as follows: python getshows.py "Name of show here." This script will check your plex server for the specified show, and any new entries are added to the TBN-Plex DB.
-Note: does not update existing entires.
-2nd note: Is pretty much obsolete now that the scrip automatically updates add entires when found on the server. 
+**getshows.py**
+To upddate a single show, instead of whole sections of the database, use getshows.py. 
+```$ python getshows.py "Name of Show```
+
+This script will check your plex server for the specified show, and any new entries are added to the database.
+
+**Note:** does not update existing entires
+**2nd note:** Is pretty much obsolete now that the script automatically updates add entires when found on the server. 
 
 ##After Install Notes:##
 It is recommended you run "python system.py updatehelp" to populdate you help table with the most recent help entries. 99% of the commands now support the "-h" argument, which will give a description and useage details for the given command. 
@@ -81,6 +55,30 @@ Before you can use the block package commands, or block package playback, you fi
 
 When you run system_setup.py the playmode is set/reset to normal, and your queue is set to " ". It is recommended you do a "whatupnext" after you run the system_setup.py script. From there your queue should never be empty. The controller is designed so something will always be up next. 
 
+### Updating ###
+
+**Note: Always back up your hasystem folder before initiating an update**
+
+There are two ways to update. The easiest is to use the updatechecker. You will need to turn auto-update on first.
+```setautoupdate on
+updatechecker```
+If your version is a lower version number than the latest version, the updater will download and install the new files.
+
+If the autoupdate isn't working or if you would like to install a different version, then you can manually install. First, remove all files except myplex.db (and any other files you might wish to retain) from the hasystem directory. Then, download the latest system_setup.py file and run it from your home directory. 
+```python system_setup.py```
+
+**Note: When running system_setup.py, you may be prompted for your server, client, and wild card show again.**
+
+## Script Functions ##
+* system.py - The controller's main script, this runs most functions of the script.
+* upddatedb_pi.py - This script manages updates to the database. You must run this script (with arguments) after updating your Plex server library
+* system_setup.py - As mentioned above, this is the script that manages the initial setup. It will download and screate files, prompt for Plex server information and populate or update the database.
+* piplaystate.py - Uses API access to check the playback state of the client at a regular interval. When play checking is turned on (`playcheckstart`), the script will check playback status and if none is detected, it will issue the `startnextprogram` command, which starts media playback, based on the playback mode the controller is set to.
+* playstatus.py - Runs in the background. When enabled uses piplaystate.py to get the status of your client. 
+* getshows.py - Updates database entries for a single specified show.
+* tbn_schedule.py - On linux systems, is run once a minute by cron to trigger scheduled TBN-Plex actions.
+* add_to_bash.py - On linux systems, updates bash shortcut entries. Needs to be run as sudo, and username specified as an argument.
+* add_to_cron.py - On linux systems, updates entries in etc/crontab
 
 ##Available Playmodes:##
 * normal - plays items from the queue. Will find content when the queue is exhaused.
