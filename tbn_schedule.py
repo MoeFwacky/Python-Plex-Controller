@@ -9,6 +9,16 @@ import time
 user = getpass.getuser()
 
 DEFAULTDIR = homedir
+ACTIONLOG = homedir + "tbn_schedules.log"
+try:
+	with open (ACTIONLOG, "r") as file:
+		log = file.read()
+	file.close()
+except Exception:
+	with open (ACTIONLOG, "w+") as file:
+		file.write("File Opened\n")
+	file.close()
+	print ("Successfully created Log File.")
 
 MYDB = DEFAULTDIR + "myplex.db"
 sql = sqlite3.connect(MYDB)
@@ -62,3 +72,7 @@ else:
 						action = "python " + DEFAULTDIR + "system.py " + whatsit + ""
 						print ("Executing: " + action)
 						os.system(action)
+			with open (ACTIONLOG, "a") as file:
+				file.write(str(item))
+			file.close()
+				

@@ -1,3 +1,5 @@
+homedir = '/home/pi/hasystem/'
+
 import os
 import getpass
 import time
@@ -27,10 +29,14 @@ global play
 global pcmd
 global pcount
 global ttlchk
+global commandcheck
+global xlib
+global PRINTMODE
+commandcheck = "no"
 
 ttlchk = ""
 
-SLEEPTIME = 20 
+#SLEEPTIME = 20 
 try:
 	input = raw_input
 except NameError:
@@ -39,6 +45,15 @@ except NameError:
 MYDB = homedir + "myplex.db"
 sql = sqlite3.connect(MYDB)
 cur = sql.cursor()
+
+cur.execute("SELECT State FROM States WHERE Option LIKE \"SLEEPTIME\"")
+if not cur.fetchone():
+	cur.execute("INSERT INTO States VALUES (?,?)",("SLEEPTIME","20"))
+	sql.commit()
+	cur.execute("SELECT State FROM States WHERE Option LIKE\"SLEEPTIME\"")
+else:
+	cur.execute("SELECT State FROM States WHERE Option LIKE\"SLEEPTIME\"")
+SLEEPTIME = int(cur.fetchone()[0])
 
 global PLEXSVR
 global PLEXCLIENT
@@ -80,9 +95,10 @@ def plexlogin():
 		
 			try:
 				from plexapi.server import PlexServer
+				from plexapi.myplex import MyPlexUser
 				baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
 				plex = PlexServer(baseurl)
-			except Exception:
+			except IndexError:
 				from plexapi.myplex import MyPlexAccount
 				print ("Local Fail. Trying cloud access.")
 				cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
@@ -98,14 +114,51 @@ def plexlogin():
 					print ("Your Plex Password is temporarly needed to proceed:\n")
 					PLEXPW = str(getpass.getpass("Password: "))
 				user = MyPlexAccount.signin(PLEXUN,PLEXPW)
+
 				print ("\rSuccessfully logged into Plex cloud.\n")
-	
 				plex = user.resource(PLEXSVR).connect()
-			client = plex.client(PLEXCLIENT)
+			if ("changeclient" not in sys.argv):
+				try:
+					client = plex.client(PLEXCLIENT)
+				except Exception:
+					print ("Retrying Client Get.\n")
+					time.sleep(1)
+					client = plex.client(PLEXCLIENT)
 			LOGGEDIN = "YES"
 
 	except IndexError:
 		print ("Error getting necessary plex api variables. Run system_setup.py.")
+
+def setsleeptime(num):
+	num = str(num)
+	cur.execute("DELETE FROM States WHERE Option LIKE \"SLEEPTIME\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("SLEEPTIME",num))
+	sql.commit()
+	return ("SLEEPTIME setting has been adjusted to: " + num + ".\n")
+
+def gethonorific():
+	command = "SELECT State FROM States WHERE Option LIKE \"CALLMETHIS\""
+	cur.execute(command)
+	if not cur.fetchone():
+		CALLMETHIS = "Sir"
+		cur.execute("INSERT INTO States VALUES (?,?)",("CALLMETHIS",CALLMETHIS))
+		sql.commit()
+	cur.execute(command)
+	CALLMETHIS = cur.fetchone()[0]
+	return (CALLMETHIS)
+
+def sethonorific(myname):
+	if myname == "none":
+		print ("What shall I call thee?")
+		CALLMETHIS = str(raw_input('TItle: ')).strip()
+	else:
+		CALLMETHIS = myname.strip()
+	cur.execute("DELETE FROM States WHERE Option LIKE \"CALLMETHIS\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("CALLMETHIS",CALLMETHIS))
+	sql.commit()
+	return ("I shall now call thee " + CALLMETHIS + ". Good Day.")
 
 def changeplexip():
 	plexip = str(raw_input('Plex Server IP: '))
@@ -115,11 +168,11 @@ def changeplexip():
 	cur.execute("DELETE FROM settings WHERE item LIKE \'PLEXSERVERIP\'")
 	sql.commit()
 	cur.execute("DELETE FROM settings WHERE item LIKE \'PLEXSERVERPORT\'")
-        sql.commit()
+	sql.commit()
 	cur.execute("INSERT INTO settings VALUES (?,?)",("PLEXSERVERIP",plexip))
 	sql.commit()
 	cur.execute("INSERT INTO settings VALUES (?,?)",("PLEXSERVERPORT",plexport))
-        sql.commit()
+	sql.commit()
 	
 
 def changeplexpw(password):
@@ -197,8 +250,8 @@ def getcustomtable(table):
                                         for item in stuff:
                                                 found.append(item.title)
                         return found
-                except Exception:
-                        return ("Error: " + table + " not found.")
+		except Exception:
+			return ("Error: " + table + " not found.")
 
 	stuff = []
 	if not cur.fetchall():
@@ -212,11 +265,11 @@ def getcustomtable(table):
 
 def listcustomtables():
 	command = "SELECT name FROM sqlite_master WHERE type='table'"
-        cur.execute(command)
-        list = cur.fetchall()
+	cur.execute(command)
+	list = cur.fetchall()
 	stuff = []
-        for item in list:
-                if ("CUSTOM_" in item[0]):
+	for item in list:
+		if ("CUSTOM_" in item[0]):
 			stuff.append(item[0])
 	return stuff
 
@@ -228,7 +281,7 @@ def muteaudio():
 def mutemusic():
 	plexlogin()
 	PLEXMUSICCLIENT = musiccheck()
-        client = plex.client(PLEXMUSICCLIENT)
+	client = plex.client(PLEXMUSICCLIENT)
 	client.setVolume(0, 'music')
 
 def unmutemusic():
@@ -244,25 +297,57 @@ def unmuteaudio():
 
 def lowaudio():
 	global client
-        plexlogin()
-        client.setVolume(25, 'Video')
+	plexlogin()
+	client.setVolume(25, 'Video')
 
 def mediumaudio():
 	global client
-        plexlogin()
-        client.setVolume(50, 'Video')
+	plexlogin()
+	client.setVolume(50, 'Video')
 
 def highaudio():
 	global client
-        plexlogin()
-        client.setVolume(75, 'Video')
+	plexlogin()
+	client.setVolume(75, 'Video')
 
 def maxaudio():
 	global client
-        plexlogin()
-        client.setVolume(100, 'Video')
+	plexlogin()
+	client.setVolume(100, 'Video')
+
+def schedchecker(command):
+	global commandcheck
+
+	command = command.replace("system.py schedchecker ","")
+	cmd = "SELECT name FROM help"
+	cur.execute(cmd)
+	xcmds = cur.fetchall()
+	cmds = []
+	for item in xcmds:
+		cmds.append(item[0])
+	ccheck = "no"
+	for itm in cmds:
+		if itm in command:
+			#print ("Pass: Commands")
+			commandcheck = "yes"
+			return command
+	if "no" in ccheck:	
+		say = titlecheck(command)
+		if ("ERROR:" in say):
+			return ("ERROR: Command Fail. " + command + " does not appear to be valid. Check and try again.")
+		else:
+			#print ("Pass: Media")
+			return ("\\\"" + say + "\\\"")
+	
 
 def addschedule(action, time, day):
+	action = action.strip()
+	time = time.strip()
+	day = day.strip()
+	global commandcheck
+	achk = schedchecker(action)
+	if "ERROR:" in achk:
+		return achk
 	try:
 		cur.execute("SELECT * FROM SCHEDULES")
 	except sqlite3.OperationalError:
@@ -287,6 +372,8 @@ def addschedule(action, time, day):
 			try:
 				adme = adme + item + ";"
 			except NameError:
+				if ((len(addme) == 1) and ("yes" not in commandcheck)):
+					item = "\"" + item + "\""
 				adme = item + ";"
 	cur.execute("INSERT INTO SCHEDULES VALUES(?,?,?)",(adme, time, day))
 	sql.commit()
@@ -294,8 +381,8 @@ def addschedule(action, time, day):
 
 def removeschedule(time, day):
 	command = "SELECT * FROM SCHEDULES WHERE time LIKE \"" + time + "\" AND day LIKE \"" + day + "\""
-        cur.execute(command)
-        if not cur.fetchall():
+	cur.execute(command)
+	if not cur.fetchall():
 		return("Error: no schedules found for " + time + " on " + day + " found.")
 	cur.execute(command)
 	fnd = cur.fetchone()
@@ -315,6 +402,10 @@ def argprocessor(thearg):
 			elif thearg in thing:
 				pass
 			else:
+				achk = schedchecker(thing)
+				if "ERROR" not in achk:
+					return achk
+				#print achk
 				sch.append(thing)
 		if len(sch) == 1:
 			xshow = sch[0]
@@ -334,10 +425,10 @@ def argprocessor(thearg):
 
 def viewschedules():
 	try:
-                cur.execute("SELECT * FROM SCHEDULES")
-        except sqlite3.OperationalError:
-                cur.execute("CREATE TABLE IF NOT EXISTS SCHEDULES(action TEXT, time TEXT, day TEXT)")
-                sql.commit()
+		cur.execute("SELECT * FROM SCHEDULES")
+	except sqlite3.OperationalError:
+		cur.execute("CREATE TABLE IF NOT EXISTS SCHEDULES(action TEXT, time TEXT, day TEXT)")
+		sql.commit()
 	if (("-d" not in sys.argv) and ("-t" not in sys.argv) and ("-a" not in sys.argv)):
 		command = "SELECT * FROM SCHEDULES"
 		cur.execute(command)
@@ -364,8 +455,8 @@ def viewschedules():
                                 print ("The Following Times have items scheduled:\n")
                                 for item in flist:
                                         print (item)
-                else:
-                        argv = argprocessor("-t")
+		else:
+			argv = argprocessor("-t")
 			argv = timechecker(argv)
 			command = "SELECT * FROM SCHEDULES WHERE time LIKE \"" + argv + "\""
                         cur.execute(command)
@@ -1348,20 +1439,33 @@ def helpme(stuff):
 def updatehelp():
 	cls()
 	try:
-		command = "SELECT * FROM help"
-		cur.execute(command)
+		cur.execute("DELETE FROM help")
+		sql.commit()
+		print ("help contents deleted.")
 	except sqlite3.OperationalError:
 		cur.execute("CREATE TABLE IF NOT EXISTS help(name TEXT, summary TEXT,example TEXT)")
 		sql.commit()
+		print ("help table built.")
 
 	hfile = homedir + "help"
-	os.system("rm -rf " + hfile)
-	cmd = "wget -O \"" + hfile + "\" \"https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/help\""
-	os.system(cmd)
+	#os.system("rm -rf " + hfile)
+	try:
+		os.remove(hfile)
+	except Exception:
+		pass
+	url = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/help"
+	newfile = http.request('GET', url, preload_content=False)
+	newfile = homedir + "\n" + str(newfile.data)
+	with open(hfile, "w") as file:
+		file.write(newfile)
+	file.close()
+	#cmd = "wget -O \"" + hfile + "\" \"https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/help\""
+	#os.system(cmd)
 	print ("Help File Acquired. Updating DB Now.")
 	with open (hfile, "r") as file:
 		stuff = file.readlines()
 	file.close()
+	xnum = int(len(stuff))-1
 	for line in stuff:
 		try:
 			line = line.split(",")
@@ -1371,9 +1475,136 @@ def updatehelp():
 				sql.commit()
 		except Exception:
 			pass
-	print ("Help Table Built.")
+		progress(xnum)
+	clearprogress()
 	os.system("rm -rf " + hfile)
-	print ("Help file removed now that DB populated.")
+	print ("\nHelp file removed now that DB populated.\n")
+
+def getautoupdate():
+	command = "SELECT State FROM States WHERE Option LIKE \"AUTOUPDATE\""
+	cur.execute(command)
+	if not cur.fetchone():
+	#if not cur.fetchall():
+		cur.execute("INSERT INTO States VALUES (?,?)",("AUTOUPDATE","OFF"))
+		sql.commit()
+	cur.execute(command)
+	val = cur.fetchone()[0]
+	cur.execute(command)
+	ccheck = cur.fetchall()
+	if len(ccheck) > 1:
+		cur.execute("DELETE FROM States WHERE Option LIKE \"AUTOUPDATE\"")
+		sql.commit()
+		printmode()
+		if PRINTMODE == "ON":
+			print ("FOUND Multiple Autoupdate entries. Deleted and set to off. If you are using this feature you will need to re-enable it.")
+	return val
+
+def setautoupdate(val):
+	if (val.lower() == "on"):
+		val = "ON"
+	elif (val.lower() == "off"):
+		val = "OFF"
+	else:
+		return ("ERROR: You must specify \"YES\" or \"NO\" to use this action.")
+	cur.execute("DELETE FROM States WHERE Option LIKE \"AUTOUPDATE\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("AUTOUPDATE",val))
+	sql.commit()
+	return ("Auto Update Status has been set to: " + val)
+
+def updatechecker():
+	curver = versioncheck()
+	print ("System Version: " + curver)
+	getme = "https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/system.py"
+	response = http.urlopen('GET', getme, preload_content=False).read()
+	response = str(response)
+	postver = response.split("version = \"")
+	postver = postver[1]
+	postver = postver.split("\"")
+	postver = postver[0]
+	print ("Posted System Version: " + postver)
+	command = "SELECT State FROM States WHERE Option LIKE \"AUTOUPDATE\""
+	cur.execute(command)
+	if not cur.fetchone():
+		cur.execute("INSERT INTO States VALUES (?,?)",("AUTOUPDATE","OFF"))
+		sql.commit()
+		print ("No Automatic Update setting found. Setting to: OFF")
+	cur.execute(command)
+	upstate = cur.fetchone()[0]
+	if ("OFF" not in upstate):
+		if curver.strip() != postver.strip():
+			print ("Executing Update Script Now.")
+			ufile = homedir + "tbn_updater.py"
+			try:
+				os.remove(ufile)
+			except Exception:
+				pass
+			cmd = "wget -O \"" + ufile + "\" \"https://raw.githubusercontent.com/amazingr4b/TBN-Plex/master/tbn_updater.py\""
+			os.system(cmd)
+			print ("Successfully acquired update script.")
+			cmd = "python " + ufile
+			print ("Running Update Now.")
+			os.system(cmd)
+		else:
+			print ("No action necessary.")
+	else:
+		print ("No Update Action Taken.")
+	
+
+def generateblock(name):
+	if (name == "none"):
+		bname = input("Block Name: ")
+	else:
+		bname = name
+	nshow = input("Number of Shows to get?: ")
+	try:
+		nshow = int(nshow)
+	except Exception:
+		return ("Error: You must specify a number here.")
+	nmve = input ("Number of Movies?: ")
+	try:
+		nmve = int(nmve)
+	except Exception:
+		return ("Error: You must specify a number here.")
+	smax = nshow
+	mmax = nmve
+	if smax < 0:
+		smax = 0
+	if mmax < 0:
+		mmax = 0
+	scnt = 1
+	mcnt = 1
+	ttl = smax + mmax
+
+	tcnt = 0
+	
+	while tcnt < ttl:
+		rnt = randint(0,1)
+		if rnt == 0:
+			if scnt <= smax:
+				addme = suggesttvblockuse("none")
+				scnt = scnt + 1
+			else:
+				rnt = 1
+		if rnt == 1:
+			if mcnt <= mmax:
+				addme = suggestmovieblockuse("none")
+				addme = "movie." + addme
+				mcnt = mcnt + 1
+			else:
+				addme = suggesttvblockuse("none")
+				scnt = scnt + 1
+		if tcnt == 0:
+			addblock(bname,addme)
+		else:
+			addtoblock(bname,addme)
+		tcnt = tcnt + 1
+	say = explainblock(bname)
+	print ("\nThe " + bname + " block has been generated.\n\n" + say)
+	
+
+	return ("done")
+
 
 def explainblock(block):
 	blist = getblockpackagelist()
@@ -1424,6 +1655,23 @@ def explainblock(block):
                                 sayme = "Next Random: Show. Type: " + bitems + ".\n"
 			say = say + sayme
 			return say		
+
+def findinblock(findme):
+	cmd = "SELECT Name FROM Blocks WHERE Items LIKE \"%" + findme + "%\""
+	cur.execute(cmd)
+	if not cur.fetchone():
+		return ("No Items found containing: " + findme + ".\n")
+	else:
+		cur.execute(cmd)
+	found = cur.fetchall()
+	print (findme + " was found in the following blocks:\n")
+	for blk in found:
+		blk = blk[0]
+		say = explainblock(blk)
+		print (say)
+		del say
+	return ("Done.")
+
 def addblock(name, title):
 	command1 = "SELECT Movie FROM Movies"
 	command2 = "SELECT TShow FROM TVshowlist"
@@ -1448,7 +1696,7 @@ def addblock(name, title):
 			if ("ERROR" in title):
 				return title
 			xname = title
-			print (title)
+			#print (title)
 		if ("Quit." in title):
 			return ("User Quit. No action taken.")
 		if ("movie." in title) and ("random" not in title.lower()):
@@ -1845,7 +2093,8 @@ def removefromblock(blockname, name):
 	if (("preroll" in name) or ("playcommercial" in name)):
 		pass
 	else:
-		name = titlecheck(name)
+		#name = titlecheck(name)
+		pass
 	list = getblockpackagelist()
 	for item in list:
 		item = item.replace(".txt", "")
@@ -1900,7 +2149,7 @@ def replaceinblock(block, nitem, oitem):
 		nitem = titlecheck(nitem)
 	if "Quit" in nitem:
 		return ("User Quit. No action taken.")
-	elif ("Error: " in nitem):
+	elif ("ERROR: " in nitem):
 		return (nitem)
 	nitem = nitem + ";"
 	bitems = bitems.replace(oitem, nitem)
@@ -2023,7 +2272,7 @@ def playblockpackage(play):
                                         play = suggesttv(xtype)
                                         play = play.split("does the TV Show ")
                                         play = play[1]
-                                        play = play.split(" sound, Sir")
+                                        play = play.split(" sound, ")
                                         play = play[0]
                                 else:
                                         cur.execute(command)
@@ -2639,7 +2888,7 @@ def epdetails(show, season, episode):
 def moviedetails(movie):
 	movie = titlecheck(movie)
 	movie = movie.replace("movie.","")
-	if (("Error" in movie) or (movie == "done")):
+	if (("ERROR:" in movie) or (movie == "done")):
 		return movie
 	plexlogin()
 	movie = plex.library.section('Movies').get(movie)
@@ -2673,6 +2922,7 @@ def moviedbcheck(movie):
 	scheck = getsectiontitle(movie)
 	if scheck == "Movies":
 		movie = movie.replace("movie.","")
+		movie = movie.strip()
 		command = "SELECT * FROM Movies WHERE Movie LIKE \"" + movie + "\""
 		cur.execute(command)
 		if not cur.fetchone():
@@ -2755,12 +3005,116 @@ def moviedbcheck(movie):
 		
 		
 
+def epsleft(show):
+	show = titlecheck(show)
+	if "ERROR" in show:
+		return show
+	plexlogin()
+	fchk = ""
+	cshow = show.strip()
+	cshow = cshow.replace("movie.","")
+	clib = plex.library.sections()
+	for video in plex.search(cshow):
+		if "stop" not in fchk:
+			xshow = video
+			if ((xshow.type == "show") and ("movie." not in show) and (xshow.title.lower() == cshow.lower())):
+				dbtvcheck(video)
+				#getsection(xshow.title)
+				SECTION = video.librarySectionID
+				xsec = plex.library.sections()
+				for lib in xsec:
+					if lib.key == SECTION:
+						SECTION = lib.title
+						schecker = "found"
+						show = video.title
+						if ("All episodes" in show):
+							show = cshow
+						fchk = "stop"
+	if ("found" in schecker):
+		try:
+			command = "SELECT Number FROM TVCounts WHERE Show LIKE \"" + show + "\""
+			cur.execute(command)
+			thecount = cur.fetchone()
+			thecount = thecount[0]
+		except Exception:
+			print ("Item not found in DB. Adding")
+			thecount = 1 
+			cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecount))
+			sql.commit()
+
+		if thecount == 0:
+			thecount = 1
+		
+		thecount = thecount - 1
+		#SECTION = getsection(show)
+		shows = plex.library.section(SECTION)
+		theshow = shows.get(show).episodes()
+		maxs = int(len(theshow))-1
+		epleft = maxs - thecount
+		return (str(epleft))
+
+def totaleps(show):
+	show = titlecheck(show)
+        if "ERROR" in show:
+                return show
+        plexlogin()
+        fchk = ""
+        cshow = show.strip()
+        cshow = cshow.replace("movie.","")
+        clib = plex.library.sections()
+        for video in plex.search(cshow):
+                if "stop" not in fchk:
+                        xshow = video
+                        if ((xshow.type == "show") and ("movie." not in show) and (xshow.title.lower() == cshow.lower())):
+                                dbtvcheck(video)
+                                #getsection(xshow.title)
+                                SECTION = video.librarySectionID
+                                xsec = plex.library.sections()
+                                for lib in xsec:
+                                        if lib.key == SECTION:
+                                                SECTION = lib.title
+                                                schecker = "found"
+                                                show = video.title
+                                                if ("All episodes" in show):
+                                                        show = cshow
+                                                fchk = "stop"
+        if ("found" in schecker):
+                shows = plex.library.section(SECTION)
+                theshow = shows.get(show).episodes()
+		epleft = int(len(theshow))-1
+                return (str(epleft))
+	
+
+
+		
+
 def showdetails(show):
+	global xlib 
 	show = show.replace("'","''")
 	command = "SELECT * FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
 	cur.execute(command)
 	if not cur.fetchone():
-		return ("Error: " + show + " not found. Check title and try again.")
+		#return ("Error: " + show + " not found. Check title and try again.")
+		show = titlecheck(show)
+		if (("Error" in show) or (show == "done")):
+			return show
+		plexlogin()
+		nshow = plex.library.section(xlib).get(show)
+		name = nshow.title
+		summary = nshow.summary
+		genres = nshow.genres
+		if not genres:
+			genres = "Update TBN-Plex DB to get this data."
+		rating = nshow.contentRating
+		duration = str(int(nshow.duration)/60000)
+		#total = str(nshow.leafCount)
+		total = totaleps(show)
+		whrat = epsleft(show)
+		total = total + "\nEpisodes left to watch: " + whrat
+		sayme = "For the show: " + name + "\nSummary: " + summary + "\nGenre: " + genres + "\nRating: " + rating + "\nDuration: " + str(duration) + " minutes\nNumber of Episodes: " + str(total)
+                return (sayme)
+		
+		
 	else:
 		cur.execute(command)
 		stuff = cur.fetchone()
@@ -2774,15 +3128,48 @@ def showdetails(show):
 		genres = genres.replace(";", ", ")
 		rating = stuff[3]
 		duration = stuff[4]
-		total = stuff[5]
+		#total = stuff[5]
+		total = totaleps(show)
+                whrat = epsleft(show)
+                total = total + "\nEpisodes left to watch: " + whrat
 		sayme = "For the show: " + name + "\nSummary: " + summary + "\nGenre: " + genres + "\nRating: " + rating + "\nDuration: " + str(duration) + " minutes\nNumber of Episodes: " + str(total)
 		return (sayme)
 
+def moviewithtline(tline):
+	tline = tline.replace("'","''")
+	command = "SELECT Movie, Tagline FROM Movies WHERE Tagline LIKE \"%" + tline.strip() + "%\""
+	cur.execute(command)
+	if not cur.fetchone():
+		return ("No Movies Found with Tagline Like: " + tline)
+	cur.execute(command)
+	found = cur.fetchall()
+	fxd = []
+	for fnd in found:	
+		tl = fnd[1]
+		tl = tl.replace("''","'")
+		ttl = fnd[0]
+		ttl = ttl.replace("''","'")
+		fnd = ttl.strip() + "\n" + tl
+		fxd.append(fnd)
+	for itm in fxd:
+		print (itm + "\n")
+	return "\nDone."
+
 def movietagline(movie):
+	global xlib
 	command = "SELECT Tagline FROM Movies WHERE Movie LIKE \"" + movie + "\""
 	cur.execute(command)
 	if not cur.fetchone():
-		return ("Error: " + movie + " not found in DB. Please try again.")
+		movie = titlecheck(movie)
+		if (("Error:" in movie) or (movie == "done")):
+			return movie
+		movie = movie.replace("movie.","")
+		mve = plex.library.section(xlib).get(movie)
+		tag = mve.tagline
+		if not tag:
+			return ("The Move " + movie + " has no tagline.")
+		else:
+			return tag
 	else:
 		try:
 			cur.execute(command)
@@ -2991,14 +3378,17 @@ def movierating(movie):
 			cur.execute(command)
 			found = cur.fetchone()[0]
 			if "none" in found:
-				return ("The Movie " + movie + " has no rating.")
+				#return ("The Movie " + movie + " has no rating.")
+				return ("No Rating.")
 			else:
-				return ("The Movie " + movie + " has a " + found + " rating.")
+				#return ("The Movie " + movie + " has a " + found + " rating.")
+				return (found)
 		except Exception:
 			return "The Movie " + movie + " has no rating specified." 
 
 def moviesummary(movie):
 	movie = titlecheck(movie)
+	movie = movie.replace("movie.","")
 	if ("Quit." in movie):
 		return ("User Quit. No action taken.")
 	elif ("Error:" in movie):
@@ -3014,7 +3404,8 @@ def moviesummary(movie):
                         if "none" in found:
                                 return ("The Movie " + movie + " has no Summary.")
                         else:
-                                return ("The Movie " + movie + " 's summary is: " + found)
+                                #return ("The Movie " + movie + " 's summary is: " + found)
+				return found
                 except Exception:
                         return "The Movie " + movie + " has no summary in the database."
 
@@ -3068,14 +3459,15 @@ def playspshow(show, season, episode):
 	client = plex.client(PLEXCLIENT)
 	client.playMedia(epx)
 	nowplaywrite("TV Show: " + show + " Episode: " + ep)
-	showsay = 'Playing ' + ep + ' From the show ' + show + ' Now, Sir'
+	CALLMETHIS = gethonorific()
+	showsay = 'Playing ' + ep + ' From the show ' + show + ' Now, ' + str(CALLMETHIS)
 
 	return showsay
 
 def movielink(movie):
 	plexlogin()
 	mve = plex.library.section('Movies').get(movie)
-	print mve.getStreamURL()
+	print mve.getStreamURL(videoResolution='800x600')
 
 def replacestatus(show):
 	try:
@@ -3322,8 +3714,9 @@ def deleteshow(show):
 def playshow(show):
 	#SECTION = "TV Shows"
 	oshow = show
-	show = titlecheck(show)
-	show = checkcustomtables(show)
+	if (("block." not in show) and ("custom." not in show) and ("marathon." not in show) and ("minithon." not in show) and ("holiday." not in show)):
+		show = titlecheck(show)
+		show = checkcustomtables(show)
 	if type(show) is tuple:
 		show = show[0].lower()
 	if "custom." in show:
@@ -3341,6 +3734,8 @@ def playshow(show):
 	global pcmd
 	kcheckshow = checkmode("show")
 	kcheckmovie = checkmode("movie")
+	show = show.replace("''","'")
+
 	sayshow = show
 	sayshow = sayshow.replace("movie.","The Movie ")
 	sayshow = sayshow.replace("preroll.","The Preroll: " )
@@ -3348,7 +3743,9 @@ def playshow(show):
 	sayshow = sayshow.replace("playcommercial.","The Commercial: ")
 	if ("ERROR:" in sayshow):
 		return sayshow
-	print ("Trying to start: " + sayshow + "\n")
+	printmode()
+	if (PRINTMODE == "ON"):
+		print ("Trying to start: " + sayshow + "\n")
 	try:
 		plexlogin()
 		fchk = ""
@@ -3365,12 +3762,19 @@ def playshow(show):
 					xsec = plex.library.sections()
 					for lib in xsec:
 						if lib.key == SECTION:
-							SECTION = lib.title
-							schecker = "found"
-							show = video.title
-							if ("All episodes" in show):
+							if video.type == "episode":
+								#markme
+								SECTION = lib.title
+                                                                schecker = "found"
+                                                                show = video.title
 								show = cshow
-							fchk = "stop"
+							else:
+								SECTION = lib.title
+								schecker = "found"
+								show = video.title
+								if ("All episodes" in show):
+									show = cshow
+								fchk = "stop"
 				elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower()) and ("stop" not in fchk)):
 					moviedbcheck(video.title)
 					SECTION = video.librarySectionID
@@ -3401,6 +3805,7 @@ def playshow(show):
 		mck
 	except NameError:
 		mck = "nogo"
+	#print (show)
 		
 	if ("found" in schecker):
 		if ("Kids" in kcheckshow):
@@ -3419,7 +3824,9 @@ def playshow(show):
 			thecount = cur.fetchone()
 			thecount = thecount[0]
 		except Exception:
-			print ("Item not found in DB. Adding")
+			printmode()
+			if PRINTMODE == "ON":
+				print ("Item not found in DB. Adding")
 			thecount = 1 
 			cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecount))
 			sql.commit()
@@ -3451,7 +3858,8 @@ def playshow(show):
 		client = plex.client(PLEXCLIENT)
 		client.playMedia(ep)
 		nowplaywrite("TV Show: " + show + " Episode: " + xshow)
-		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, Sir' 
+		CALLMETHIS = gethonorific()
+		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, ' + CALLMETHIS 
 		
 		return showsay
 	elif ("minithon." in show):
@@ -3518,7 +3926,8 @@ def playshow(show):
 			showplay = show
 			nowplaywrite("Movie: " + showplay)
 			
-			return ("Playing the movie " + show + " now, Sir.") 
+			CALLMETHIS = gethonorific()
+			return ("Playing the movie " + show + " now, " + CALLMETHIS + ".") 
 		return ("Error. " + show + " Not found!")
 	elif ("block." in show):
 		say = playblockpackage(show)
@@ -3682,7 +4091,8 @@ def addvideoplaylist(title, item):
                         thecount = cur.fetchone()
                         thecount = thecount[0]
                 except Exception:
-                        print ("Item not found in DB. Adding")
+			if PRINTMODE == "ON":
+				print ("Item not found in DB. Adding")
                         thecount = 1
                         cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecount))
                         sql.commit()
@@ -3763,7 +4173,8 @@ def modifyvideoplaylist(playlist, item, action):
                         thecount = cur.fetchone()
                         thecount = thecount[0]
                 except Exception:
-                        print ("Item not found in DB. Adding")
+			if PRINTMODE == "ON":
+				print ("Item not found in DB. Adding")
                         thecount = 1
                         cur.execute('INSERT INTO TVCounts VALUES(?,?)', (show, thecount))
                         sql.commit()
@@ -3974,6 +4385,7 @@ def commercialbreak():
 		except Exception:
 			ppc = "no"
 		if ("yes" not in ppc):
+			#print (playme[pcnt-1])
 			playcommercial(playme[pcnt-1])
 		pcnt = pcnt + 1
 		if int(duration) >= 60:
@@ -4016,23 +4428,36 @@ def playcommercial(commercial):
 	else:
 		cur.execute("SELECT * FROM commercials WHERE name LIKE \"" + commercial + "\"")
 	found = cur.fetchall()
-	max = int(len(found)) - 1
-	min = 0
-	pcnt = randint(min,max)
-	playme = found[pcnt]
-	show = playme[0]
-	duration = playme[1]
-	duration = int(duration) + 1
+	if not found:
+		return ("Failed to start: " + commercial + ". Check this item and its entry in your plex library.\n")
+	if commercial == "none":
+		max = int(len(found)) - 1
+		min = 0
+		pcnt = randint(min,max)
+		playme = found[pcnt]
+		show = playme[0]
+		duration = playme[1]
+		duration = int(duration) + 1
+	else:
+		playme = found[0]
+		show = playme[0]
+		duration = playme[1]
+		duration = int(duration) + 1
 	commercial = plex.library.section('Commercials').get(show)
 	client = plex.client(PLEXCLIENT)
-	client.playMedia(commercial)
-	if ("Fail" in externalcheck()):
-		time.sleep(duration)
-	else:
-		try:
-			progressfunct(duration)
-		except KeyboardInterrupt:
-			print ("\rCancelling Commercial.\n")
+	try:
+		nowplaywrite(str(show))
+		client.playMedia(commercial)
+		if ("Fail" in externalcheck()):
+			time.sleep(duration)
+		else:
+			try:
+				progressfunct(duration)
+			except KeyboardInterrupt:
+				print ("\rCancelling Commercial.\n")
+		return ("Done.")
+	except Exception:
+		return ("Failed to start: " + show + ". Check this item and its entry in your plex library.\n")
 
 def playcustom(show, table):
 	plexlogin()
@@ -4183,11 +4608,13 @@ def playwhereleftoff(show, nvalue):
 			thecount = cur.fetchone()
 			thecount = thecount[0]
 		except Exception:
-			print ("Item not found in DB. Adding")
+			if PRINTMODE == "ON":
+				print ("Item not found in DB. Adding")
 			thecount = 1 
 			cur.execute("INSERT INTO TVCounts VALUES(?,?)", (show, thecount))
 			sql.commit()
-			print ("added")
+			if PRINTMODE == "ON":
+				print ("added")
 
 		if thecount == 0:
 			thecount = 1
@@ -4213,7 +4640,8 @@ def playwhereleftoff(show, nvalue):
 		client = plex.client(PLEXCLIENT)
 		client.playMedia(ep, offset=leftoff)
 		nowplaywrite("TV Show: " + show + " Episode: " + xshow)
-		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, Sir' 
+		CALLMETHIS = gethonorific()
+		showsay = 'Playing ' + xshow + ' From the show ' + show + ' Now, ' + CALLMETHIS 
 		return showsay
 	elif ("movie." in show):
 		show = show.replace("movie.", "")
@@ -4230,7 +4658,8 @@ def playwhereleftoff(show, nvalue):
 				#playfile(show)
 				showplay = show
 				nowplaywrite("Movie: " + showplay)
-				return ("Playing the movie " + show + " now, Sir.") 
+				CALLMETHIS = gethonorific()
+				return ("Playing the movie " + show + " now, " + CALLMETHIS + ".") 
 		return ("Error. " + show + " Not found!")
 	elif ("block." in show):
 		say = playblockpackage(show)
@@ -4292,7 +4721,6 @@ def queueadd(addme):
 		sql.commit()	
 		xname = xname.replace("movie.","")
 		xname = xname.replace(";","")
-		#say = ("The Movie " + xname.rstrip() + " has been added to the queue.")
 		say = xname.strip()
 		return say	
 		
@@ -4326,20 +4754,32 @@ def nowplaywrite(showplay):
 	cur.execute("INSERT INTO States VALUES (?,?)",('Nowplaying',showplay))
 	sql.commit()
 
+def nowpdb():
+	cur.execute("SELECT State FROM States WHERE Option LIKE \"Nowplaying\"")
+	nowp = cur.fetchone()[0]
+	return nowp
+
 def nowplaying():
 	global plex
 	plexlogin()
 	psess = plex.sessions()
 	for sess in psess:
+		#sess.myPlexUsername 
 		if (sess.player.title == PLEXCLIENT):
 			if "episode" in sess.type:
 				say = "Now Playing: " + sess.grandparentTitle.strip() + "\nEpisode: " + sess.title.strip()
 			else:
 				say = "Now playing: " + sess.title
+		else:
+			#print (vars(sess))
+			if ("nowplaying" in sys.argv):
+				print (sess.username + " is playing " + sess.title + " on " + sess.player.title)
+			else:
+				pass
 	try:
 		say
 	except NameError:
-		say = "Nothing is currently playing."
+		say = "Nothing is currently playing on " + PLEXCLIENT + "."
 	return (say)
 
 def queueget():
@@ -4357,7 +4797,8 @@ def queueget():
 	queue = queue.replace("movie.", "The Movie ")
 	queue = queue.replace(' has been added to the queue.',', and then ')
 
-	queue = "Up next we have: " + queue + "Agent Smith will find content to watch, Sir."
+	CALLMETHIS = gethonorific()
+	queue = "Up next we have: " + queue + "Agent Smith will find content to watch, " + CALLMETHIS + "."
 	
 	return queue;
 
@@ -4373,6 +4814,11 @@ def queuefix():
 
 def queuefill():
 	playme = randint(1,9)
+	if ("-m" in sys.argv):
+		playme = 6
+	elif ("-t" in sys.argv):
+		playme = 7
+	#print (playme)
 	#random TV show
 	showmode = checkmode("show")
 	moviemode = checkmode("movie")
@@ -4440,7 +4886,7 @@ def queuefill():
                                         SECTION = "TV Shows"
 					GEN = ['TV-Y','TV-Y7','TV-G']
                                         tlist = plex.library.section(SECTION).search(None,contentRating=GEN)
-					print tlist
+					#print tlist
 					tvlist = []
 					for item in tlist:
 						if item.title not in tvlist:
@@ -4578,7 +5024,7 @@ def queuefill():
 	try:
 		return queueadd(addme)
 	except UnboundLocalError:
-		print ("FAILURE DETECTED:\nOption Tried: " + playme + "\nRETRYING!")
+		print ("FAILURE DETECTED:\nOption Tried: " + str(playme) + "\nRETRYING!")
 		return queuefill()
 
 def queueremove(item):
@@ -4842,6 +5288,23 @@ def setplaymode(mode):
 	for item in checks:
 		if item in mode:
 			setcheck = "pass"
+	if ("collection." in mode):
+		mode = mode.replace("collection.","")
+		cmd = "SELECT * FROM Collections WHERE name LIKE \"" + mode + "\""
+		cur.execute(cmd)
+		if not cur.fetchone():
+			return ("Error: " + mode + " not found as an available Collection.")
+		sys.argv.append("-b")
+		cur.execute(cmd)
+		mve = cur.fetchone()
+		mve = mve[1]
+		mve = mve.split(";")
+		mve = mve[0]
+		getcollection(mve)
+		say = setplaymode("smartblock")
+		return say
+		
+		
 
 	if ("holiday." in mode):
 		hcheck = mode.replace("holiday.","")
@@ -4916,6 +5379,14 @@ def setplaymode(mode):
 			show = mode 
                         show = show.replace("block.","")
                         blocktoplist(show)
+		cmode = mode.replace("block.","")
+		try:
+			idtonightsmovie()
+		except Exception:
+			idtonightsshow()
+
+		say1 = explainblock(cmode)
+		#print (say1)
 	elif ("normal" in mode):
                 queuetpl = qtpl()
                 if ("on" in queuetpl.lower()):
@@ -4957,6 +5428,8 @@ def setupnext(title):
 	if ("CUSTOM." not in title):
 		if (("numb3rs" not in title.lower()) and ("se7en" not in title.lower())):
 			title = titlecheck(title).strip()
+			if ("ERROR:" in title):
+				return title
 	if "''" in title:
                 pass
         else:
@@ -5169,6 +5642,37 @@ def externalcheck():
 	else:
 		return ("Fail")
 
+def gencheck(tshow):
+	plexlogin()
+	for video in plex.search(tshow):
+		#if video.type == "show":
+			'''
+			SECTION = video.librarySectionID
+			xsec = plex.library.sections()
+			show = video.title
+			for lib in xsec:
+				if lib.key == SECTION:
+					SECTION = lib.title
+			shows = plex.library.section(SECTION)
+			theshow = shows.get(show)
+			print theshow.type
+			print theshow.title
+			print theshow.summary
+			print theshow.roles
+			print theshow.genres
+			print ("\n")
+			print (vars(theshow))
+			'''
+			print (video.type)
+			print (video.title)
+			print (video.summary)
+			print (video.roles)
+			print (video.genres)
+			print ("\n")
+			print (vars(video))
+			print ("\n--------------------\n")
+	return ("Done.")
+
 def dbtvcheck(video):
 	plexlogin()
 	libs = plex.library.sections()
@@ -5212,7 +5716,8 @@ def dbtvcheck(video):
 			if not cur.fetchone():
 				cur.execute("INSERT INTO TVshowlist VALUES (?,?,?,?,?,?)",(name,summary,bgenre,rating,duration,totalnum))
 				sql.commit()
-				print ("\nFound and Successfully added " + name + " to the TVshowlist table.\n")
+				if PRINTMODE == "ON":
+					print ("\nFound and Successfully added " + name + " to the TVshowlist table.\n")
 	except NameError:
 		pass
 
@@ -5274,8 +5779,76 @@ def getsectiontitle(title):
                                                         say = lib.title
 	return say
 
+def spellchecker(title):
+	try:
+		d = enchant.Dict("en_US")
+	except ImportError:
+		print ("Enchant Library Not Found. Spell Checking Failed.")
+		return title
+	options = []
+	newt = ""
+	ccount = 0
+	fail = "no"
+	for word in title.split(" "):
+		if d.check(word) is True:
+			newt = newt + word + " "
+		else:
+			clist = d.suggest(word)
+			word = clist[ccount]
+			newt = newt + word + " "
+			fail = "yes"
+	return newt
+
+def addcustomtitle(ntitle, otitle):
+	ctitle = ntitle
+	ctitle = customtitlecheck(ctitle)
+	if ctitle.lower() == otitle.lower():
+		return ("ERROR: " + ntitle + " already maps to: " + otitle + "\n")
+	otitle = titlecheck(otitle)
+	if ("ERROR:" in otitle):
+		return otitle
+	otitle = otitle.replace("movie.","")
+	ntitle = ntitle.strip().lower()
+	otitle = otitle.strip().lower()
+	cur.execute("INSERT INTO CUSTOMTITLES VALUES (?,?)",(otitle, ntitle))
+	sql.commit()
+	return ("Successfully associated " + ntitle + " with: " + otitle + ".\n")
+
+def removecustomtitle(ctitle):
+	customtitlecheck(ctitle)
+	cur.execute("DELETE FROM CUSTOMTITLES WHERE ctitle LIKE \"" + ctitle.strip() + "\"")
+	sql.commit()
+	return ("Removed associations for: " + ctitle + ".\n")	
+
+def customtitlecheck(title):
+	title = title.lower()
+	command = "SELECT * FROM CUSTOMTITLES WHERE ctitle LIKE \"" + title + "\""
+	try:
+		cur.execute(command)
+	except sqlite3.OperationalError:
+		cur.execute("CREATE TABLE IF NOT EXISTS CUSTOMTITLES(otitle TEXT, ctitle TEXT)")
+		sql.commit()
+		print ("Sucessfully Added Needed CUSTOMTITLES Table.")
+	cur.execute(command)
+	if not cur.fetchone():
+		#print ("No Custom Title Found.")
+		return title
+	else:
+		cur.execute(command)
+		title = cur.fetchone()[0]
+		return title
+		
+
+
 def titlecheck(title):
+	global xlib
 	global ttlchk
+	global tccnt
+	title = customtitlecheck(title)
+	try:
+		tccnt
+	except Exception:
+		tccnt = 1
 	if "yes" not in ttlchk:
 		plexlogin()
 		otitle = title
@@ -5289,6 +5862,7 @@ def titlecheck(title):
 				xshow = video
 				if ((xshow.type == "show") and ("movie." not in oshow) and (xshow.title.lower() == oshow.lower())):
 					say = xshow.title
+					xlib = lib.title
 					#return xshow.title
 				elif ((xshow.type.lower() == "movie") and (xshow.title.lower() == cshow.lower())):
 					try:
@@ -5300,13 +5874,58 @@ def titlecheck(title):
 							if lib.key == video.librarySectionID:
 								if lib.title == "Movies":
 									say = "movie." + say
+								xlib = lib.title
 		try:
 			ttlchk = "yes"
 			return say
 		except NameError:
+			try:
+				print (say)
+				del say
+			except NameError:
+				pass
+			otitle = title
+			if tccnt == 2:
+				title = specialfixer(title)
+				tccnt = 3
+			elif tccnt == 1:
+				title = spellchecker(title).lower().strip()
+				tccnt = 0
+			elif tccnt == 0:
+				atitle = title
+				atitle = atitle.split(" ")
+				if atitle[0].lower == "the":
+					atitle.pop[0]
+				else:
+					atitle.insert(0,"the")
+				for item in atitle:
+					try:
+						ntitle = ntitle + item + " "
+					except NameError:
+						ntitle = item + " "
+				ntitle = ntitle.strip()
+				title = ntitle
+				del atitle
+				del ntitle
+				tccnt = 2
+			if tccnt <3:
+				ttlchk = "no"
+				#print ("Title Not Found. Trying: " + title + "\n")
+				oxtitle = title
+				title = titlecheck(title)
+				if ("ERROR:" not in title):
+					return title
+				if ("ERROR:" in title):
+					title = oxtitle
 			return ("ERROR: " + oshow + " NOT FOUND.\n")
 	else:
 		return title
+
+def specialfixer(title):
+	removeme = ["'",":","!",",","-"]
+	for itm in removeme:
+		title = title.replace(itm,"")
+	return (title)
 
 def didyoumeanboth(title):
 	#title = titlecheck(title).strip()
@@ -5528,13 +6147,14 @@ def whatupnext():
 	playmode = cur.fetchone()
 	playmode = playmode[0]
 
-	if (("normal" in playmode) or ("binge." in playmode)):
+	if (("normal" in playmode) or ("binge." in playmode) or ("-q" in sys.argv)):
 		queue = openqueue()
 		if queue == " ":
 			updatehelp()
                         cls()
-			print ("Successfully updated help file.")
-			print ("First run situation detected. Taking approprate action.\n")
+			if PRINTMODE == ON:
+				print ("Successfully updated help file.")
+				print ("First run situation detected. Taking approprate action.\n")
 			queuefix()
 			queue = openqueue()
 		queue = queue.split(';')
@@ -5819,7 +6439,7 @@ def idtonightsshow():
                                                 found = suggesttv(genre)
                                                 found = found.split("the TV Show ")
                                                 found = found[1]
-                                                found = found.split(" sound, Sir")
+                                                found = found.split(" sound, ")
                                                 found = found[0].strip()
                                                 found = settonightsshow(found)
                                         ccnt = ccnt + 1
@@ -5897,7 +6517,7 @@ def idtonightsmovie():
 						'''
 						found = found.split("the movie: ")
 						found = found[1]
-						found = found.split("sound, Sir")
+						found = found.split("sound, ")
 						found = found[0].strip()
 						'''
 						found = settonightsmovie(found)
@@ -5909,7 +6529,7 @@ def idtonightsmovie():
 		
 
 def settonightsmovie(movie):
-	movie = movie.replace("movie.","")
+	#movie = movie.replace("movie.","")
 	movie = titlecheck(movie)
 	if ("ERROR" in movie):
 		return movie
@@ -5918,7 +6538,7 @@ def settonightsmovie(movie):
 	sql.commit()
 	cur.execute("INSERT INTO States VALUES(?,?)",('TONIGHTSMOVIE',movie))
 	sql.commit()
-	movie = movie.replace('movie.','')
+	movie = movie.replace('movie.','The Movie ')
 	return (movie)
 
 def settonightsshow(show):
@@ -5981,9 +6601,16 @@ def nextep(show):
 	ssn = str(theshow[epnum].seasonNumber)
 	xep = str(theshow[epnum].index)
 	episode = episode.replace("''","'")
-	episode = "For the show " + show + ", Up next is Season " + ssn + ", Episode " + xep + ", " + episode
+	try:
+		episode = str(episode)
+	except Exception:
+		episode = episode.decode("utf8")
+		episode = str(episode)
+	try:
+		episode = "For the show " + str(show) + ", Up next is Season " + ssn + ", Episode " + xep + ", " + str(episode)
+	except Exception:
+		pass
 	episode = episode.rstrip()
-
 	return episode
 
 
@@ -5994,7 +6621,7 @@ def removeblock(block):
 		print (say + "\n\n")
 		block = str(input('Block: '))
 	if block in say:
-		print ("Removing the " + block + " block now.")
+		print ("Removing and recreating the " + block + " block now.")
 	else:
 		return ("Error, block not found to remove. Please try check and try again.")
 	bname = block.strip()
@@ -6002,6 +6629,43 @@ def removeblock(block):
 	cur.execute(command)
 	sql.commit()
 	return ("Block " + block + " has been successfully removed.")
+
+def jumpinblock(num):
+	pm = playmode()
+	if ("block." in pm):
+		#print ("Good")
+		pass
+	else:
+		return ("Error: Not in block package mode.")
+	block = pm.replace("block.","")
+	try:
+		num = int(num)
+	except Exception:
+		return ("Error: Location in block must be a number value. IE: 1.")
+	if num < 0:
+		print ("Negative number input has been autocorrected.\n")
+		num = num * (-1)
+	if num > 0:
+		num = int(num)-1
+	command = "SELECT Items, Count FROM Blocks WHERE Name LIKE \"" + block + "\""
+	cur.execute(command)
+	if not cur.fetchone():
+		return ("Error: Block " + block + " not found.")
+	else:
+		cur.execute(command)
+		stuff = cur.fetchone()
+	things = stuff[0]
+	blk = things
+	bcnt = stuff[1]
+	things = things.split(";")
+	bmax = int(len(things))-1
+	if num+1 > bmax:
+		return ("Error: Jumpto location is greater than number of items in block. Unable to comply.")
+	cur.execute("DELETE FROM Blocks WHERE Name LIKE \"" + block + "\"")
+	sql.commit()
+	cur.execute("INSERT INTO Blocks VALUES (?,?,?)",(block,str(blk.strip()),int(num)))
+	sql.commit()
+	return ("Done.")	
 
 def skipthat():
 	mode = playmode()
@@ -6011,7 +6675,7 @@ def skipthat():
 			print ("Skip Enabled")
 	except Exception:
 		option = ""
-	if (("normal" in mode) or ("normal" in option)):
+	if (("normal" in mode) or ("normal" in option) or ("-q" in sys.argv)):
 		command = "SELECT State FROM States WHERE Option LIKE \"Queue\""
 		cur.execute(command)
 		queue = cur.fetchone()
@@ -6390,6 +7054,14 @@ def suggestcustom(table):
 	sql.commit()
 	return playme
 
+def suggestsomething():
+	getme = randint(0,1)
+	if getme == 0:
+		found = suggestmovie("none")
+	else:
+		found = suggesttv("none")
+	return (found)
+
 def suggestmovieblockuse(genre):
 	check = checkmode("movie")
 	#command = "SELECT Movie FROM Movies WHERE Rating NOT IN (\"R\",\"none\", \"PG-13\")"
@@ -6593,7 +7265,8 @@ def suggestmovie(genre):
 		cur.execute("INSERT INTO States VALUES(?,?)", ('Pending',addme))
 		sql.commit()
 
-	return "How does the movie: " + play + " sound, Sir?"
+	CALLMETHIS = gethonorific()
+	return "How does the movie: " + play + " sound, " + CALLMETHIS + "?"
 
 def suggesttv(genre):
 	if (genre == "none"):
@@ -6604,14 +7277,6 @@ def suggesttv(genre):
 			command = "SELECT TShow FROM TVshowlist WHERE Rating IN (\"TV-Y\",\"TV-Y7\", \"TV-PG\", \"TV-G\")"
                 else:
                         command = "SELECT TShow FROM TVshowlist"
-		'''
-		cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%Favorite%\"")
-		if not cur.fetchone():
-			cur.execute("SELECT TShow FROM TVshowlist")
-                        playfiles = cur.fetchall()
-		else:
-			cur.execute("SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%Favorite%\"")
-		'''
 		cur.execute(command)
 		playfiles = cur.fetchall()
 		if int(len(playfiles)-1) <= 24:
@@ -6652,7 +7317,7 @@ def suggesttv(genre):
                         pcnt = randint(0, max)
                         play = foundt[pcnt][0]
 	else:
-		command = "SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + ";%\""
+		command = "SELECT TShow FROM TVshowlist WHERE Genre LIKE \"%" + genre + "%\""
 		cur.execute(command)
 		if not cur.fetchall():
 			return("Error. Genre: " + genre + " not found. Please try again.")
@@ -6670,7 +7335,8 @@ def suggesttv(genre):
 	cur.execute("INSERT INTO States VALUES(?,?)", ('Pending',play))
 	sql.commit()
 
-	return "How does the TV Show " + play + " sound, Sir?"
+	CALLMETHIS = gethonorific()
+	return "How does the TV Show " + play + " sound, " + CALLMETHIS + "?"
 
 def listshows(genre):
 	command = 'SELECT TShow from TVshowlist WHERE Genre LIKE \'%' + genre + ';%\' ORDER BY TShow ASC'
@@ -6710,6 +7376,25 @@ def whatispending():
 		pending = pending.replace("custom.","")
 		return (pending + " is currently in the pending queue.")
 	
+def getpending():
+	command = "SELECT State FROM States WHERE Option LIKE \"Pending\""
+        cur.execute(command)
+        if not cur.fetchone():
+                return ("Nothing is pending.")
+        else:
+                cur.execute(command)
+                pending = cur.fetchone()[0]
+		return (pending)
+
+def playpending():
+	item = getpending()
+	if (item == "Nothing is pending."):
+		return ("Error: Nothing is Pending Queue to Play.")
+	else:
+		cur.execute("DELETE FROM States WHERE Option LIKE \"Pending\"")
+                sql.commit()
+		say = playshow(item)
+		return (say)
 
 def addsuggestion():
 	command = "SELECT State FROM States WHERE Option LIKE \"Pending\""
@@ -6755,6 +7440,54 @@ def playcheckstart():
         with open(openme, "w") as file:
 		file.write("On")
         file.close()
+	setwebhookstatus("OFF")
+
+def playcheckstatus():
+	cmd = "python " + homedir + "playstatus.py"
+	stuff = subprocess.check_output(cmd, shell=True)
+	return (stuff)
+
+def webhookscheck():
+	cmd = "python " + homedir + "webhookstatus.py"
+	try:
+		stuff = subprocess.check_output(cmd, shell=True)
+	except Exception:
+		stuff = "webhookstatus.py not installed or has an error. Manual check necessary."
+        return (stuff)
+
+def webhookstatus():
+	cmd = "python " + homedir + "webhookstatus.py"
+        stuff = subprocess.check_output(cmd, shell=True)
+	cmd = "SELECT State FROM States WHERE Option LIKE \"WEBHOOKSTATUS\""
+	cur.execute(cmd)
+	if not cur.fetchone():
+		cur.execute("INSERT INTO States VALUES (?,?)",("WEBHOOKSTATUS","OFF"))
+		sql.commit()
+	cur.execute(cmd)
+	wstatus = cur.fetchone()[0]
+	wstatus =  (stuff + "\nWebhook checking is: " + wstatus + ".")
+	return wstatus
+
+def setwebhookstatus(value):
+	value = value.lower().strip()
+	if ((value == "on") or (value == "off") or (value == "sleep")):
+		pass
+	else:
+		return ("ERROR: You must use \"ON\" or \"OFF\" to use this command.")
+	if value == "on":
+		value = "ON"
+		playcheckstop()
+	elif value == "off":
+		value = "OFF"
+	elif value == "sleep":
+		value = "SLEEP"
+	cur.execute("DELETE FROM States WHERE Option LIKE \"WEBHOOKSTATUS\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES (?,?)",("WEBHOOKSTATUS",value))
+	sql.commit()
+	return ("WEBHOOKSTATUS has been set to: " + value + ".")
+	
+	
 
 def checkpstatus():
 	openme = homedir + 'playstatestatus.txt'
@@ -6990,6 +7723,10 @@ def statuscheck():
 		say = whatupnext()
 		say = say.replace("''","'")
 		print (say)
+	pstatus = playcheckstatus()
+	print ("\n" + pstatus +"\n")
+	wstatus = webhookstatus()
+	print (wstatus + "\n")
 	resstatus = resumestatus()
 	print ("Resume Feature Option is: " + resstatus)
 	
@@ -7005,6 +7742,22 @@ def statuscheck():
 	print ("Commercial Injection is: " + ccheck)
 	queuetpl = qtpl()
 	print ("Queue To Playlist is: " + queuetpl)
+	autou = getautoupdate()
+	print ("Automatic Update Status is: " + autou)
+	wc = listwildcard()
+	print ("The Current Wild Card Show is: " + wc)
+	cur.execute("SELECT State FROM States WHERE Option LIKE \"REPLACEWILDCARD\"")
+	if not cur.fetchone():
+		pass
+	else:
+		cur.execute("SELECT State FROM States WHERE Option LIKE \"REPLACEWILDCARD\"")
+		newwc = cur.fetchone()[0]
+		xsay = "The Next Wild Card Show is: " + newwc + "."
+		print (xsay)
+	printmode()
+	print ("PRINTMODE is currently: " + PRINTMODE)
+	CALLMETHIS = gethonorific()
+	print ("I call thee: " + CALLMETHIS)
 
 def smartplist(thetext):
 	print ("\nWarning: This action may take a few minutes depending on the size of your library.\n")
@@ -7082,7 +7835,7 @@ def smartplist(thetext):
 		return ("\nUser Cancelled.")
 
 def getlikemovie(xmovie):
-	print ("Finding Similar Movies.")
+	#print ("Finding Similar Movies.")
 	global ttlchk
 	found = []
 	import tmdbsimple as tmdb
@@ -7099,10 +7852,14 @@ def getlikemovie(xmovie):
 				if item['title'] not in found:
 					found.append(item['title'])
 	if len(found) > 0:
-		print ("Successfully Acquired Like Movies. Comparing to your library now. WARNING: This may take a moment.")
 		cfound = []
 		ccnt = 0
 		max = int(len(found))-1
+		if ("-f" in sys.argv):
+			pcnt = randint(0,max)
+			playme = found[pcnt]
+			return playme
+		print ("Successfully Acquired Like Movies. Comparing to your library now. WARNING: This may take a moment.")
 		while ccnt <= max:
 			itm = found[ccnt]
 			try:
@@ -7112,25 +7869,48 @@ def getlikemovie(xmovie):
 				itm = "ERROR"
 			ttlchk = "no"
 			if (("ERROR" not in itm) and (itm not in cfound)):
-				itm = itm.replace("movie.","The Movie ")
 				cfound.append(itm)
 			ccnt = ccnt + 1
 		if len(cfound) > 0:
+			if ("-b" in sys.argv):
+				bcnt = 0
+				max = int(len(cfound))-1
+				while bcnt <= max:
+					print cfound[bcnt]
+					if bcnt == 0:
+						removeblock("smartblock")
+						addblock("smartblock",cfound[bcnt])
+					else:
+						addtoblock("smartblock",cfound[bcnt])
+					bcnt = bcnt + 1
+					ttlchk = "no"
+				print ("\nSuccessfully Created smartblock with the results.\n")
 			print ("The following similar movies were located in your library:\n")
 			for ite in cfound:
+				ite = ite.replace("movie.","The Movie ")
 				print ite
 		else:
 			print ("No similar items found in your library. Here are the similar movies found that are not in your library:\n")
 			for thy in found:
+				thy = thy.replace("movie.","The Movie ")
 				print thy
 		return ("\nDone.")
 	else:
 		return ("Error: Nothing similar found to: " + xmovie + ".")
 
 def getcollection(xmovie):
+	xmovie = titlecheck(xmovie)
+	if ("ERROR: " in xmovie):
+		return xmovie
+	xmovie = xmovie.replace("movie.","")
+	global ttlchk
 	collection = []
 	collectionx = []
-	import tmdbsimple as tmdb
+	try:
+		import tmdbsimple as tmdb
+	except Exception:
+		print ("Error: tmdb library not found. Install and try again. \"pip install tmdbsimple\"")
+		return ("ERROR: tmdb library not found.")
 	tmdb.API_KEY = "ff44b56e7ea4641918abc6cf46d19a1c"
 	search = tmdb.Search()
 	response = search.movie(query=xmovie)
@@ -7150,7 +7930,7 @@ def getcollection(xmovie):
 
 	try:
 		movie = tmdb.Movies(mid)
-	except Exception:
+	except IndexError:
 		return ("Error:" + xmovie + " not found. Please try again.")
 	response = movie.info()
 	cid = response['belongs_to_collection']
@@ -7193,6 +7973,44 @@ def getcollection(xmovie):
 		#print collection
 		collectionplist(collection)
 		print ("Successfully added the following to the TBNSmartPlist:\n")
+	if ("-b" in sys.argv):
+		#newstuff
+		ocoll = collection
+                collection = []
+                ccnt = 0
+		dates = []
+                for item in ocoll:
+                        item = item.split(",")
+                        date = item[1].strip()
+			date = date.split("-")
+			date = date[0]
+			if date not in dates:
+				dates.append(date)
+		collection = []
+		dcnt = 0
+		dates.sort()
+		for itm in dates:
+			for item in ocoll:
+				if itm in item:
+					addme = item.split(",")
+					addme = addme[0]
+					addme = "movie."+addme
+					collection.append(addme)
+                #print ylidy
+		collectionx = collection
+		#endnewstuff
+		max = int(len(collectionx))-1
+		ccnt = 0
+		while ccnt <= max:
+			if ccnt == 0:
+				removeblock("smartblock")
+				addblock("smartblock",collectionx[ccnt])
+			else:
+				addtoblock("smartblock",collectionx[ccnt])
+			ccnt = ccnt + 1
+			ttlchk = "no"
+		if ("getcollection" in show):
+			print ("Successfully created a smartblock with the following:")
 	return collectionx
 
 def collectiontitlecheck(title):
@@ -7241,7 +8059,156 @@ def collectionplist(array):
 		pass
 	if (("-p" in sys.argv) and (len(plist)>0)):
 		plex.createPlaylist(plname,plist)
-	
+
+def collectiondetails(xname):
+	command = "SELECT * FROM Collections WHERE name LIKE \"" + xname + "\""
+	cur.execute(command)
+	if not cur.fetchone():
+		return("Error: " + xname + " not found as a Collection in your Collection table.")
+	cur.execute(command)
+	found = cur.fetchone()
+	ttls = found[1]
+	ttls = ttls.split(";")
+	for item in ttls:
+		if item == "":
+			pass
+		else:
+			print (item)
+	return ("\nDone.")
+
+def listcollections(cname):
+	if cname == "none":
+		command = "SELECT name FROM Collections"
+	else:
+		command = "SELECT name FROM Collections WHERE name LIKE \"%" + cname + "%\""
+	cur.execute(command)
+	if not cur.fetchall():
+		return ("Error: No Collections found. Run \"getallcollections\" to find Collections in your library.")
+	cur.execute(command)
+	clist = cur.fetchall()
+	cxlist = []
+	for item in clist:
+		cxlist.append(item[0])
+	if ((len(cxlist) <30) or ("-l" in sys.argv)):
+		worklist(cxlist)
+	else:
+		wlistcolumns(cxlist)
+	return ("\nDone.")
+
+def getcollections():
+	import tmdbsimple as tmdb
+	tmdb.API_KEY = "ff44b56e7ea4641918abc6cf46d19a1c"
+	search = tmdb.Search()
+	print ("WARNING: This action will take a while to process. It is recommended you run this during the off hours.")
+	colcmd = "SELECT * FROM Collections"
+	try:
+		cur.execute(colcmd)
+	except sqlite3.OperationalError:
+		cur.execute("CREATE TABLE IF NOT EXISTS Collections(name TEXT, items TEXT)")
+		sql.commit()
+		if PRINTMODE == "ON":
+			print ("Successfully added Collections table.")
+
+	cur.execute("DELETE FROM Collections")
+	sql.commit()
+	cur.execute("SELECT Movie FROM Movies")
+	mlist = cur.fetchall()
+	mvlist = []
+	for item in mlist:
+		if item[0] not in mvlist:
+			mvlist.append(item[0])
+
+	colcount = 0
+	print (len(mvlist))
+	for item in mvlist:
+		collection = []
+		collectionx = []
+		#print item
+		thettl = item
+		fcheck = "no"
+		try:
+			response = search.movie(query=item)
+			sset = "no"
+			for s in search.results:
+				if ((s['title'] == item) and (sset == "no")):
+					try:
+						mid = s['id']
+						movie = tmdb.Movies(mid)
+						response = movie.info()
+						cid = response['belongs_to_collection']
+						#print cid['id']
+						sset = "yes"
+					except Exception:
+						#print ("fail")
+						pass
+
+			try:
+				movie = tmdb.Movies(mid)
+			except Exception:
+				fcheck = "yes"
+			if fcheck == "no":
+				response = movie.info()
+				cid = response['belongs_to_collection']
+				if not cid:
+					pass
+				else:
+					cid = cid['id']
+					coll = tmdb.Collections(cid)
+					colld = coll.info()
+					for item in colld['parts']:
+						writeme = item['original_title'] + "," + item['release_date']
+						collection.append(writeme)
+						collectionx.append(item['original_title'])
+					ocoll = collection
+					collection = []
+					ccnt = 0
+					for item in ocoll:
+						item = item.split(",")
+						date = item[1].strip()
+						title = item[0]
+						date = date.split("-")
+						date = date[0]
+						if ccnt == 0:
+							ylidy = title.strip() + ","
+						else:
+							cdate = ocoll[ccnt-1]
+							cdate = cdate.split(",")
+							cdate = cdate[1].strip()
+							cdate = cdate.split("-")
+							cdate = cdate[0].strip()
+							#print date
+							#print cdate
+							if cdate > date:
+								ylidy = title.strip() + "," + ylidy
+							else:
+								ylidy = ylidy + "," + title.strip()
+						ccnt = ccnt + 1
+					#print ylidy
+					collection = ylidy.split(",")
+					colname = colld['name']
+					for item in collection:
+						if item == "":
+							pass
+						else:
+							try:
+								newcol = newcol + ";" + item.strip()
+							except NameError:
+								newcol = item.strip()
+					if ";" not in newcol:
+						newcol = newcol + ";"
+					cur.execute("SELECT * FROM Collections WHERE name LIKE \"" + colname + "\"")
+					if not cur.fetchone():
+						cur.execute("INSERT INTO Collections VALUES (?,?)",(colname, newcol))
+						sql.commit()
+						print ("Found Collection in your library: " + colld['name'])
+					del newcol
+			del collection
+			del collectionx
+					#print collection
+		except Exception:
+			#print ("Error, skipping " + thettl + ".")
+			pass
+	return ("\nDone.")
 
 def wait(number):
 	try:
@@ -7298,13 +8265,446 @@ def timechecker(thing):
 		thedate = thing
 	return thedate
 
+def availableactions(actn):
+	if actn == "none":
+		command = "SELECT * FROM help ORDER BY name ASC"
+	else:
+		command = "SELECT * FROM help WHERE name LIKE \"%" + actn + "%\""
+	cur.execute(command)
+	found = cur.fetchall()
+	actns = []
+	for item in found:
+		actns.append(item[0])
+	return actns
+
+def trivia(movie):
+	movie = titlecheck(movie)
+        if ("ERROR: " in movie):
+                return movie
+        movie = movie.replace("movie.","")
+	try:
+		import imdb
+	except Exception:
+		return ("Error: You must install the imdbpy library to use this action.")
+	i = imdb.IMDb()
+	movie = movie.strip()
+	mvlst = i.search_movie(movie)
+	mve = mvlst[0]
+	i.update(mve)
+	i.update(mve, 'trivia')
+	try:
+		tlist = mve['trivia']
+	except Exception:
+		return ("No trivia options available for this option.")
+	min = 0
+	max = len(mve['trivia'])
+	rand = randint(min,max)
+	return (tlist[rand])
+
+def whodirected(xmovie):
+	try:
+                import imdb
+        except Exception:
+                return ("Error: You must install the imdbpy library to use this action.")
+	i = imdb.IMDb()
+	movie = xmovie.strip()
+	mvlist = i.search_movie(movie)
+        mve = mvlist[0]
+	if ((mve.data['kind'] == "tv series") and ("-s" not in sys.argv)):
+                        mve = mvlist[1]
+        i.update(mve)
+	nme = mve.data['director']
+	direct = nme[0]
+	return direct
+
+def whoplayed(ctr, xmovie):
+	try:
+                import imdb
+        except Exception:
+                return ("Error: You must install the imdbpy library to use this action.")
+        i = imdb.IMDb()
+        movie = xmovie.strip()
+	try:
+		mvlist = i.search_movie(movie)
+		mve = mvlist[0]
+		if ((mve.data['kind'] == "tv series") and ("-s" not in sys.argv)):
+			mve = mvlist[1]
+	except Exception:
+		return ("ERROR: " + xmovie + " not found.")
+			
+        i.update(mve)
+	#print (mve.data['kind'])
+	nme = mve.data['cast']
+	for actr in nme:
+		if str(actr.currentRole).lower() == str(ctr).lower():
+			direct = actr
+	try:
+		direct
+	except Exception:
+		for actr in nme:
+			#print str(actr.currentRole)
+			if str(ctr).lower() in str(actr.currentRole).lower():
+				direct = actr
+	try:
+		direct
+	except Exception:
+		if " " not in ctr:
+			pass
+		else:
+			print ("Failed with given name. Trying a hail marry.")
+			excludeme = ['a','the','of','for','at']
+			ctst = ctr.split(" ")
+			for itm in ctst:
+				if itm in excludeme:
+					pass
+				else:
+					for actr in nme:
+						if str(itm).lower() in str(actr.currentRole).lower():
+							direct = actr
+				
+	try:
+		direct
+	except Exception:
+		direct = "ERROR: " + ctr + " Not Found in " + xmovie + "."
+
+        return direct
+
+def goofs(movie):
+	try:
+               import imdb
+        except Exception:
+               return ("Error: You must install the imdbpy library to use this action.")
+        i = imdb.IMDb()
+        movie = movie.strip()
+        mvlst = i.search_movie(movie)
+        mve = mvlst[0]
+	i.update(mve)
+        i.update(mve, 'all')
+        min = 0
+        max = len(mve['quotes'])
+        rand = randint(min,max)
+        return (mve['quotes'][rand])
+
+def faqs(movie):
+	movie = titlecheck(movie)
+        if ("ERROR: " in movie):
+                return movie
+        movie = movie.replace("movie.","")
+	try:
+               import imdb
+        except Exception:
+               return ("Error: You must install the imdbpy library to use this action.")
+        i = imdb.IMDb()
+        movie = movie.strip()
+        mvlst = i.search_movie(movie)
+        mve = mvlst[0]
+        i.update(mve)
+        i.update(mve, ['faqs'])
+        min = 0
+        max = len(mve['faqs'])
+        rand = randint(min,max)
+        return (mve['faqs'][rand])
+
+def triviagame():
+	mve = suggestmovieblockuse("none")
+	randc = randint(0,7)
+	#randc = 7
+	if randc == 5:
+		pass
+	else:
+		try:
+			cur.execute("DELETE FROM States WHERE Option LIKE \"THEANSWER\"")
+			sql.commit()
+		except Exception:
+			pass
+		THEANSWER = mve.strip()
+		mve = mve.replace("movie.","The Movie ")
+		cur.execute("INSERT INTO States VALUES (?,?)",("THEANSWER",THEANSWER))
+		sql.commit()
+	if randc == 0:
+		say = trivia(mve)
+		say = "Guess the movie based on this random fact:\n" + say
+	elif randc == 1:
+		say = whodirected(mve)
+		say2 = movierating(mve)
+                say = "This movie was directed by: " + str(say) + " and rated: " + say2 + "."
+	elif randc == 2:
+		plexlogin()
+		mve = mve.replace("movie.","")
+		for video in plex.search(mve):
+			if video.type == "movie":
+				#print (video.roles)
+				starring = []
+				scnt = 0
+				if len(video.roles)<2:
+					smax = int(len(video.roles))-1
+				else:
+					smax = 2
+				while scnt <= smax:
+					starring.append(video.roles[scnt].tag)
+					scnt = scnt + 1
+				for itm in starring:
+					try:
+						xstar = xstar + itm + "\n"
+					except NameError:
+						xstar = itm + "\n"
+				say = "This movie starred:\n" + xstar
+	elif randc == 3:
+		say = movietagline(mve)
+		if say == "__NA__":
+			print ("No Tagline, trying again.")
+			say = triviagame()
+		say = "This Movies Tagline is:\n" + say
+	elif randc == 4:
+		import imdb
+		i = imdb.IMDb()
+		mvlist = i.search_movie(mve)
+		mve = mvlist[0]
+		if ((mve.data['kind'] == 'tv series') and ("-s" not in sys.argv)):
+			mve = mvlist[1]
+		i.update(mve)
+		nme = mve.data['cast']
+		acnt = randint(0,2)
+		actr = nme[acnt]
+		cname = actr.currentRole
+		say = str(actr) + " played " + str(cname) + " in one of the main roles."
+	elif randc == 5:
+		import imdb
+                i = imdb.IMDb()
+                mvlist = i.search_movie(mve)
+                mve = mvlist[0]
+                if ((mve.data['kind'] == 'tv series') and ("-s" not in sys.argv)):
+                        mve = mvlist[1]
+                i.update(mve)
+                nme = mve.data['cast']
+                acnt = randint(0,2)
+                actr = nme[acnt]
+                cname = actr.currentRole
+		THEANSWER = "ACTOR." + str(actr).strip()
+		try:
+			cur.execute("DELETE FROM States WHERE Option LIKE \"THEANSWER\"")
+			sql.commit()
+		except Exception:
+			pass
+		cur.execute("INSERT INTO States VALUES (?,?)",("THEANSWER",THEANSWER))
+		sql.commit()
+		say = "Who played " + str(cname) + " in the movie : " + str(mve) + "."
+	elif randc == 6:
+		mve = mve.replace("movie.","")
+		say = moviesummary(mve)
+		if ("has no summary" in say):
+			say = triviagame()
+		else:
+			say = "This movie has the following summary:\n" + say
+	elif randc == 7:
+                import imdb
+                i = imdb.IMDb()
+                mvlist = i.search_movie(mve)
+                mve = mvlist[0]
+                if ((mve.data['kind'] == 'tv series') and ("-s" not in sys.argv)):
+                        mve = mvlist[1]
+                i.update(mve)
+                nme = mve.data['cast']
+                acnt = randint(0,2)
+                actr = nme[acnt]
+                cname = actr.currentRole
+                THEANSWER = "ACTOR." + str(cname).strip()
+                try:
+                        cur.execute("DELETE FROM States WHERE Option LIKE \"THEANSWER\"")
+                        sql.commit()
+                except Exception:
+                        pass
+                cur.execute("INSERT INTO States VALUES (?,?)",("THEANSWER",THEANSWER))
+                sql.commit()
+                say = "Who did " + str(actr) + " play in the movie : " + str(mve) + "."
+		
+
+
+	try:
+		cur.execute("DELETE FROM States WHERE Option LIKE \"THEQUESTION\"")
+		sql.commit()
+	except Exception:
+		pass
+	cur.execute("INSERT INTO States VALUES (?,?)",("THEQUESTION",say))
+	sql.commit()
+	return (say)
+
+def triviahint():
+	mve = triviaanswer()
+	if mve == "NOANSWER":
+		return ("Wait for next round.")
+	elif ("ACTOR." in mve):
+		return ("There are no hints for this question.")
+	LASTO = lasttriviaoption()
+	randc = randint(0,4)
+	#randc = 4
+	while str(randc) == str(LASTO):
+		randc = randint(0,4)
+	setlasttriviaoption(randc)
+	if randc == 0:
+		say = trivia(mve)
+                say = "This movie has the following random fact:\n" + say
+        elif randc == 1:
+                say = whodirected(mve)
+                say = "This movie was directed by:\n" + str(say)
+        elif randc == 2:
+                plexlogin()
+                mve = mve.replace("movie.","")
+                for video in plex.search(mve):
+                        if video.type == "movie":
+                                #print (video.roles)
+                                starring = []
+                                scnt = 0
+                                if len(video.roles)<2:
+                                        smax = int(len(video.roles))-1
+                                else:
+                                        smax = 2
+                                while scnt <= smax:
+                                        starring.append(video.roles[scnt].tag)
+                                        scnt = scnt + 1
+                                for itm in starring:
+                                        try:
+                                                xstar = xstar + itm + "\n"
+                                        except NameError:
+                                                xstar = itm + "\n"
+                                say = "This movie starred:\n" + xstar
+        elif randc == 3:
+                say = movietagline(mve)
+                if say == "__NA__":
+                        print ("No Tagline, trying again.")
+                        say = triviahint()
+		else:
+			say = "This Movies Tagline is:\n" + say
+	elif randc == 4:
+                import imdb
+                i = imdb.IMDb()
+                mvlist = i.search_movie(mve)
+                mve = mvlist[0]
+                if ((mve.data['kind'] == 'tv series') and ("-s" not in sys.argv)):
+                        mve = mvlist[1]
+                i.update(mve)
+                nme = mve.data['cast']
+                acnt = randint(0,2)
+                actr = nme[acnt]
+                cname = actr.currentRole
+                say = str(actr) + " played " + str(cname) + " in one of the main roles."
+	return (say)
+
+def setlasttriviaoption(num):
+	try:
+		cur.execute("DELETE FROM States WHERE Option LIKE \"LASTTRIVIAOPTION\"")
+		sql.commit()
+	except Exception:
+		pass
+	cur.execute("INSERT INTO States VALUES (?,?)", ("LASTTRIVIAOPTION",str(num)))
+	sql.commit()
+
+def lasttriviaoption():
+	cmd = "SELECT State FROM States WHERE Option LIKE \"LASTTRIVIAOPTION\""
+	cur.execute(cmd)
+	if not cur.fetchone():
+		return ("None")
+	cur.execute(cmd)
+	LASTO = cur.fetchone()[0]
+	return LASTO
+		
+
+def triviaanswer():
+	try:
+		cur.execute("SELECT State FROM States WHERE Option LIKE \"THEANSWER\"")
+		THEANSWER = cur.fetchone()[0]
+		return THEANSWER
+	except TypeError:
+		return ("No recent trivia questions asked.")
+
+def triviaclearanswer():
+	try:
+		cur.execute("DELETE FROM States WHERE Option LIKE \"THEANSWER\"")
+		sql.commit()
+		cur.execute("DELETE FROM States WHERE Option LIKE \"THEQUESTION\"")
+		sql.commit()
+	except Exception:
+		pass
+	addme = "NOANSWERS"
+	qaddme = "NOQUESTION"
+	cur.execute ("INSERT INTO States VALUES (?,?)",("THEANSWER",addme))
+	sql.commit()
+	cur.execute ("INSERT INTO States VALUES (?,?)",("THEQUESTION",qaddme))
+        sql.commit()
+	return ("Done.")
+
+def triviaquestion():
+	try:
+		cur.execute("SELECT State FROM States WHERE Option LIKE \"THEQUESTION\"")
+		if not cur.fetchone():
+			THEQUESTION = "No Recent Trivia Questions."
+		else:
+			cur.execute("SELECT State FROM States WHERE Option LIKE \"THEQUESTION\"")
+			THEQUESTION = cur.fetchone()[0]
+			if THEQUESTION == "NOQUESTION":
+				THEQUESTION = "No Recent Trivia Questions. Wait for next round."
+	except Exception:
+		THEQUESTION = "No Recent Trivia Questions."
+	return THEQUESTION
+
+def deletefromtable(table,title):
+	badtables = ['blocks','schedules','states','tvcounts','help','replaceinblock','settings','customtitles','collections','holidays','musicalbums','musicartists']
+	if table.lower() in badtables:
+		return ("Error: Invalid Table Selected. Please Try again.")
+	if ("custom_" in table.lower()):
+		OPTION = "name"
+	elif ("movie" in table.lower()):
+		OPTION = "Movie"
+	elif (("commercials" in table.lower()) or ("prerolls" in table.lower())):
+		OPTION = "name"
+	elif ("shows" in table.lower()):
+		OPTION = "TShow"
+	cmd = "DELETE FROM " + table.strip() + " WHERE " + OPTION.strip() + " LIKE \"" + title.strip() + "\""
+	try:
+		chcmd = "SELECT * FROM " + table.strip() + " WHERE " + OPTION.strip() + " LIKE \"" + title.strip() + "\""
+		cur.execute(chcmd)
+		if not cur.fetchone():
+			return ("ERROR: Title " + title + " not found in " + table + " to remove.")
+		cmd = str(cmd)
+		cur.execute(cmd)
+		sql.commit()
+		return ("Successfully Deleted: " + title + " from " + table)
+	except IndexError:
+		return ("Error: Command failed\n" + cmd)
+
+def setprintmode(option):
+	option = option.lower().strip()
+	if (option == "on"):
+		option = "ON"
+	elif (option == "off"):
+		option = "OFF"
+	else:
+		return ("ERROR: PRINTMODE can only be set to \"ON\" or \"OFF\"")
+	cur.execute("DELETE FROM States WHERE Option LIKE \"PRINTMODE\"")
+	sql.commit()
+	cur.execute("INSERT INTO States VALUES(?,?)",("PRINTMODE",option))
+	sql.commit()
+	return ("PRINTMODE has been set to: " + option + ".")
+
+def printmode():
+	global PRINTMODE
+	cmd = "SELECT State FROM States WHERE Option LIKE \"PRINTMODE\""
+	cur.execute(cmd)
+	if not cur.fetchone():
+		cur.execute("INSERT INTO States VALUES (?,?)",("PRINTMODE","ON"))
+		sql.commit()
+	else:
+		cur.execute(cmd)
+		pstate = cur.fetchone()[0]
+		PRINTMODE = pstate
 
 def versioncheck():
-	version = "3.05exp"
+	version = "4.01"
 	return version
 	
 
 #commandsgohere
+printmode()
 try:	
 	if (("-h" in sys.argv) or ("-l" in sys.argv)):
 		if ("-h" in sys.argv):
@@ -7325,16 +8725,112 @@ try:
 				except sqlite3.OperationalError:
 					updatehelp()
 					cls()
-					print ("Successfully Updated Help Files.")
+					if PRINTMODE == "ON":
+						print ("Successfully Updated Help Files.")
 					say = helpme(argv)
                 try:
                         say
                 except NameError:
                         say = "Sorry, but that entry was not found in the help table. Run \"updatehelp\" and try again if you have not updated recently."
+	elif ("deletefromtable" in show):
+		try:
+			tbl = str(sys.argv[2])
+			ttl = str(sys.argv[3])
+			say = deletefromtable(tbl,ttl)
+		except IndexError:
+			say = "Error: You must supply both a table name and a title from that table to use this command."
+	elif ("getprintmode" in show):
+		say = PRINTMODE
+	elif("setprintmode" in show):
+		try:
+			option = str(sys.argv[2])
+			say = setprintmode(option)
+		except IndexError:
+			say = "ERROR: You must specify \"ON\" or \"OFF\" to use this command."
+	elif ("triviagame" in show):
+		say = triviagame()
+	elif ("triviaanswer" in show):
+		say = triviaanswer()
+		say = say.replace("ACTOR.","")
+	elif ("triviaclearanswer" in show):
+		say = triviaclearanswer()
+	elif ("triviaquestion" in show):
+		say = triviaquestion()
+	elif ("triviahint" in show):
+		say = triviahint()
+	elif ("playpending" in show):
+		say = playpending()
+	elif ("gencheck" in show):
+		show = sys.argv[2]
+		say = gencheck(show)
+	elif ("sethonorific" in show):
+		try:
+			myname = sys.argv[2]
+		except Exception:
+			myname = "none"
+		say = sethonorific(myname)
+	elif ("gethonorific" in show):
+		say = gethonorific()
+		say = "I call thee: " + say
+	elif (show == "trivia"):
+		try:
+			movie = sys.argv[2]
+			say = trivia(movie)
+		except IndexError:
+			say = "Error: You must enter a movie to use this action."
+	elif ("faqs" in show):
+                try:
+                        movie = sys.argv[2]
+                        say = faqs(movie)
+                except IndexError:
+                        say = "Error: You must enter a movie to use this action."
+	elif ("whodirected" in show):
+                try:
+                        movie = sys.argv[2]
+                        say = whodirected(movie)
+                except IndexError:
+                        say = "Error: You must enter a movie to use this action."
+	elif ("whoplayed" in show):
+                try:
+			char = sys.argv[2]
+                        movie = sys.argv[3]
+                        say = whoplayed(char, movie)
+                except IndexError:
+                        say = "Error: You must enter a movie to use this action."
+	elif ("moviewithtline" in show):
+		try:
+			tline = sys.argv[2]
+			say = moviewithtline(tline)
+		except IndexError:
+			say = "Error: You must supply a Tagline to use this command."
+	elif ("setsleeptime" in show):
+		try:
+			num = str(sys.argv[2])
+			say = setsleeptime(num)
+		except IndexError:
+			say = "ERROR: You must specify a Intiger to use this command."
+	elif ("listcollections" in show):
+		try:
+			cname = str(sys.argv[2])
+		except IndexError:
+			cname = "none"
+		say = listcollections(cname)
+	elif ("schedchecker" in show):
+		for item in sys.argv:
+			try:
+				say = say + " " + item
+			except NameError:
+				say = item
+		say = schedchecker(say)
+	elif ("collectiondetails" in show):
+		col = sys.argv[2]
+		say = collectiondetails(col)
+	elif ("getallcollections" in show):
+		say = getcollections()
 	elif ("getcollection" in show):
 		movie = str(sys.argv[2])
 		sme = getcollection(movie)
-		if ("Error" in sme):
+		if (("Error" in sme) or ("ERROR" in sme)):
 			say = sme
 		else:
 			try:
@@ -7408,9 +8904,16 @@ try:
                 restoremoviedb()
                 say = "Done."
 	elif ("updatehelp" in show):
-		print (1)
 		updatehelp()
 		say = "Done."
+	elif ("updatechecker" in show):
+		updatechecker()
+		say = "\nDone."
+	elif ("setautoupdate" in show):
+		val = sys.argv[2]
+		say = setautoupdate(val)
+	elif ("getautoupdate" in show):
+		say = getautoupdate()
 	elif ("playmusic" in show):
 		try:
 			artist = str(sys.argv[2])
@@ -7439,7 +8942,7 @@ try:
 		try:
 			playlist = str(sys.argv[2])
 			say = playplaylist(playlist)
-		except TypeError:
+		except IndexError:
 			say = "Error: You must specify a playlist to use this command."
 	elif ("getartists" in show):
 		say = getartists()
@@ -7462,6 +8965,19 @@ try:
 			say = wlistcolumns(say)
 		except IndexError:
 			say = "Error: you must supply an album to use this command."
+	elif ("availableactions" in show):
+		try:
+			if sys.argv[2] == "-l":
+				actn = "none"
+			else:
+				actn = sys.argv[2]
+		except IndexError:
+			actn = "none"
+		say = availableactions(actn)
+		if ("-l" not in sys.argv):
+			say = wlistcolumns(say)
+		else:
+			say = worklist(say)
 	elif ("getcustomtitle" in show):
 		title = str(sys.argv[2])
 		say = getcustomtitle(title)
@@ -7504,6 +9020,14 @@ try:
 			say = replaceshowinblock(show, nshow, block, playflag)
 		except IndexError:
 			say = "You must provide a show, new show, block, and playflag(yes/no) to use this command."
+	elif ("jumpinblock" in show):
+		try:
+			xnum = sys.argv[2]
+			say = jumpinblock(xnum)
+			say2 = whatupnext()
+			say = say + "\n" + say2
+		except IndexError:
+			say = "Error: You must specify where in the block to jump."
 			
 	elif (("resumestatus" in show) and ("set" not in show)):
 		say = resumestatus()
@@ -7521,12 +9045,28 @@ try:
                 say = setqueuetoplex(option)
                 if "Error" not in say:
                         say = "Queuetoplaylist Status has been set to: " + say + "."
-	elif ("titlecheck" in show):
+	elif (("titlecheck" in show) and ("customtitlecheck" not in show)):
 		show = str(sys.argv[2])
 		show = titlecheck(show)
 		sect = getsection(show)
 		say = show + ", Section: " + sect
+	elif ("customtitlecheck" in show):
+		show = sys.argv[2]
+		say = customtitlecheck(show)
 
+	elif ("addcustomtitle" in show):
+		try:
+			ntitle = str(sys.argv[2])
+			otitle = str(sys.argv[3])
+			say = addcustomtitle(ntitle,otitle)
+		except IndexError:
+			say = "ERROR: You must provide both a new title and an original title to use this action."
+	elif ("removecustomtitle" in show):
+		try:
+			ctitle = str(sys.argv[2])
+			say = removecustomtitle(ctitle)
+		except IndexError:
+			say = "Error: You must supply a custom title to use this action."
 	elif ("checkholidays" in show):
 		try:
 			holiday = str(sys.argv[2])
@@ -7645,8 +9185,7 @@ try:
 			comm = str(sys.argv[2])
 		except IndexError:
 			comm = "none"
-		playcommercial(comm)
-		say = "Done."
+		say = playcommercial(comm)
 	elif (("commercialbreak" in show) and ("setcommercialbreakcount" not in show)):
 		commercialbreak()
 		say = "Done."
@@ -7781,9 +9320,12 @@ try:
 		#saythat(say)
 	elif ("whereat" in show):
 		plexlogin()
-		nowp = nowplaying()
-		say = whereat()
-		say = "For " + nowp + "- " + say 
+		if PRINTMODE == "ON":
+			nowp = nowplaying()
+			say = whereat()
+			say = "For " + nowp + "- " + say 
+		else:
+			say = whereat()
 	elif ("listwildcard" in show):
 		say = listwildcard()
 		say = "The Current Wild Card Show is: " + say
@@ -7845,7 +9387,8 @@ try:
 	elif ("stopplay" in show):
 		plexlogin()
 		stopplay()
-		say = "Playback has been stopped. A new program will start unless you have already stopped playstatus.py"
+		#say = "Playback has been stopped. A new program will start unless you have already stopped playstatus.py"
+		say = "Playback has been stopped."
 	elif ("pauseplay" in show):
 		plexlogin()
 		pauseplay()
@@ -7885,7 +9428,16 @@ try:
 		with open(openme, "w") as file:
 				file.write("Sleep")
 		file.close()
-		say = "Playback State Checking will stop, and the system will sleep when the current program ends. Be well, Sir."
+		CALLMETHIS = gethonorific()
+		say = "Playback State Checking will stop, and the system will sleep when the current program ends. Be well, " + CALLMETHIS + "."
+	elif ("getwebhookstatus" in show):
+		say = webhookstatus()
+	elif ("setwebhookstatus" in show):
+		try:
+			value = str(sys.argv[2])
+			say = setwebhookstatus(value)
+		except IndexError:
+			say = "Error: You must specify \"On\" or \"Off\" to use this command."
 	elif ("queueshow" in show):
 		say = queueget()
 		#saythat(say)
@@ -7928,30 +9480,14 @@ try:
 	elif ("whatsafterthat" in show):
 		say = whatsafterthat()
 	elif ("startnextprogram" in show):
-		startnextprogram()
+		try:
+			startnextprogram()
+		except Exception:
+			print ("Failed to start last program. Trying again next pass.")
 		say = "done."
-		'''
-		openme = homedir + 'playstatestatus.txt'
-		with open(openme, "r") as file:
-			checkme = file.read()
-		file.close()
-		if "On" in checkme:
-			playcheckstop()
-		plexlogin()
-		commcheck = commercialcheck()
-		if "On" in commcheck:
-			playcommercial("none")
-		show = upnext()
-		say = playshow(show)
-		if (("block." or "binge.") not in say):
-			skipthat()
-		say = say + "\n"
-		if "On" in checkme:
-			time.sleep(SLEEPTIME)
-			playcheckstart()
-		'''
 	elif ("skipthat" in show):
 		say = skipthat()
+		say = say.replace("movie.","The Movie ")
 		try:
 			if "No queue to skip." in say:
 				say = queuefill()
@@ -8030,6 +9566,8 @@ try:
 			genre = "none"
 		say = suggesttv(genre)
 		#saythat(say)
+	elif ("suggestsomething" in show):
+		say = suggestsomething()
 	elif ("suggestblock" in show):
 		try:
 			say = getrandomblock()
@@ -8038,6 +9576,12 @@ try:
 			print (say1)
 		except Exception:
 			say = "Error: Block get failed."
+	elif (("findinblock" in show) or ("searchblock" in show)):
+		try:
+			findme = str(sys.argv[2])
+			say = findinblock(findme)
+		except IndexError:
+			say = "Error: You must specify an item to use this command."
 	elif ("listshows" in show):
 		try:
 			genre = str(sys.argv[2])
@@ -8131,6 +9675,7 @@ try:
 				wve = wve.replace("''","'")
 				item = item.lower()
 				item = item.replace("''","'")
+				item = item.replace("movie.","the movie ")
 				if ("random_tv." in item):
 					item = item.replace("random_tv.", "A random ")
 					item = item + " show"
@@ -8154,6 +9699,12 @@ try:
 			title = "none"
 
 		say = addblock(name, title)
+	elif ("generateblock" in show):
+		try:
+			bname = str(sys.argv[2])
+		except IndexError:
+			bname = "none"
+		say = generateblock(bname)
 	elif ("removeblock" in show):
 		try:
 			block = str(sys.argv[2])
@@ -8202,7 +9753,8 @@ try:
 		show = upnext()
 		say = playshow(show)
 		skipthat()
-		say = "Sir, the last feature has ended, starting " + say
+		CALLMETHIS = gethonorific()
+		say = CALLMETHIS + ", the last feature has ended, starting " + say
 		
 	elif ("blockplay" in show):
 		plexlogin()
@@ -8211,7 +9763,10 @@ try:
 	elif ("nextep" in show)and ("setnextep" not in show):
 		show = str(sys.argv[2])
 		show = titlecheck(show)
-		say = nextep(show)
+		if ("ERROR:" in show):
+			say = show
+		else:
+			say = nextep(show)
 
 	elif ("getplaymode" in show):
 		say = playmode()
@@ -8350,6 +9905,12 @@ try:
 	elif ("showdetails" in show):
 		show = str(sys.argv[2])
 		say = showdetails(show)
+	elif ("epsleft" in show):
+		try:
+			show = str(sys.argv[2])
+			say = epsleft(show)
+		except IndexError:
+			say = "ERROR: You must specify a show to use this command."
 	elif ("findmovie" in show):
 		movie = str(sys.argv[2])
 		findmovie(movie)
@@ -8367,6 +9928,8 @@ try:
 
 	elif "nowplaying" in show:
 		say = nowplaying()
+	elif "nowpdb" in show:
+		say = nowpdb()
 
 	elif "moviegenres" in show:
 
@@ -8469,6 +10032,7 @@ try:
 		say = versioncheck()
 	else:
 		#def playme
+		SLEEPTIME = 5
 		pcmd = "playme"
 		plexlogin()
 		show = checkcustomtables(show)
@@ -8483,6 +10047,7 @@ try:
 				pass
 			else:
 				oshow = show
+				show = show.replace("''","'")
 				show = titlecheck(show)
 				if "Error:" in show:
 					show = oshow
@@ -8504,6 +10069,7 @@ try:
 				time.sleep(SLEEPTIME)
 				playcheckstart()
 	try:
+		say = str(say)
 		say = say.replace("''","'")
 	except AttributeError:
 		say = "Done"

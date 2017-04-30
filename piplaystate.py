@@ -5,19 +5,24 @@ import getpass
 
 user = getpass.getuser()
 
-MYDB = homedir + "myplex.db"
+DEFAULTDIR = homedir
+
+MYDB = DEFAULTDIR + "myplex.db"
+sql = sqlite3.connect(MYDB)
+cur = sql.cursor()
+
+cur.execute("SELECT State FROM States WHERE Option LIKE \"SLEEPTIME\"")
+if not cur.fetchone():
+        cur.execute("INSERT INTO States VALUES (?,?)",("SLEEPTIME","20"))
+        sql.commit()
+        cur.execute("SELECT State FROM States WHERE Option LIKE\"SLEEPTIME\"")
+else:
+        cur.execute("SELECT State FROM States WHERE Option LIKE\"SLEEPTIME\"")
+SLEEPTIME = int(cur.fetchone()[0])
 
 def sessionstatus():
 	sql = sqlite3.connect(MYDB)
 	cur = sql.cursor()
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
-	PLEXUN = cur.fetchone()
-	PLEXUN = str(PLEXUN[0]).strip()
-
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-	PLEXPW = cur.fetchone()
-	PLEXPW = str(PLEXPW[0]).strip()
-
 	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 	PLEXSVR = cur.fetchone()
 	PLEXSVR = PLEXSVR[0]
@@ -34,17 +39,37 @@ def sessionstatus():
 	PLEXSERVERPORT = cur.fetchone()
 	PLEXSERVERPORT = PLEXSERVERPORT[0]
 
-        from plexapi.myplex import MyPlexAccount
+	#cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERTOKEN\'')
+	#PLEXSERVERTOKEN = cur.fetchone()
+	#PLEXSERVERTOKEN = PLEXSERVERTOKEN[0]
+
+
+	from plexapi.myplex import MyPlexAccount
 	try:
 		from plexapi.server import PlexServer
 		baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
+		#token = PLEXSERVERTOKEN
+		#plex = PlexServer(baseurl, token)
 		plex = PlexServer(baseurl)
-		print ("using local access.")
+		#print ("using local access.")
 	except Exception:
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+		PLEXUN = cur.fetchone()
+		PLEXUN = str(PLEXUN[0]).strip()
+		try:    
+			cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+			PLEXPW = cur.fetchone()
+			PLEXPW = PLEXPW[0]
+			import base64
+			PLEXPW = str(base64.b64decode(PLEXPW))
+		except Exception:
+			print ("Your Plex Password is temporarly needed to proceed:\n")
+			PLEXPW = str(getpass.getpass("Password: "))
+
 		print ("Local Fail. Trying cloud access.")
 		user = MyPlexAccount.signin(PLEXUN, PLEXPW)
 		plex = user.resource(PLEXSVR).connect()
-        client = plex.client(PLEXCLIENT)	
+	client = plex.client(PLEXCLIENT)	
 	psess = plex.sessions()
 	if not psess:
 		return ("Stopped")
@@ -68,16 +93,8 @@ def sessionstatus():
 		return ("Unknown")
 
 def playstatus():
-	
 	sql = sqlite3.connect(MYDB)
 	cur = sql.cursor()
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
-	PLEXUN = cur.fetchone()
-	PLEXUN = PLEXUN[0]
-
-	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
-	PLEXPW = cur.fetchone()
-	PLEXPW = PLEXPW[0]
 
 	cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSVR\'')
 	PLEXSVR = cur.fetchone()
@@ -95,17 +112,36 @@ def playstatus():
 	PLEXSERVERPORT = cur.fetchone()
 	PLEXSERVERPORT = PLEXSERVERPORT[0]
 
+	#cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXSERVERTOKEN\'')
+	#PLEXSERVERTOKEN = cur.fetchone()
+	#PLEXSERVERTOKEN = PLEXSERVERTOKEN[0]
+
 	from plexapi.myplex import MyPlexAccount
 	try:
 		from plexapi.server import PlexServer
 		baseurl = 'http://' + PLEXSERVERIP + ':' + PLEXSERVERPORT
+		#token = PLEXSERVERTOKEN
 
-		plex = PlexServer(baseurl, token)
+		#plex = PlexServer(baseurl, token)
+		plex = PlexServer(baseurl)
 	except Exception:
+		cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXUN\'')
+		PLEXUN = cur.fetchone()
+		PLEXUN = PLEXUN[0]
+
+		try:
+			cur.execute('SELECT setting FROM settings WHERE item LIKE \'PLEXPW\'')
+			PLEXPW = cur.fetchone()
+			PLEXPW = PLEXPW[0]
+			import base64
+			PLEXPW = str(base64.b64decode(PLEXPW))
+		except Exception:
+			print ("Your Plex Password is temporarly needed to proceed:\n")
+			PLEXPW = str(getpass.getpass("Password: "))
+
 		user = MyPlexAccount.signin(PLEXUN, PLEXPW)
 		print ("Local Fail. Trying cloud access.")
-
-	plex = user.resource(PLEXSVR).connect()
+		plex = user.resource(PLEXSVR).connect()
 	client = plex.client(PLEXCLIENT)
 
 	pstatus = client.isPlayingMedia()
@@ -119,7 +155,8 @@ def playstatus():
 #say = sessionstatus()
 #print (say)
 while True:
-	with open(homedir + 'playstatestatus.txt','r') as file:
+	file1 = homedir + "playstatestatus.txt"
+	with open(file1,'r') as file:
 		stuff = file.read()
 	file.close()
 	try:
@@ -150,9 +187,7 @@ while True:
 				cur.execute("INSERT INTO States VALUES(?,?)",('Playstate','Stopped'))
 				sql.commit
 				sql.close()
-				command = "python " + homedir + "system.py playcheckstop"
-				os.system(command)
-				time.sleep(20)
+				time.sleep(SLEEPTIME)
 			else:
 				sql = sqlite3.connect(MYDB)
 				cur = sql.cursor()
@@ -162,11 +197,15 @@ while True:
 				cur.execute("INSERT INTO States VALUES(?,?)",('Playstate','Stopped'))
 				sql.commit
 				sql.close()
-				command = "python " + homedir + "/system.py startnextprogram"
-				os.system(command)
-				time.sleep(20)
-	except TypeError:
-		print ("Timeout Error. Checking again next pass.")
+				command = "python " + DEFAULTDIR + "/system.py startnextprogram"
+				try:
+					os.system(command)
+				except Exception:
+					print ("Failed to start next programming. Trying again next pass.")
+				time.sleep(SLEEPTIME)
+	#except IndexError:
+	except Exception:
+		print ("Timeout Error. Checking again next pass. If this is a recurring error check for communication and bad media data issues.")
 	time.sleep(10)
 
 

@@ -1,1 +1,2 @@
 alias updatedb='python /home/pi/hasyste/upddatedb_pi.py'
+alias setprintmode='python /home/pi/hasystem/system.py setplaymode'

@@ -7,7 +7,7 @@
 * [The Beginnings of a bad web ui.](https://youtu.be/u0ur4koeDFM)
 * [How to use replaceshowinblock feature.](https://youtu.be/oMDl-6GRK30)
 
-* [The TBN-Plex Discord Channel.](https://discordapp.com/channels/206249843209797632/206249843209797632)
+* [The TBN-Plex Discord Channel.](https://discord.gg/Q3cBvK9)
 
 TheBaconNation Plex Controller Help Document
 

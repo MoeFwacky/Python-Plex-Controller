@@ -1,4 +1,4 @@
-whatupnext,Lists the item that will play next.,whatupnext
+whatupnext,Lists the item that will play next. Can Optionally add "-q" flag to specify next up in the queue when not in normal mode.,whatupnext
 whatsafterthat,Lists the second item in the queue.Note: Only works in normal mode.,whatsafterthat
 startnextprogram,Starts the next program.,startnextprogram
 queueshow,Lists the contents of the queue.,queueshow
@@ -10,9 +10,11 @@ findmovie,Finds movies based on name/rating/genre/actors.,findmovie genre.action
 findshow,Finds shows based on name/rating/genre/duration.,findshow rating.TV-MA
 tvgenres,Lists available TV genres,tvgenres
 suggesttv,Suggests a show. Can optionally restrict by \"genre.\" or \"duration.\" or \"rating.\".,suggesttv genre.action
+suggestsomething,Suggests a random show or movie.,suggestsomething
 suggestblock,Suggests a block from the available blocks.,suggestblock
 addsuggestion,Adds suggestion to the play queue.,addsuggestion
-skipthat,Skips the item up next.,skipthat
+playpending,Plays the last pending(suggested) item,playpending
+skipthat,Skips the item up next. Note: Can use "-m" and "-t" flags to restrict next selection to "movies" or "tv shows".,skipthat
 skipafterthat,Skips the second item in the queue. Note: only supports normal mode.,skipafterthat
 whatispending,Lists what is in the pending(previously suggested) queue.,whatispending
 playme,Play a specific item,playme psych
@@ -57,10 +59,10 @@ replacewildcard,designates the current wild card show to be replaced by the spec
 settonightsmovie,Sets tonights movie to the specified movie. Note: used for random movie items in blocks., settongitsmovie "tremors"
 skipback,Skips back in the current feature 30 seconds.,skipback
 skipahead,Skips ahead in the current feature 30 seconds.,skipahead
-muteaudio.,Mutes audio on your video client.,muteaudio
+muteaudio,Mutes audio on your video client.,muteaudio
 unmuteaudio.,unmutes audio on your video client.,unmuteaudio
-mutemusic.,Mutes audio on your music client.,mutemusic
-unmutemusic.,unmutes audio on your music client.,unmutemusic
+mutemusic,Mutes audio on your music client.,mutemusic
+unmutemusic,unmutes audio on your music client.,unmutemusic
 randommovieblock,Generates a random movie block of the specified genre.,randommovieblock action
 randomtvblock,Generates a random show block of the specified genre.,randomtvblock comedy
 listmoviegenres,Lists the movie genres found in your library.,listmoviegenres
@@ -121,6 +123,30 @@ setqueuetoplex,Enable/Disable the automatic plex playlist feature.,setqueuetople
 backuptvcounts,Backs up the tv count entries,backuptvcounts
 restoretvcounts,Restores the tv count entires.Note: tvcounts must be in your /hasystem directory.,restoretvcounts
 addschedule,Adds item to the schedule,addschedule "setplaymode normal" 6:00 PM" today
-viewschedules,Lists currently scheduled items,viewschedules
+viewschedules,Lists currently scheduled items. Can use -d for date filter -a for action filter and -t for time,viewschedules
 removeschedule,Removes the scheduled item at the specified day/date and time,removeschedule "7:00AM" sunday
 smartplist,Generates a playlist on your plex server (add \"-p\" flag) or a holidaymode playlist (no \"-p\" flag) using the specified words.,smartplist christmas
+updatechecker,Checks to see if you are running the most recent TBN-Plex files,updatechecker
+setautoupdate,Change the AUTOUPDATE value. This is ON or OFF,setautoupdate ON
+getautoupdate,Gets the current AUTOUPDATE value,getautoupdate
+listcollections,Lists the Collections found in your library. NOTE: You  must do a "getallcollections" before this will return results,listcollections
+collectiondetails,Gets the movies in the given Collection,collectiondetails "The Die Hard Collection"
+getallcollections,Scans your movie library and compares it to themoviedb to find the collections in your library,getallcollections
+getlikemovie,Checks themoviedb for similar movies to the given movie. NOTE: supports "-b" flag to create a smartblock using the results,getlikemovie "Lethal Weapon" -b
+getcollection,Gets the Collection associated with a given movie. NOTE: supports "-b" flag to create a smartblock using the results and "-p" to create a smartplaylist on your Plex server,getcollection "Die Hard" -p
+availableactions,Lists the actions supported by the system.py file,availableactions -l
+playspshow,Plays a specifiec episode for the given show. Format show season number episode number, playspshow Psych 4 15
+customtitlecheck,Checks if the given custom title exists,customtitlecheck "Ghostbusters 3"
+addcustomtitle,Adds a custom title association for an original title,addcustomtitle "Ghostbusters 3" "Ghostbusters(2016)"
+removecustomtitle,Removes the given custom title association,removecustomtitle "Ghostbusters 3"
+trivia,Gets a trivia item for the given movie,trivia "The Matrix"
+faqs,Gets a FAQ for the given movie,faqs "The Matrix"
+triviagame,Generates a trivia question using a title from your movie library.,triviagame
+triviaanswer,Shows the Answer to the last trivia question asked,triviaanswer
+triviaquestion,Shows the Last Trivia Question Asked,triviaquestion
+triviahint,Gives a hint for the last Trivia Question asked,triviahint
+changehonorific,Changes what the server calls you example: sir, lady, bill, etc.,changehonorific "My Lord"
+jumpinblock,Jump to a specific place in the active block,jumpinblock 2
+getprintmode,Gets the PRINTMODE state,getprintmode
+setprintmode,Set PRINTMODE ON or OF,setprintmode ON
+suggestsomething,Suggests a random show or movie,suggestsomething
