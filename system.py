@@ -129,6 +129,7 @@ def plexlogin():
 	except IndexError:
 		print ("Error getting necessary plex api variables. Run system_setup.py.")
 
+		
 def setsleeptime(num):
 	num = str(num)
 	cur.execute("DELETE FROM States WHERE Option LIKE \"SLEEPTIME\"")
@@ -137,7 +138,7 @@ def setsleeptime(num):
 	sql.commit()
 	return ("SLEEPTIME setting has been adjusted to: " + num + ".\n")
 
-def gethonorific():
+def gethonorific(): #Returns the value of the name the script will refer to the user by in certain outputs.
 	command = "SELECT State FROM States WHERE Option LIKE \"CALLMETHIS\""
 	cur.execute(command)
 	if not cur.fetchone():
@@ -148,7 +149,7 @@ def gethonorific():
 	CALLMETHIS = cur.fetchone()[0]
 	return (CALLMETHIS)
 
-def sethonorific(myname):
+def sethonorific(myname): #Sets the name the script will refer to the user by. Defaults to "Sir"
 	if myname == "none":
 		print ("What shall I call thee?")
 		CALLMETHIS = str(raw_input('TItle: ')).strip()
@@ -160,7 +161,7 @@ def sethonorific(myname):
 	sql.commit()
 	return ("I shall now call thee " + CALLMETHIS + ". Good Day.")
 
-def changeplexip():
+def changeplexip(): #Changes the stored IP address for the Plex Server
 	plexip = str(raw_input('Plex Server IP: '))
 	plexip = plexip.strip()
 	plexport = str(raw_input('Plex Port: '))
@@ -175,7 +176,7 @@ def changeplexip():
 	sql.commit()
 	
 
-def changeplexpw(password):
+def changeplexpw(password): #Changes the stored password for Plex. Obsolete as storing passwords is no longer needed
 	password = password.strip()
 	cur.execute("DELETE FROM settings WHERE item LIKE \'PLEXPW\'")
 	sql.commit()
@@ -187,7 +188,7 @@ def changeplexpw(password):
 def cls():
 	os.system('cls' if os.name=='nt' else 'clear')
 
-def checkcustomtables(show):
+def checkcustomtables(show): 
 	command = "SELECT name FROM sqlite_master WHERE type='table'"
 	cur.execute(command)
 	list = cur.fetchall()
@@ -263,7 +264,7 @@ def getcustomtable(table):
 			stuff.append(item[0])
 		return stuff
 
-def listcustomtables():
+def listcustomtables(): #Displays a list of custom Plex libraries imported into the controller database
 	command = "SELECT name FROM sqlite_master WHERE type='table'"
 	cur.execute(command)
 	list = cur.fetchall()
@@ -273,44 +274,44 @@ def listcustomtables():
 			stuff.append(item[0])
 	return stuff
 
-def muteaudio():
+def muteaudio(): #Mutes the audio
 	global client
 	plexlogin()
 	client.setVolume(0, 'Video')
 
-def mutemusic():
+def mutemusic(): #Mutes audio output to the music client
 	plexlogin()
 	PLEXMUSICCLIENT = musiccheck()
 	client = plex.client(PLEXMUSICCLIENT)
 	client.setVolume(0, 'music')
 
-def unmutemusic():
+def unmutemusic(): #Unmutes audio output to the music client
         plexlogin()
         PLEXMUSICCLIENT = musiccheck()
         client = plex.client(PLEXMUSICCLIENT)
         client.setVolume(100, 'music')
 
-def unmuteaudio():
+def unmuteaudio(): #Unmutes audio 
         global client
         plexlogin()
         client.setVolume(100, 'Video')
 
-def lowaudio():
+def lowaudio(): #Sets volume to 25%
 	global client
 	plexlogin()
 	client.setVolume(25, 'Video')
 
-def mediumaudio():
+def mediumaudio(): #Sets volume to 50%
 	global client
 	plexlogin()
 	client.setVolume(50, 'Video')
 
-def highaudio():
+def highaudio(): #Sets volume to 75%
 	global client
 	plexlogin()
 	client.setVolume(75, 'Video')
 
-def maxaudio():
+def maxaudio(): #Sets audio to 100%
 	global client
 	plexlogin()
 	client.setVolume(100, 'Video')
@@ -340,7 +341,7 @@ def schedchecker(command):
 			return ("\\\"" + say + "\\\"")
 	
 
-def addschedule(action, time, day):
+def addschedule(action, time, day): #Adds an item to the schedule. These must be done one at a time, to add in bulk, use a shell script
 	action = action.strip()
 	time = time.strip()
 	day = day.strip()
@@ -379,7 +380,7 @@ def addschedule(action, time, day):
 	sql.commit()
 	return ("Successfully added item to schedule.")
 
-def removeschedule(time, day):
+def removeschedule(time, day): #Removes an item from the schedule
 	command = "SELECT * FROM SCHEDULES WHERE time LIKE \"" + time + "\" AND day LIKE \"" + day + "\""
 	cur.execute(command)
 	if not cur.fetchall():
@@ -423,7 +424,7 @@ def argprocessor(thearg):
 		else:
 			return thing
 
-def viewschedules():
+def viewschedules(): #Outputs the entire schedule list. Currently has pagination and will output the entire schedule at once.
 	try:
 		cur.execute("SELECT * FROM SCHEDULES")
 	except sqlite3.OperationalError:
@@ -526,7 +527,7 @@ def viewschedules():
 				
 	return ("\nDone.")
 
-def clearschedules():
+def clearschedules(): #Removes all scheduled items
 	cur.execute("DELETE FROM SCHEDULES")
 	sql.commit()
 	return ("Done.")
@@ -540,7 +541,7 @@ def holidaycheck(title):
 		return ("Error: " + title + " does not exist as a holiday.")
 	return title
 
-def checkholidays(holiday):
+def checkholidays(holiday): #Returns custom holidays
 	try:
 		command = "SELECT * FROM Holidays"
 		cur.execute(command)	
@@ -576,7 +577,7 @@ def checkholidays(holiday):
 				print ("---")
 	return ("\nDone.")
 
-def removeholiday(holiday):
+def removeholiday(holiday): #Delete custom holiday
 	print ("Warning: This will remove the " + holiday + " and all associations. Are you sure you want to proceed?")
 	validate = str(raw_input("Yes or No:"))
 	if "yes" not in validate.lower():
@@ -588,7 +589,7 @@ def removeholiday(holiday):
 	cur.execute("DELETE FROM Holidays WHERE name LIKE \"" + name + "\"")
 	sql.commit()
 	return ("Successfully removed " + holiday + ".")
-def removefromholiday(holiday, title):
+def removefromholiday(holiday, title): #Removes a holiday designation from a title
 	holiday = holiday.lower()
         if ":" not in title:
                 if ("Quit." in title):
@@ -628,7 +629,7 @@ def removefromholiday(holiday, title):
 		return (title + " not found associated with the " + name + " holiday.")
 		
 
-def addholiday(holiday, title):
+def addholiday(holiday, title): 
 	holiday = holiday.lower()
 	if ":" not in title:
 		title = titlecheck(title.strip())
@@ -1078,7 +1079,7 @@ def disablekidsmode():
 	else:
 		return ("Not in Kids mode. Unable to disable.")
 
-def enablefavoritesmode(mode):
+def enablefavoritesmode(mode): #Turns on Favorites mode
 	mode = mode.lower()
 	if "show" in option:
 		cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODESHOW\"")
@@ -1095,7 +1096,7 @@ def enablefavoritesmode(mode):
 
 	return ("Favories mode " + mode + " has been turned On.")
 
-def disablefavoritesmode(mode):
+def disablefavoritesmode(mode): #Turns off Favorites mode
 	mode = mode.lower()
         if "show" in option:
                 cur.execute("DELETE FROM States WHERE Option LIKE \"ENABLEFAVORITESMODESHOW\"")
@@ -1112,21 +1113,21 @@ def disablefavoritesmode(mode):
 
         return ("Favories mode " + mode + " has been turned Off.")
 
-def disablecommercials():
+def disablecommercials(): #Disables commercials from playing before a title starts
         cur.execute("DELETE FROM States WHERE Option LIKE \"COMMERCIALMODE\"")
         sql.commit()
         cur.execute("INSERT INTO States VALUES (?,?)",("COMMERCIALMODE","Off"))
         sql.commit()
 	return ("Commercial Mode has been disabled.")
 
-def enablecommercials():
+def enablecommercials(): #Allow commercials to play before a title starts, default 2
 	cur.execute("DELETE FROM States WHERE Option LIKE \"COMMERCIALMODE\"")
         sql.commit()
         cur.execute("INSERT INTO States VALUES (?,?)",("COMMERCIALMODE","On"))
         sql.commit()
         return ("Commercial Mode has been enabled.")
 
-def listclients():
+def listclients(): #Display a list of available clients
 	daclients = []
 	for client in plex.clients():
 		daclients.append(client.title)
@@ -1136,7 +1137,7 @@ def listclients():
 		print (str(counter) + "- " + client.strip() + "\n")
 		counter = counter + 1
 
-def changeclient():
+def changeclient(): #Change the client that playback is allocated to
 	daclients = []
 	for client in plex.clients():
 		daclients.append(client.title)
@@ -1158,7 +1159,7 @@ def changeclient():
 	except Exception:
 		return ("Error. Unable to update client. Please try again.")
 
-def setmusicclient():
+def setmusicclient(): #Sets the client to be used for music
 	plexlogin()
 	daclients = []
         for client in plex.clients():
@@ -1181,32 +1182,32 @@ def setmusicclient():
         except Exception:
                 return ("Error. Unable to update client. Please try again.")
 
-def stopplay():
+def stopplay(): #Stops video playback
 	client = plex.client(PLEXCLIENT)
 	client.stop('video')
 
-def stopmusic():
+def stopmusic(): #Stops music playback
 	plexlogin()
         PLEXMUSICCLIENT = musiccheck()
         client = plex.client(PLEXMUSICCLIENT)
 	client.stop('music')
 
 
-def hitok():
+def hitok(): #Clicks the OK button in case a dialog box needs to be dismissed
 	client = plex.client(PLEXCLIENT)
 	client.select()
 
-def pauseplay():
+def pauseplay(): #Pauses playback
 	client = plex.client(PLEXCLIENT)
 	client.pause('video')
 
-def pausemusic():
+def pausemusic(): #Pauses music playback
 	plexlogin()
         PLEXMUSICCLIENT = musiccheck()
         client = plex.client(PLEXMUSICCLIENT)
 	client.pause('music')
 
-def whereat():
+def whereat(): #Outputs the playback position of the current title
 	client = plex.client(PLEXCLIENT)
 	for mediatype in client.timeline():
 		if int(mediatype.get('time')) != 0:
@@ -1308,14 +1309,14 @@ def skipback(val):
                 except Exception:
                         return ("Error: Skip failed.")
 
-def listwildcard():
+def listwildcard(): #Displays name of the current Wild Card show
 	cur.execute("SELECT setting FROM settings WHERE item LIKE \"WILDCARD\"")
 	wildcard = cur.fetchone()
 	wildcard = wildcard[0]
 
 	return wildcard
 
-def changewildcard(show):
+def changewildcard(show): #Change the wildcard show
 	show = show.replace("'","''")
 	if "none" in show:
 		currentw = listwildcard()
@@ -1436,7 +1437,7 @@ def helpme(stuff):
 	say = "Command: " + name + "\nDescription: " + desc + "\nUsage Example: " + exp.strip()
 	return say
 
-def updatehelp():
+def updatehelp(): #Updates the help file
 	cls()
 	try:
 		cur.execute("DELETE FROM help")
@@ -1499,7 +1500,7 @@ def getautoupdate():
 			print ("FOUND Multiple Autoupdate entries. Deleted and set to off. If you are using this feature you will need to re-enable it.")
 	return val
 
-def setautoupdate(val):
+def setautoupdate(val): #Turns autoupdate on. When the updatechecker is un, it will automatically update if a new version was found
 	if (val.lower() == "on"):
 		val = "ON"
 	elif (val.lower() == "off"):
@@ -1512,7 +1513,7 @@ def setautoupdate(val):
 	sql.commit()
 	return ("Auto Update Status has been set to: " + val)
 
-def updatechecker():
+def updatechecker(): #Checks for new version and if autoupdate is on, it will update to the newest version
 	curver = versioncheck()
 	print ("System Version: " + curver)
 	getme = "https://raw.githubusercontent.com/MoeFwacky/Python-Plex-Controller/master/system.py"
@@ -1606,7 +1607,7 @@ def generateblock(name):
 	return ("done")
 
 
-def explainblock(block):
+def explainblock(block): #Displays content of specified block
 	blist = getblockpackagelist()
 	for item in blist:
 		check = item
@@ -1672,7 +1673,7 @@ def findinblock(findme):
 		del say
 	return ("Done.")
 
-def addblock(name, title):
+def addblock(name, title): #Creates a new block of programming
 	command1 = "SELECT Movie FROM Movies"
 	command2 = "SELECT TShow FROM TVshowlist"
 	cur.execute(command1)
@@ -1960,7 +1961,7 @@ def addblock(name, title):
 		say = ("block."+name+ " has been created.")
 		return (say)
 
-def addtoblock(blockname, name):
+def addtoblock(blockname, name): #Add a title to an existing block
 	blist = getblockpackagelist()
 	name = name.replace("''","'")
 	if (blockname == "none"):
@@ -2089,7 +2090,7 @@ def addtoblock(blockname, name):
 			return (say)
 		return ("Done.")
 
-def removefromblock(blockname, name):
+def removefromblock(blockname, name): #Remove a title from the specified block
 	if (("preroll" in name) or ("playcommercial" in name)):
 		pass
 	else:
@@ -2129,7 +2130,7 @@ def removefromblock(blockname, name):
 	return ("Item not found to remove.")
 
 
-def replaceinblock(block, nitem, oitem):
+def replaceinblock(block, nitem, oitem): #Replace on title in a block with a different title
 	oitem = oitem.lower()
 	nitem = nitem.lower()
 	command = "SELECT Name, Items, Count FROM Blocks WHERE Name LIKE \"" + block + "\""
@@ -2648,7 +2649,7 @@ def isanint(checkme):
 		return False
 
 
-def availableblocks():
+def availableblocks(): #Displays available programming blocks
 	blocklist = getblockpackagelist()
 	for item in blocklist: 
 		try:
@@ -2788,7 +2789,7 @@ def findmovie(movie):
 
 			return (say)
 
-def listepisodes(show):
+def listepisodes(show): #Displays all of the episodes titles of a specified show
 	plexlogin()
 	show = titlecheck(show)
 	command = "SELECT TShow FROM TVshowlist WHERE TShow LIKE \"" + show + "\""
@@ -3411,7 +3412,7 @@ def moviesummary(movie):
 
 
 
-def setnextep(show, season, episode):
+def setnextep(show, season, episode): #Set the next episode to play in a TV series
 	plexlogin()
 	show = titlecheck(show)
 	if ("Quit." in show):
@@ -3443,7 +3444,7 @@ def setnextep(show, season, episode):
 	say = say.rstrip()
 	return say
 
-def playspshow(show, season, episode):
+def playspshow(show, season, episode): #Plays a specific episode of a TV show instead of the next in order
 	global PLEXCLIENT
 	plexlogin()
 	test = show
@@ -3711,7 +3712,7 @@ def deleteshow(show):
 	sql.commit()
 	return ("Done.")
 
-def playshow(show):
+def playshow(show): #Plays the next episode of a specified TV show
 	#SECTION = "TV Shows"
 	oshow = show
 	if (("block." not in show) and ("custom." not in show) and ("marathon." not in show) and ("minithon." not in show) and ("holiday." not in show)):
@@ -4311,7 +4312,7 @@ def commercialcheck():
         check = cur.fetchone()[1]
 	return check
 
-def setcommercialbreakcount(number):
+def setcommercialbreakcount(number): #Sets the number of commercials to play when the commercialbreak command is issued
 	cur.execute("SELECT * FROM commercials")
 	if not cur.fetchall():
 		return ("Error: not enough commercials in the commercials table to use that setting.")
@@ -4327,7 +4328,7 @@ def setcommercialbreakcount(number):
 	sql.commit()
 	return ("COMMERCIALBREAKCOUNT has been set to: " + str(number))
 
-def commercialbreak():
+def commercialbreak(): #forces a commercial break to stop the current program and play commercials
 	cur.execute("SELECT State FROM States WHERE Option LIKE \"COMMERCIALBREAK\"")
 	if not cur.fetchone():
 		print ("No commercial break settings found. Settings to 2.")
@@ -4418,7 +4419,7 @@ def getcommercial():
         show = playme[0]
 	return show
 
-def playcommercial(commercial):
+def playcommercial(commercial): #Play a commerical
 	global plex
 	global client
 	global PLEXCLIENT
