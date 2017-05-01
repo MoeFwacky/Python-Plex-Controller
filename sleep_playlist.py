@@ -1,4 +1,4 @@
-homedir = '/home/pi/hasystem/'
+
 
 from random import randint
 import sys
