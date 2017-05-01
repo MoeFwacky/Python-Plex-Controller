@@ -1,4 +1,4 @@
-homedir = '/home/pi/hasystem/'
+
 
 import web
 import time
