@@ -4,7 +4,7 @@ import os
 import sys
 import getpass
 
-user = str(sys.argv[1])
+user = getpass.getuser()
 
 newdir = homedir
 getfiles = newdir + "aliases"
