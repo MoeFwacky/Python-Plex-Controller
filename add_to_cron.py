@@ -2,7 +2,7 @@
 
 import sys
 
-user = str(sys.argv[1])
+user = getpass.getuser()
 
 workd = "/etc/crontab"
 writeme = "@reboot " + user + " python /home/" + user + "/hasystem/piplaystate.py > /dev/null 2>&1 &"
