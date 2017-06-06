@@ -8700,7 +8700,7 @@ def printmode():
 		PRINTMODE = pstate
 
 def versioncheck():
-	version = "4.01"
+	version = "4.02"
 	return version
 	
 
