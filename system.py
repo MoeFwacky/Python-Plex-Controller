@@ -6153,7 +6153,7 @@ def whatupnext():
 		if queue == " ":
 			updatehelp()
                         cls()
-			if PRINTMODE == ON:
+			if PRINTMODE == "ON":
 				print ("Successfully updated help file.")
 				print ("First run situation detected. Taking approprate action.\n")
 			queuefix()
@@ -8700,7 +8700,7 @@ def printmode():
 		PRINTMODE = pstate
 
 def versioncheck():
-	version = "4.01"
+	version = "4.02"
 	return version
 	
 
